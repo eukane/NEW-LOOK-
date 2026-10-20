@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>소집 프로토타입</title>
+<style>
+:root{--bg:#0f0b18;--panel:#1a1426;--panel2:#221a33;--line:#2e2542;--gold:#e8c76a;--gold2:#f6e3a6;--text:#efe9dc;--dim:#9a90ab;--red:#ff5a5a;--ok:#7fe3a0}
+@media (prefers-color-scheme: light){:root{--bg:#0f0b18}} /* 항상 어두운 무대 톤 */
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 "Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo","WenQuanYi Zen Hei",system-ui,sans-serif}
+header{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+header h1{margin:0;font-size:18px;color:var(--gold2)}
+header .sub{color:var(--dim);font-size:13px}
+main{display:grid;grid-template-columns:260px 1fr;gap:14px;padding:14px 16px;max-width:1100px;margin:0 auto}
+@media (max-width:820px){main{grid-template-columns:1fr}}
+#players{display:flex;flex-direction:column;gap:8px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;grid-template-columns:44px 1fr;gap:10px;align-items:center}
+.card.dead{opacity:.45}
+.card .nm{font-weight:700}
+.card .meta{color:var(--dim);font-size:12px}
+.pips{display:flex;gap:4px;margin-top:4px}
+.pip{width:14px;height:14px;border-radius:50%;border:2px solid var(--line);background:transparent}
+.pip.on{background:var(--red);border-color:var(--red)}
+.tag{font-size:11px;background:#2a2140;border-radius:6px;padding:1px 6px;margin-left:6px;color:var(--gold2)}
+.mine{font-size:12px;color:#ffb0b0;margin-top:4px}
+#stage{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;min-height:420px}
+h2{margin:0 0 6px;font-size:17px;color:var(--gold2)}
+p{margin:6px 0}
+.dim{color:var(--dim)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+button.btn{background:var(--gold);color:#1a1200;border:0;border-radius:10px;padding:9px 16px;font:inherit;font-weight:700;cursor:pointer}
+button.btn.ghost{background:transparent;color:var(--gold2);border:1px solid var(--line)}
+button.btn:disabled{opacity:.4;cursor:not-allowed}
+label.opt{display:flex;gap:8px;align-items:flex-start;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:6px 0;cursor:pointer}
+label.opt small{color:var(--dim);display:block}
+.board{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+.s{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:10px 6px;font:inherit;cursor:pointer;text-align:center;position:relative}
+.s b{display:block;font-size:16px;color:var(--gold2)}
+.s span{font-size:12px;color:var(--dim)}
+.s.sel{border-color:var(--gold);background:#3a2f10}
+.s.clear{opacity:.4}.s.clear span::after{content:" · 급소 아님"}
+.s.cut{background:#4a1616;border-color:var(--red);cursor:not-allowed}.s.cut span::after{content:" · 끊김"}
+.s.mine{border-style:dashed;border-color:#ff8a8a}
+.s.flash{outline:3px solid var(--gold)}
+.s.hit{background:#7a1c1c;border-color:var(--red)}
+.s.miss{opacity:.55}
+.s.dis{cursor:default}
+.bar{height:6px;border-radius:4px;background:var(--line);overflow:hidden;margin:6px 0}
+.bar i{display:block;height:100%;background:var(--gold);width:100%}
+canvas{width:100%;max-width:480px;background:#0b0813;border:1px solid var(--line);border-radius:12px;touch-action:none;display:block}
+table{border-collapse:collapse;width:100%;font-size:13px;margin:8px 0}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left}
+th{color:var(--gold2)}
+#log{max-width:1100px;margin:0 auto 24px;padding:0 16px}
+#log .box{background:#120d1d;border:1px solid var(--line);border-radius:12px;padding:10px 12px;max-height:200px;overflow:auto;font-size:13px;color:#cfc7de}
+#log .box div{padding:2px 0;border-bottom:1px dashed #241b36}
+.win{color:var(--ok)}.lose{color:#ffb0b0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:820px){.two{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>소집 프로토타입</h1>
+  <span class="sub">12개의 실 · 급소 4개 · 공격 3개 선택 &nbsp;|&nbsp; 나 1명 + 봇 3명 &nbsp;|&nbsp; 탐색 라운드는 재화 증가로 대체, 탄막 듀얼은 간이 회피 게임으로 대체</span>
+</header>
+<main>
+  <aside id="players"></aside>
+  <section id="stage"></section>
+</main>
+<section id="log"><div class="box" id="logbox"></div></section>
+
+<script>
+/* ===================== CORE:BEGIN (DOM 없음, 규칙 로직) ===================== */
+const JOBS = [
+  {id:'ent',  name:'엔터테이너', color:'#f6e3a6'},
+  {id:'tech', name:'기술자',     color:'#9be37a'},
+  {id:'scout',name:'수색자',     color:'#7fe3ff'},
+  {id:'arch', name:'기록자',     color:'#cdb6ff'},
+];
+const STRING_NAMES = ['머리','가슴','좌 어깨','우 어깨','좌 팔꿈치','우 팔꿈치','좌 손목','우 손목','좌 무릎','우 무릎','좌 발목','우 발목'];
+const N = 12, VITALS = 4;
+const DEFAULT_RULES = {basePicks:3, loserPicks:2, clue:5, comeback:'extra', winnerFirst:false}; // comeback: off | extra(관객의 동정) | last(최후의 승부수)
+
+let rand = Math.random;
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const ri = n => Math.floor(rand()*n);
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=ri(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
+function sample(a,k){return shuffle(a).slice(0,k)}
+function gauss(){let u=0,v=0;while(!u)u=rand();while(!v)v=rand();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+const range = n => [...Array(n).keys()];
+
+function makePlayers(humanIdx){
+  const jobs = shuffle(JOBS);
+  return range(4).map(i=>({
+    i, job:jobs[i], human:i===humanIdx, name:jobs[i].name,
+    vit:new Set(sample(range(N),VITALS)),  // 급소 4개 (랜덤 배정, 본인에게만 보임)
+    cut:new Set(),                          // 끊긴 급소 (모두에게 공개)
+    known:{},                               // known[targetIdx] = 급소가 아님을 아는 실
+    gold:0, skill:0.2+rand()*0.6, alive:true, duelWins:0,
+  }));
+}
+const level = p => Math.min(5, Math.floor(p.gold/2));
+const alive = P => P.filter(p=>p.alive);
+
+function picksFor(p, won, rules){
+  let n = won ? rules.basePicks : rules.loserPicks;
+  if(rules.comeback==='extra' && p.cut.size>=2) n += 1;       // 역전 기믹 A: 관객의 동정 (급소 2개 이상 끊기면 +1)
+  else if(rules.comeback==='last' && p.cut.size>=3) n = 5;    // 역전 기믹 B: 최후의 승부수 (급소 3개 끊기면 한 번에 5개)
+  return n;
+}
+function dodgeHits(attLevel, skill){
+  const mean = Math.max(0.2, 1.0 + 0.6*attLevel - 1.6*skill);
+  return Math.max(0, Math.round(mean + gauss()));
+}
+// hitsA = A가 맞은 횟수. 적은 쪽이 승리, 동률이면 재화 레벨, 그래도 같으면 무작위
+function duelWinner(a, b, hitsA, hitsB){
+  if(hitsA!==hitsB) return hitsA<hitsB ? a : b;
+  if(level(a)!==level(b)) return level(a)>level(b) ? a : b;
+  return rand()<0.5 ? a : b;
+}
+function simDuel(a, b){
+  const hitsA = dodgeHits(level(b), a.skill), hitsB = dodgeHits(level(a), b.skill);
+  return {hitsA, hitsB, winner:duelWinner(a,b,hitsA,hitsB)};
+}
+function giveClue(w, l, rules){
+  const k = w.known[l.i] || (w.known[l.i]=new Set());
+  const cand = range(N).filter(i=>!l.vit.has(i) && !k.has(i));
+  const got = sample(cand, Math.min(rules.clue, cand.length));
+  got.forEach(i=>k.add(i));
+  return got;
+}
+function aiPicks(p, t, count){
+  const k = p.known[t.i] || new Set();
+  const free = range(N).filter(i=>!t.cut.has(i));
+  const good = free.filter(i=>!k.has(i));
+  let picks = good.length>=count ? sample(good,count) : good.concat(sample(free.filter(i=>k.has(i)), count-good.length));
+  return picks;
+}
+function resolveAttack(att, tar, picks){
+  const hits = picks.filter(i=>tar.vit.has(i) && !tar.cut.has(i));
+  hits.forEach(i=>tar.cut.add(i));
+  if(tar.cut.size>=VITALS) tar.alive = false;
+  return hits;
+}
+/* 한 쌍의 두 공격을 처리한다. winnerFirst면 승자가 먼저 공격하고, 그 공격에 죽은 쪽의 반격은 취소된다. */
+function applyPair(a, b, w, pa, pb, rules){
+  const out = [];
+  const seq = rules.winnerFirst ? (w===a ? [[a,b,pa],[b,a,pb]] : [[b,a,pb],[a,b,pa]]) : [[a,b,pa],[b,a,pb]];
+  seq.forEach(([att,tar,pk],idx)=>{
+    if(rules.winnerFirst && idx===1 && !att.alive){ out.push({att,tar,picks:pk,hits:[],canceled:true}); return; }
+    out.push({att,tar,picks:pk,hits:resolveAttack(att,tar,pk)});
+  });
+  return out;
+}
+function pairUp(P){
+  const al = shuffle(alive(P)), pairs = [];
+  for(let i=0;i+1<al.length;i+=2) pairs.push([al[i],al[i+1]]);
+  return {pairs, bye: al.length%2 ? al[al.length-1] : null};
+}
+function gainGold(P){ alive(P).forEach(p=>p.gold += 1+ri(2)); }
+
+function botGame(rules){
+  const P = makePlayers(-1); let rounds = 0; const maxCut=[0,0,0,0];
+  while(alive(P).length>1 && rounds<60){
+    rounds++; gainGold(P);
+    const {pairs} = pairUp(P);
+    const plan = pairs.map(([a,b])=>{
+      const r = simDuel(a,b); const w = r.winner, l = w===a?b:a;
+      w.duelWins++; w.gold += 1; giveClue(w,l,rules);
+      return {a,b,w,l};
+    });
+    plan.forEach(({a,b,w,l})=>{
+      const pa = aiPicks(a,b,picksFor(a,w===a,rules)), pb = aiPicks(b,a,picksFor(b,w===b,rules));
+      applyPair(a,b,w,pa,pb,rules);
+    });
+    P.forEach(p=>{ maxCut[p.i]=Math.max(maxCut[p.i],p.cut.size); });
+  }
+  const al = alive(P);
+  return {rounds, winner: al.length===1 ? al[0].i : -1, duelWins:P.map(p=>p.duelWins), maxCut};
+}
+function runBotGames(rules, n){
+  let sum=0, draws=0, leaderGames=0, leaderWins=0, backWins=0, decided=0; const wins=[0,0,0,0];
+  for(let g=0; g<n; g++){
+    const r = botGame(rules); sum += r.rounds;
+    if(r.winner<0) draws++; else { wins[r.winner]++; decided++; if(r.maxCut[r.winner]>=2) backWins++; }
+    const mx = Math.max(...r.duelWins), idx = r.duelWins.map((v,i)=>v===mx?i:-1).filter(i=>i>=0);
+    if(idx.length===1 && r.winner>=0){ leaderGames++; if(idx[0]===r.winner) leaderWins++; }
+  }
+  return {games:n, avgRounds:sum/n, draws:draws/n, leaderRate:leaderWins/Math.max(1,leaderGames), backRate:backWins/Math.max(1,decided)};
+}
+/* ===================== CORE:END ===================== */
+
+/* ===================== UI ===================== */
+const params = new URLSearchParams(location.search);
+const AUTO = params.has('auto'), FAST = params.has('fast') || AUTO, STOP = params.get('stop'), FORCEPLAY = params.has('forceplay'); // 디버그용: ?auto=1&stop=선택
+const $ = s => document.querySelector(s);
+const sleep = ms => new Promise(r=>setTimeout(r, FAST?0:ms));
+const stage = $('#stage'), playersEl = $('#players'), logbox = $('#logbox');
+let P = [], round = 0, rules = {...DEFAULT_RULES}, opts = {timer:true, duelMode:'play'};
+
+function log(msg, cls=''){ const d=document.createElement('div'); if(cls) d.className=cls; d.innerHTML=msg; logbox.appendChild(d); logbox.scrollTop=logbox.scrollHeight; }
+const nameOf = p => `<b style="color:${p.job.color}">${p.name}${p.human?'(나)':''}</b>`;
+
+function plateSVG(color, dead){
+  const c = dead ? '#555' : color;
+  return `<svg viewBox="-30 -42 60 84" width="40" height="52"><path d="M-24 -4 C-24 -30 -12 -40 0 -40 C12 -40 24 -30 24 -4 C24 12 18 24 10 32 Q0 38 -10 32 C-18 24 -24 12 -24 -4 Z" fill="#c7a874" stroke="#120c1c" stroke-width="2"/>
+  <g fill="none" stroke="${c}" stroke-width="2.4" stroke-linecap="round" opacity="${dead?0.5:1}">${dead?'<path d="M-14 -4 h8 M6 -4 h8"/>':'<path d="M-14 -4 q5 -8 10 0 M4 -4 q5 -8 10 0"/><path d="M-12 14 Q0 26 12 14"/>'}</g></svg>`;
+}
+function renderPlayers(){
+  playersEl.innerHTML = P.map(p=>`
+    <div class="card ${p.alive?'':'dead'}">
+      <div>${plateSVG(p.job.color, !p.alive)}</div>
+      <div>
+        <div class="nm" style="color:${p.job.color}">${p.name}${p.human?'<span class="tag">나</span>':''}${p.alive?'':'<span class="tag">탈락</span>'}</div>
+        <div class="meta">재화 Lv ${level(p)} · 듀얼 승 ${p.duelWins}</div>
+        <div class="pips" title="끊긴 급소">${range(VITALS).map(i=>`<span class="pip ${i<p.cut.size?'on':''}"></span>`).join('')}</div>
+        ${p.human?`<div class="mine">내 급소: ${[...p.vit].sort((a,b)=>a-b).map(i=>`${i+1} ${STRING_NAMES[i]}${p.cut.has(i)?'(끊김)':''}`).join(', ')}</div>`:''}
+        ${[...p.cut].length && !p.human ? `<div class="meta">끊긴 급소: ${[...p.cut].sort((a,b)=>a-b).map(i=>i+1).join(', ')}</div>`:''}
+      </div>
+    </div>`).join('');
+}
+
+/* 한 화면을 그리고 버튼 클릭을 기다린다 */
+function humanDead(){ const h=P.find(p=>p.human); return !!h && !h.alive; }
+function screen(html, buttons, skipIfDead){
+  return new Promise(res=>{
+    stage.innerHTML = html + `<div class="row" style="margin-top:12px">${buttons.map((b,i)=>`<button class="btn ${b.ghost?'ghost':''}" data-i="${i}">${b.label}</button>`).join('')}</div>`;
+    stage.querySelectorAll('button[data-i]').forEach(el=>el.onclick=()=>res(buttons[+el.dataset.i].value));
+    const tag = (html.match(/<h2>([^<]*)/)||[])[1]||'';
+    if(AUTO && !(STOP && tag.includes(STOP))) setTimeout(()=>res(buttons[0].value),0);
+    else if(skipIfDead && humanDead()) setTimeout(()=>res(buttons[0].value),900);
+  });
+}
+function boardHTML(target, viewer, sel, picksShown, mineView){
+  const k = viewer && viewer.known[target.i] || new Set();
+  return `<div class="board">${range(N).map(i=>{
+    const cls = ['s'];
+    if(target.cut.has(i)) cls.push('cut');
+    else if(k.has(i)) cls.push('clear');
+    if(sel && sel.has(i)) cls.push('sel');
+    if(mineView && target.vit.has(i) && !target.cut.has(i)) cls.push('mine');
+    return `<button class="${cls.join(' ')}" data-i="${i}"><b>${i+1}</b><span>${STRING_NAMES[i]}</span></button>`;
+  }).join('')}</div>`;
+}
+
+/* ---------- 간이 회피 듀얼 (탄막 듀얼 대용) ---------- */
+function dodgeGame(oppLevel, color){
+  return new Promise(res=>{
+    const W=480,H=300,SECS=12;
+    stage.innerHTML = `<h2>회피 듀얼</h2><p class="dim">마우스·터치로 움직이거나 방향키/WASD. ${SECS}초 동안 빛 조각을 피하세요. 상대 재화 Lv ${oppLevel}일수록 탄막이 촘촘합니다.</p>
+      <div class="row"><span id="dtimer">${SECS}</span>초 · 피격 <span id="dhits">0</span></div><canvas id="cv" width="${W}" height="${H}"></canvas>`;
+    const cv=$('#cv'), g=cv.getContext('2d');
+    let px=W/2, py=H-40, hits=0, t=0, inv=0, bullets=[], keys={}, spawn=0, last=performance.now(), done=false;
+    const target={x:px,y:py};
+    const rate = 1.4 + 0.5*oppLevel;
+    const kd=e=>{keys[e.key.toLowerCase()]=true}, ku=e=>{keys[e.key.toLowerCase()]=false};
+    addEventListener('keydown',kd); addEventListener('keyup',ku);
+    function pos(e){const r=cv.getBoundingClientRect();const t0=e.touches?e.touches[0]:e;target.x=(t0.clientX-r.left)*W/r.width;target.y=(t0.clientY-r.top)*H/r.height}
+    cv.addEventListener('pointermove',pos); cv.addEventListener('pointerdown',pos);
+    function addBullet(){
+      const kind = Math.random();
+      const x = Math.random()*W;
+      if(oppLevel>=3 && kind<0.25){ const n=6, cx=x, cy=20; for(let a=0;a<n;a++){const ang=Math.PI*(0.15+0.7*a/(n-1)); bullets.push({x:cx,y:cy,vx:Math.cos(ang)*90,vy:Math.sin(ang)*90,r:5});} }
+      else if(oppLevel>=2 && kind<0.5){ const dx=px-x, dy=py-0, m=Math.hypot(dx,dy)||1; bullets.push({x,y:0,vx:dx/m*110,vy:dy/m*110,r:5}); }
+      else if(oppLevel>=4 && kind<0.7){ bullets.push({x,y:0,vx:0,vy:100,r:5,wave:Math.random()*6}); }
+      else bullets.push({x,y:0,vx:0,vy:80+Math.random()*50,r:5});
+    }
+    function finish(){ if(done) return; done=true; removeEventListener('keydown',kd); removeEventListener('keyup',ku); res(hits); }
+    function frame(now){
+      if(done) return; const dt=Math.min(0.05,(now-last)/1000); last=now; t+=dt; inv=Math.max(0,inv-dt);
+      const sp=220; if(keys['arrowleft']||keys['a'])target.x=px-sp*dt*3; if(keys['arrowright']||keys['d'])target.x=px+sp*dt*3; if(keys['arrowup']||keys['w'])target.y=py-sp*dt*3; if(keys['arrowdown']||keys['s'])target.y=py+sp*dt*3;
+      px+= (Math.max(8,Math.min(W-8,target.x))-px)*Math.min(1,dt*14); py+= (Math.max(8,Math.min(H-8,target.y))-py)*Math.min(1,dt*14);
+      spawn+=dt; while(spawn>1/rate){spawn-=1/rate; addBullet();}
+      g.clearRect(0,0,W,H); g.fillStyle='#0b0813'; g.fillRect(0,0,W,H);
+      bullets.forEach(b=>{ if(b.wave!==undefined) b.x+=Math.sin(t*4+b.wave)*60*dt; b.x+=b.vx*dt; b.y+=b.vy*dt;
+        g.fillStyle=color; g.shadowColor=color; g.shadowBlur=8; g.beginPath(); g.arc(b.x,b.y,b.r,0,7); g.fill(); g.shadowBlur=0;
+        if(inv<=0 && Math.hypot(b.x-px,b.y-py)<b.r+6){hits++;inv=1;$('#dhits').textContent=hits;}
+      });
+      bullets=bullets.filter(b=>b.y<H+10&&b.x>-20&&b.x<W+20);
+      g.fillStyle = inv>0 && Math.floor(t*12)%2 ? '#ffffff55' : '#f6e3a6'; g.beginPath(); g.arc(px,py,6,0,7); g.fill();
+      $('#dtimer').textContent=Math.max(0,Math.ceil(SECS-t));
+      if(t>=SECS) return finish(); tick();
+    }
+    const tick = () => setTimeout(()=>frame(performance.now()), 16);
+    tick();
+  });
+}
+
+/* ---------- 실 선택 ---------- */
+function pickScreen(me, target, n){
+  return new Promise(res=>{
+    const sel=new Set(); let left=15, timer=null, done=false;
+    const draw=()=>{
+      stage.innerHTML = `<h2>실 선택 — ${nameOf(target)}에게 ${n}개</h2>
+        <p class="dim">상대의 12개 실 중 ${n}개를 비공개로 고릅니다. 급소가 포함돼 있으면 그 실이 끊어집니다. 흐린 실은 단서로 급소가 아님을 안 실입니다.</p>
+        ${opts.timer?`<div class="bar"><i id="tbar"></i></div>`:''}
+        ${boardHTML(target, me, sel)}
+        <div class="row"><button class="btn" id="ok" ${sel.size===n?'':'disabled'}>확정 (${sel.size}/${n})</button></div>`;
+      stage.querySelectorAll('.board .s').forEach(el=>el.onclick=()=>{
+        const i=+el.dataset.i; if(target.cut.has(i)) return;
+        if(sel.has(i)) sel.delete(i); else if(sel.size<n) sel.add(i); draw();
+      });
+      $('#ok').onclick=()=>finish();
+      if(opts.timer) $('#tbar').style.width=(left/15*100)+'%';
+    };
+    const finish=()=>{ if(done) return; done=true; clearInterval(timer);
+      while(sel.size<n){ const free=range(N).filter(i=>!target.cut.has(i)&&!sel.has(i)); sel.add(free[ri(free.length)]); }
+      res([...sel]); };
+    draw();
+    if(AUTO){ if(!(STOP && STOP==='선택')) setTimeout(finish,0); return; }
+    if(opts.timer) timer=setInterval(()=>{ left-=0.1; const b=$('#tbar'); if(b) b.style.width=Math.max(0,left/15*100)+'%'; if(left<=0) finish(); },100);
+  });
+}
+
+/* ---------- 공개 연출 ---------- */
+async function revealScreen(me, meView, foeView, myPicks, foePicks, myHits, foeHits, foeCanceled){
+  const foe = P.find(p=>p.i===foeView.i);
+  stage.innerHTML = `<h2>공개</h2><div class="two">
+    <div><b>내 공격 → ${nameOf(foe)}</b>${boardHTML(foeView, me, new Set(), null)}</div>
+    <div><b>${nameOf(foe)}의 공격 → 나</b>${boardHTML(meView, null, new Set(), null, true)}</div></div><div id="rv" class="dim"></div>`;
+  const [bA,bB] = stage.querySelectorAll('.board');
+  const mark=async(board,picks,hits)=>{ for(const i of picks){ const el=board.children[i]; el.classList.add('flash'); await sleep(450);
+      el.classList.remove('flash'); el.classList.add(hits.includes(i)?'hit':'miss'); if(hits.includes(i)) el.classList.add('cut'); await sleep(150);} };
+  await Promise.all([mark(bA,myPicks,myHits), foeCanceled?Promise.resolve():mark(bB,foePicks,foeHits)]);
+  $('#rv').innerHTML = `<p>내 공격: ${myHits.length?`<span class="win">급소 ${myHits.length}개 끊음 (${myHits.map(i=>i+1).join(', ')})</span>`:'빗나감'}</p>
+                        <p>상대 공격: ${foeCanceled?'<span class="dim">승자의 선공에 쓰러져 취소되었습니다.</span>':(foeHits.length?`<span class="lose">내 급소 ${foeHits.length}개 끊김 (${foeHits.map(i=>i+1).join(', ')})</span>`:'빗나감')}</p>`;
+}
+
+/* ---------- 메인 흐름 ---------- */
+async function setup(){
+  const html = `<h2>소집 프로토타입</h2>
+   <p class="dim">탐색 라운드는 생략하고 소집만 돌려 규칙을 검증합니다. 매 소집: 짝짓기 → 듀얼 → 단서 보상 → 동시 선택 → 공개. 급소 4개가 모두 끊기면 탈락, 마지막까지 살아남으면 승리.</p>
+   <label class="opt"><div style="flex:1">역전 기믹<small>급소를 많이 잃은 쪽에게 반격 기회를 줍니다.</small>
+     <select id="o-cb" style="margin-top:6px;background:#120d1d;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px">
+       <option value="off" ${rules.comeback==='off'?'selected':''}>없음</option>
+       <option value="extra" ${rules.comeback==='extra'?'selected':''}>A. 관객의 동정 — 급소 2개 이상 끊기면 선택 +1</option>
+       <option value="last" ${rules.comeback==='last'?'selected':''}>B. 최후의 승부수 — 급소 3개 끊기면 한 번에 5개 선택</option></select></div></label>
+   <label class="opt"><div style="flex:1">단서 개수 (승자가 지우는 실)<small>0이면 단서 없음. 클수록 이긴 쪽이 유리해집니다.</small>
+     <select id="o-cl" style="margin-top:6px;background:#120d1d;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px">
+       ${[0,3,5,7].map(v=>`<option value="${v}" ${rules.clue===v?'selected':''}>${v}개</option>`).join('')}</select></div></label>
+   <label class="opt"><input type="checkbox" id="o-wf" ${rules.winnerFirst?'checked':''}><div>승자 선공<small>듀얼 승자의 공격이 먼저 적용되고, 그 공격에 쓰러진 쪽의 반격은 취소됩니다. (동시 사망 감소)</small></div></label>
+   <label class="opt"><input type="checkbox" id="o-tm" ${opts.timer?'checked':''}><div>선택 제한 시간 15초<small>끄면 천천히 고를 수 있습니다.</small></div></label>
+   <label class="opt"><input type="checkbox" id="o-du" ${opts.duelMode==='auto'?'checked':''}><div>듀얼 자동 진행<small>회피 게임을 건너뛰고 결과를 시뮬레이션합니다.</small></div></label>`;
+  const act = await screen(html, [{label:'게임 시작',value:'start'},{label:'봇 600판 시뮬레이션 (역전 기믹 비교)',value:'sim',ghost:true}]);
+  rules.comeback = $('#o-cb') ? $('#o-cb').value : rules.comeback;
+  rules.clue = $('#o-cl') ? +$('#o-cl').value : rules.clue;
+  rules.winnerFirst = $('#o-wf') ? $('#o-wf').checked : rules.winnerFirst;
+  opts.timer = $('#o-tm') ? $('#o-tm').checked : opts.timer;
+  opts.duelMode = ($('#o-du') && $('#o-du').checked) ? 'auto' : 'play';
+  return act;
+}
+function simReport(){
+  const base = {...rules};
+  const names = {off:'없음', extra:'A. 관객의 동정', last:'B. 최후의 승부수'};
+  const rows = ['off','extra','last'].map(cb=>({cb, ...runBotGames({...base,comeback:cb}, 600)}));
+  window.__sim = rows;
+  return `<h2>봇 600판 시뮬레이션 (단서 ${base.clue}개)</h2>
+    <table><tr><th>역전 기믹</th><th>평균 소집 수</th><th>무승부</th><th>듀얼 최다승자의 최종 승리율</th><th>급소 2개↑ 끊겼다가 이긴 비율</th></tr>
+    ${rows.map(r=>`<tr><td>${names[r.cb]}</td><td>${r.avgRounds.toFixed(2)}</td><td>${(r.draws*100).toFixed(1)}%</td><td>${(r.leaderRate*100).toFixed(1)}%</td><td>${(r.backRate*100).toFixed(1)}%</td></tr>`).join('')}</table>
+    <p class="dim">4명 동률이면 최다승자의 기대 승리율은 25%입니다. 이 값이 높을수록 스노우볼이 강하고, 마지막 열이 높을수록 역전이 자주 일어납니다. 봇은 실력(회피 능력)이 판마다 무작위입니다.</p>`;
+}
+
+async function playGame(){
+  P = [...Array(4).keys()]; P = makePlayers(ri(4)); round=0; logbox.innerHTML='';
+  log('게임 시작 — 급소 4개가 각자에게 랜덤 배정되었습니다.');
+  while(alive(P).length>1 && round<40){
+    round++; gainGold(P); renderPlayers();
+    const {pairs, bye} = pairUp(P);
+    const human = P.find(p=>p.human);
+    log(`<b>── 소집 ${round} ──</b>`);
+    await screen(`<h2>소집 ${round}</h2><p>탐색 라운드(생략): 모두 재화를 얻었습니다.</p>
+      <table><tr><th>짝</th></tr>${pairs.map(([a,b])=>`<tr><td>${nameOf(a)} vs ${nameOf(b)}</td></tr>`).join('')}${bye?`<tr><td>${nameOf(bye)} — 이번 소집은 쉽니다</td></tr>`:''}</table>`,
+      [{label: human.alive ? '듀얼 시작' : '관전 중… (자동 진행)', value:1}], true);
+    // 듀얼
+    const plan = [];
+    for(const [a,b] of pairs){
+      let r;
+      if((a.human||b.human) && opts.duelMode==='play' && (!AUTO || FORCEPLAY)){
+        const me = a.human?a:b, foe = a.human?b:a;
+        const myHits = await dodgeGame(level(foe), foe.job.color);
+        const foeHits = dodgeHits(level(me), foe.skill);
+        const w = duelWinner(me,foe,myHits,foeHits);
+        r = a.human ? {hitsA:myHits,hitsB:foeHits,winner:w} : {hitsA:foeHits,hitsB:myHits,winner:w};
+      } else r = simDuel(a,b);
+      const w=r.winner, l = w===a?b:a; w.duelWins++; w.gold+=1;
+      const got = giveClue(w,l,rules);
+      plan.push({a,b,w,l,r,got});
+      log(`${nameOf(a)} vs ${nameOf(b)} → ${nameOf(w)} 승 (피격 ${r.hitsA}:${r.hitsB})`);
+    }
+    renderPlayers();
+    const mine = plan.find(x=>x.a.human||x.b.human);
+    let summary = `<h2>듀얼 결과</h2><table><tr><th>대결</th><th>승자</th><th>피격</th></tr>${plan.map(x=>`<tr><td>${nameOf(x.a)} vs ${nameOf(x.b)}</td><td>${nameOf(x.w)}</td><td>${x.r.hitsA} : ${x.r.hitsB}</td></tr>`).join('')}</table>`;
+    if(mine){ const me = mine.a.human?mine.a:mine.b;
+      if(mine.w===me) summary += `<p class="win">승리 — 상대의 급소가 아닌 실 ${mine.got.length}개를 알게 되었습니다: ${mine.got.map(i=>i+1).sort((x,y)=>x-y).join(', ')}</p>`;
+      else summary += `<p class="lose">패배 — 단서는 없고, 이번 공격의 선택이 ${picksFor(me,false,rules)}개로 줄었습니다.</p>`; }
+    await screen(summary,[{label:'실 선택으로',value:1}], true);
+    // 선택
+    const attacks = [];
+    for(const x of plan){
+      for(const [att,tar] of [[x.a,x.b],[x.b,x.a]]){
+        const n = picksFor(att, x.w===att, rules);
+        const picks = att.human ? await pickScreen(att,tar,n) : aiPicks(att,tar,n);
+        attacks.push({att,tar,picks,n});
+      }
+    }
+    // 공개: 연출용으로 적용 전 상태를 복사해 둔다
+    const snap = {}; P.forEach(p=>snap[p.i]=new Set(p.cut));
+    const results = [];
+    for(const x of plan){
+      const A = attacks.filter(q=>q.att===x.a), B = attacks.filter(q=>q.att===x.b);
+      results.push(...applyPair(x.a, x.b, x.w, A[0].picks, B[0].picks, rules).map(r=>({...r, n:(r.att===x.a?A[0]:B[0]).n})));
+    }
+    const myA = results.find(r=>r.att.human);
+    if(myA){ const foeA = results.find(r=>r.att===myA.tar && r.tar===myA.att);
+      const view = p => ({i:p.i, cut:snap[p.i], vit:p.vit, known:p.known});
+      await revealScreen(myA.att, view(myA.att), view(myA.tar), myA.picks, foeA.picks, myA.hits, foeA.hits, foeA.canceled);
+      await new Promise(r=>{ stage.insertAdjacentHTML('beforeend','<div class="row" style="margin-top:12px"><button class="btn" id="nx">다음 소집으로</button></div>'); $('#nx').onclick=r; if(AUTO && STOP!=='공개') r(); }); }
+    results.forEach(r=>log(`${nameOf(r.att)}의 공격(${r.n}개) → ${nameOf(r.tar)}: ${r.canceled?'<span class="dim">쓰러져서 취소됨</span>':(r.hits.length?`<span class="win">급소 ${r.hits.length}개 끊음</span>`:'빗나감')}${r.tar.alive?'':' <b>탈락</b>'}`));
+    renderPlayers();
+  }
+  const al = alive(P);
+  const win = al.length===1 ? al[0] : null;
+  window.__result = {rounds:round, winner: win? win.i : -1, humanWon: win? win.human : false};
+  document.title = '결과: ' + JSON.stringify(window.__result);
+  return screen(`<h2>${win?`${nameOf(win)} 승리`:'무승부 — 동시 탈락'}</h2><p>${round}번의 소집 끝에 승부가 났습니다.</p>${win&&win.human?'<p class="win">살아남았습니다.</p>':''}`,
+    [{label:'다시 하기',value:'again'}]);
+}
+
+(async function main(){
+  P = makePlayers(0); renderPlayers();
+  while(true){
+    const act = await setup();
+    if(act==='sim'){ await screen(simReport(),[{label:'돌아가기',value:1}]); if(AUTO) break; continue; }
+    await playGame(); if(AUTO) break;
+  }
+})();
+</script>
+</body>
+</html>
