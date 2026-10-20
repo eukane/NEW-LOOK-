@@ -48,7 +48,7 @@ th,td{border-bottom:1px solid #6b5c3e66;padding:5px 7px;text-align:left}th{font-
 .bk .win{color:#1e5a2a}.bk .lose{color:#8a1a28}
 .bk .btn{font-size:.95em;padding:.6em 1.4em}
 .bk .btn.ghost{color:#3a2a14;border-color:#5a4528}
-.bk img.hero{display:block;margin:0 auto;height:min(34vh,290px)}
+.bk img.hero{display:block;margin:0 auto;height:min(28vh,250px)}
 .bk .pairs{display:flex;gap:.6em;justify-content:center;align-items:flex-end;margin:.2em 0}
 .bk .pairs img{height:min(16vh,160px)}
 .bk .vs{font:400 1.6em var(--f-disp);color:#7c1620;transform:skewX(-8deg)}
@@ -105,7 +105,7 @@ th,td{border-bottom:1px solid #6b5c3e66;padding:5px 7px;text-align:left}th{font-
 .cards{display:flex;gap:10px;margin:2px 0 8px}.card2{flex:1;border:1px solid #4a3a20;background:#0008;padding:10px 12px;text-align:center}
 .card2 .k{font:400 12px var(--f-disp);color:#8f7340;letter-spacing:.2em}.card2 .n{font:400 40px/1.1 var(--f-disp)}.card2 .n.w{color:#7fcf8a}.card2 .n.l{color:#e0506a}.card2 .n.z{color:#6a5a3e}
 .card2 .s{font-size:12px;color:#a89a78;min-height:2.6em}
-.body{display:block;height:min(26vh,200px);width:auto;flex:none}
+.body{display:block;height:min(19vh,150px);width:auto;flex:none}
 .wq{width:100%;box-sizing:border-box;margin:.5em 0;padding:.65em .8em;background:#f3e8c8cc;border:1px solid #5a4528;border-bottom:3px double #5a4528;color:#2a1d10;font:500 1em var(--f-body);outline:none}
 .wq:focus{background:#fbf2d6;border-color:#7c1620}
 .wc{display:inline-block;margin:.2em .3em .2em 0;padding:.3em .7em;background:#00000014;border:1px dashed #5a4528;color:#3a2a14;font:500 .85em var(--f-body);cursor:pointer;pointer-events:auto}
@@ -1316,9 +1316,9 @@ function bookScreen({left,right,buttons,flips=5,tag}){
     bookScene={t:fast?99:0,flips,R,settled:false}; mode='book'; ui.innerHTML='';
     if(params.has('bt')) bookScene.t=+params.get('bt');
     if(!fast) sfxFlip(flips);
-    const fs=Math.max(12,Math.min(17,R.w/(R.portrait?30:60)));
+    const fs=Math.max(12,Math.min(17,R.w/(R.portrait?35:60)));
     const wrap=document.createElement('div'); wrap.className='bkwrap'; wrap.style.fontSize=fs+'px';
-    const btnHtml=`<div class="row" style="position:sticky;bottom:0;margin-top:1em">${buttons.map((b,i)=>`<button class="btn ${b.ghost?'ghost':''}" data-i="${i}">${b.label}</button>`).join('')}</div>`;
+    const btnHtml=`<div class="row" style="margin-top:1em;padding-bottom:.4em">${buttons.map((b,i)=>`<button class="btn ${b.ghost?'ghost':''}" data-i="${i}">${b.label}</button>`).join('')}</div>`;
     const pos=(x,y,w,h,html)=>`<div class="bk" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px">${html}</div>`;
     wrap.innerHTML = R.portrait ? pos(R.x,R.y,R.w,R.h,left+right+btnHtml) : pos(R.x,R.y,R.w/2,R.h,left)+pos(R.x+R.w/2,R.y,R.w/2,R.h,right+btnHtml);
     ui.appendChild(wrap); bookScene.wrap=wrap;
@@ -1442,7 +1442,7 @@ function runExplore(P,o={}){
     const w=makeExplore(P,{mirror:o.mirror||null,T:+(params.get('et')||opts.exploreT||EXP_T),ev:o.ev||params.get('ev')||null,theme:o.theme||params.get('theme')||null}); const me=w.ents.find(e=>e.human)||w.ents[0]; if(params.has('xbot')) me.human=false; if(params.has('xr')){ w.mons.forEach(m=>{ me.recorded[m.type.id]=true; }); w.mons.filter(m=>!m.type.fly).forEach((m,i)=>{ m.x=me.x+200+i*60; m.y=me.y-100+i*50; }); } if(params.has('xg')){ w.gate.x=me.x+150; w.gate.y=me.y-80; w.gate.open=true; w.gate.forE=me; me.gens=3; w.objs.filter(q=>q.type==='trap').slice(0,3).forEach((q,i)=>{ q.x=me.x-160+i*50; q.y=me.y+60; }); } if(params.has('xd')){ me.light=true; throwLure(w,me,me.x+160,me.y-40); w.mons.filter(m=>m.flock).forEach((m,i)=>{ m.rest=0; m.x=me.x+520+i*24; m.y=me.y+(i-1.5)*34; m.isLeader=i===0; }); } if(params.has('xl')){ me.light=true; w.mons.forEach(m=>{ if(m.type.fly){ m.x=me.x+140; m.y=me.y-60; } if(m.type.id==='shears'){ m.x=me.x-300; m.y=me.y+80; } }); } if(params.has('inb')){ const b=w.builds[0]; me.x=b.x+b.w*0.3; me.y=b.y+b.h*0.5; w.objs.filter(q=>q.type==='gen').slice(0,2).forEach(q=>{ q.lit=true; }); }
     xs={w,me,toasts:[],res,endT:0,hint:9,tick:0,stepT:0,srchT:0,ripT:0};
     mode='explore'; ui.innerHTML=''; hideSpellButtons(); actBtn.style.display='block'; lightBtn.style.display='block'; lureBtn.style.display='block'; joy=null; actHeld=false;
-    const be=BOOK_EVENTS.find(b=>b.id===w.ev); xToast(be?`${be.title} — ${be.rule.split('.')[0]}`:'고요한 장. 괴물과 발전기를 조심하세요.','#bba878'); xToast('목표: '+me.p.job.goal.split(' (')[0],me.p.job.color);
+    const be=BOOK_EVENTS.find(b=>b.id===w.ev); if(be) xToast(`${be.title} — ${be.rule.split('.')[0]}`,'#bba878');
     if(w.shoesOn&&w.shoesOn===me) xToast('빨간 구두가 신겨졌다! 누군가 붙잡아 줘야 멈춘다.','#ff6a7a');
     if(me.mcol) xToast(`거울 때문에 내 얼굴 빛이 ${COLNAME[me.mcol]}으로 보인다`,me.mcol);
   });
@@ -1491,7 +1491,7 @@ function xUpdate(dt){
   lureBtn.disabled=me.lures<=0||me.lureCd>0||w.over; lureBtn.innerHTML='미끼<br>×'+me.lures;
   lightBtn.classList.toggle('on',me.light); lightBtn.disabled=me.blind>0; lightBtn.innerHTML=me.blind>0?'실명<br>'+Math.ceil(me.blind)+'s':'얼굴 빛<br>'+(me.light?'ON':'OFF');
   actBtn.textContent=!o?'수색':o.type==='gen'?'수리':o.type==='plank'?'판자':o.type==='ward'?(me.hidden?'나오기':'숨기'):'수색';
-  for(const t of xs.toasts) t.t+=dt; xs.toasts=xs.toasts.filter(t=>t.t<3).slice(-4);
+  for(const t of xs.toasts) t.t+=dt; xs.toasts=xs.toasts.filter(t=>t.t<2.6).slice(-3);
 }
 function drawExplore(c,t){
   const w=xs.w, me=xs.me, th=w.theme, z=Math.max(0.7,Math.min(W/640,H/680)), vw=W/z, vh=H/z;
@@ -1546,7 +1546,7 @@ function drawExplore(c,t){
   for(const m of w.mons){ if(m.asleep) continue; const md=Math.hypot(m.x-me.x,m.y-me.y); if(m.type.id==='bell'&&md<700){ const k=(t*1.1)%1, sx=(m.x-cx)*z+W/2, sy=(m.y-cy)*z+H/2; c.strokeStyle=`rgba(246,210,122,${0.4*(1-k)*(1-md/700)})`; c.beginPath(); c.ellipse(sx,sy,(20+120*k)*z,(20+120*k)*z*0.6,0,0,7); c.stroke(); } if(fog&&md<500){ const k=(t*0.9)%1, sx=(m.x-cx)*z+W/2, sy=(m.y-cy)*z+H/2; c.strokeStyle=`rgba(255,80,60,${0.6*(1-k)})`; c.beginPath(); c.ellipse(sx,sy,(30+200*k)*z,(30+200*k)*z*0.6,0,0,7); c.stroke(); } } c.restore();
   c.save(); c.globalCompositeOperation='lighter'; for(const e of w.ents) if(e.light&&e.p.alive&&!e.hidden){ const sx=(e.x-cx)*z+W/2, sy=(e.y-cy-70)*z+H/2, gl=glowSprite(e.lcol,12); c.globalAlpha=0.75; c.drawImage(gl.c,sx-gl.s*z*0.9,sy-gl.s*z*0.9,gl.s*z*1.8,gl.s*z*1.8); }
   for(const m of w.mons){ if(!m.type.fly||m.asleep) continue; if(Math.hypot(m.x-me.x,m.y-me.y)>640) continue; const sx=(m.x-cx)*z+W/2, sy=(m.y-cy)*z+H/2, gl=glowSprite('#f0e8c0',6); c.globalAlpha=0.55; c.drawImage(gl.c,sx-gl.s*z*0.8,sy-gl.s*z*0.8,gl.s*z*1.6,gl.s*z*1.6); } c.restore();
-  if(me.p.job.id==='arch'){ c.save(); c.lineCap='round'; for(const m of w.mons){ if(!me.recorded[m.type.id]||m.asleep) continue; const sx=(m.x-cx)*z+W/2, sy=(m.y-cy)*z+H/2; c.strokeStyle='rgba(205,182,255,.55)'; c.lineWidth=2; c.setLineDash([6,8]); c.lineDashOffset=-t*30; if(m.path&&m.path.length){ c.beginPath(); c.moveTo(sx,sy); for(const p of m.path.slice(0,8)) c.lineTo((p[0]-cx)*z+W/2,(p[1]-cy)*z+H/2); c.stroke(); } c.setLineDash([]); c.fillStyle='#cdb6ff'; c.font=`400 11px ${FD}`; c.textAlign='center'; c.fillText('기록: '+m.type.name,sx,sy-52*z); c.strokeStyle='rgba(205,182,255,.5)'; c.beginPath(); c.arc(sx,sy,(m.type.sight||60)*z*(m.type.fly?0:1),0,7); if(!m.type.fly) c.stroke(); } c.restore(); }
+  if(me.p.job.id==='arch'){ c.save(); c.lineCap='round'; for(const m of w.mons){ if(!me.recorded[m.type.id]||m.asleep) continue; const sx=(m.x-cx)*z+W/2, sy=(m.y-cy)*z+H/2; c.strokeStyle='rgba(205,182,255,.55)'; c.lineWidth=2; c.setLineDash([6,8]); c.lineDashOffset=-t*30; if(m.path&&m.path.length){ c.beginPath(); c.moveTo(sx,sy); for(const p of m.path.slice(0,8)) c.lineTo((p[0]-cx)*z+W/2,(p[1]-cy)*z+H/2); c.stroke(); } c.setLineDash([]); c.fillStyle='#cdb6ff'; c.font=`400 11px ${FD}`; c.textAlign='center'; c.fillText('기록: '+m.type.name,sx,sy-52*z); if(!m.type.fly&&Math.hypot(m.x-me.x,m.y-me.y)<650){ c.strokeStyle='rgba(205,182,255,.22)'; c.beginPath(); c.arc(sx,sy,m.type.sight*z,0,7); c.stroke(); } } c.restore(); }
   let danger=dng;
   if(danger>0){ const vg=c.createRadialGradient(W/2,H/2,Math.min(W,H)*0.3,W/2,H/2,Math.max(W,H)*0.75); vg.addColorStop(0,'rgba(120,0,10,0)'); vg.addColorStop(1,`rgba(120,0,10,${0.55*danger*(0.75+0.25*Math.sin(t*10))})`); c.fillStyle=vg; c.fillRect(0,0,W,H); }
   { const mx_=W/2+(me.x-cx)*z, my_=H/2+(me.y-cy)*z, R=Math.min(W,H)*0.34; for(const m of w.mons){ if(m.asleep||m.type.fly) continue; const dx=m.x-me.x, dy=m.y-me.y, d=Math.hypot(dx,dy); if(d>650||d<baseR*0.9) continue; const a=Math.atan2(dy,dx), al=Math.min(1,(650-d)/420)*(0.6+0.4*Math.sin(t*8)); const col=m.type.id==='puppet'?'255,70,60':m.type.id==='shears'?'200,210,230':'246,210,122';
@@ -1571,7 +1571,7 @@ function xHud(c,t,cx,cy,z){
   if(me.p.job.id==='tech'){ c.fillStyle=w.gate.open?'#9be37a':'#d6402e'; c.fillRect(mx+w.gate.x*k-3.5,my+w.gate.y*k-3.5,7,7); c.strokeStyle='#fff'; c.lineWidth=1; c.strokeRect(mx+w.gate.x*k-3.5,my+w.gate.y*k-3.5,7,7); }
   for(const m of w.mons) if(!m.asleep&&(Math.hypot(m.x-me.x,m.y-me.y)<560||(me.p.job.id==='arch'&&me.recorded[m.type.id]))){ c.fillStyle=m.type.id==='bell'?'#f6d27a':'#ff4a3a'; c.beginPath(); c.arc(mx+m.x*k,my+m.y*k,3,0,7); c.fill(); }
   c.fillStyle=me.p.job.color; c.strokeStyle='#fff'; c.lineWidth=1.4; c.beginPath(); c.arc(mx+me.x*k,my+me.y*k,3.6,0,7); c.fill(); c.stroke(); c.restore();
-  c.textAlign='center'; xs.toasts.forEach((tt,i)=>{ const a=Math.min(1,tt.t*5)*Math.min(1,(3-tt.t)*3); c.save(); c.globalAlpha=a; c.font=`400 ${Math.min(18,W*0.042)}px ${FD}`; const wd=Math.min(W-20,c.measureText(tt.text).width+28), y=116+i*34; c.fillStyle='rgba(8,4,3,.82)'; c.fillRect(W/2-wd/2,y-14,wd,28); c.fillStyle=tt.col; c.fillText(tt.text,W/2,y+1,wd-16); c.restore(); });
+  c.textAlign='center'; xs.toasts.forEach((tt,i)=>{ const a=Math.min(1,tt.t*5)*Math.min(1,(2.6-tt.t)*3); c.save(); c.globalAlpha=a; c.font=`400 ${Math.min(16,W*0.038)}px ${FD}`; const wd=Math.min(W-20,c.measureText(tt.text).width+28), y=114+i*30; c.fillStyle='rgba(8,4,3,.82)'; c.fillRect(W/2-wd/2,y-14,wd,28); c.fillStyle=tt.col; c.fillText(tt.text,W/2,y+1,wd-16); c.restore(); });
   if(xs.hint>0&&!xs.w.over){ const msg=W<640?'이동: 화면 드래그 · 옆에서 [수색] 길게':'이동: WASD 또는 드래그 · 오브젝트 옆에 서서 [E] 또는 버튼을 길게'; c.save(); c.globalAlpha=Math.min(1,xs.hint); c.font=`400 13px ${FD}`; const wd=c.measureText(msg).width+28, y=H-(W<640?150:36); c.fillStyle='rgba(8,4,3,.82)'; c.fillRect(W/2-wd/2,y-14,wd,28); c.fillStyle='#d9cdb0'; c.fillText(msg,W/2,y+1); c.restore(); }
   if(joy){ c.save(); c.strokeStyle='rgba(217,205,176,.35)'; c.lineWidth=3; c.beginPath(); c.arc(joy.ox,joy.oy,48,0,7); c.stroke(); const dx=joy.x-joy.ox, dy=joy.y-joy.oy, d=Math.min(48,Math.hypot(dx,dy)), a=Math.atan2(dy,dx); c.fillStyle='rgba(217,205,176,.45)'; c.beginPath(); c.arc(joy.ox+Math.cos(a)*d,joy.oy+Math.sin(a)*d,18,0,7); c.fill(); c.restore(); }
   if(w.over){ const a=Math.min(1,xs.endT*2); c.fillStyle=`rgba(0,0,0,${0.55*a})`; c.fillRect(0,0,W,H); c.save(); c.globalAlpha=a; c.textAlign='center'; c.textBaseline='middle'; c.font=`400 ${Math.min(96,W*0.18)}px ${FD}`; c.lineWidth=10; c.strokeStyle='#0e0907'; c.strokeText('소집!',W/2,H/2); c.fillStyle='#e6dcc0'; c.fillText('소집!',W/2,H/2); c.font=`400 ${Math.min(20,W*0.045)}px ${FB}`; c.fillStyle='#bba878'; c.fillText(w.early?'모든 상자와 발전기가 바닥났다':'종이 울린다. 극장 중앙으로 모여라',W/2,H/2+Math.min(70,W*0.13)); c.restore(); }
@@ -1908,7 +1908,7 @@ async function whisperScreen(){
   await pr; const mine=((document.getElementById('wn')||{}).value||'').trim()||'…';
   const notes=shuffle([mine,...alive(P).filter(p=>!p.human).map(p=>botNote(p,P))]);
   await transition(()=>{},{text:'벽이 낭독한다',tip:'쪽지들이 벽 틈에서 흘러나옵니다…',job:me.job});
-  await bookScreen({left:`<h3>잔혹동화 책 · 낭독</h3><h2>벽이 읽어 준다</h2><p class="dim">누가 썼는지는 아무도 모릅니다.</p><div>${notes.map((n,i)=>`<div class="slip" style="animation-delay:${0.5+i*0.9}s"><i>쪽지 ${i+1}</i>${n.replace(/[<>&]/g,'')}</div>`).join('')}</div>`,right:`<h3>속삭임의 규칙</h3><p>쪽지 중 일부는 거짓입니다. 직업은 비공개이니, 얼굴 빛 색과 이 쪽지를 맞춰 보며 정체를 추리하세요.</p><p class="quote">벽이 입을 다물었습니다. 하지만 누군가의 심장 소리는 아직 들립니다.</p><p style="text-align:center"><span class="seal">封</span></p>`,buttons:[{label:'소집을 계속한다',value:1}],tag:STOP==='whisper2'?'whisper2':'whisper2_'});
+  await bookScreen({left:`<h3>잔혹동화 책 · 낭독</h3><h2>벽이 읽어 준다</h2><p class="dim">누가 썼는지는 아무도 모릅니다.</p><div>${notes.map((n,i)=>`<div class="slip" style="animation-delay:${0.5+i*0.9}s"><i>쪽지 ${i+1}</i>${n.replace(/[<>&]/g,'')}</div>`).join('')}</div>`,right:`<h3>속삭임의 규칙</h3><p>쪽지 중 일부는 거짓입니다. 직업은 비공개이니, 얼굴 빛 색과 이 쪽지를 맞춰 보며 정체를 추리하세요.</p><p class="quote">벽이 입을 다물었습니다. 하지만 누군가의 심장 소리는 아직 들립니다.</p><p style="text-align:center"><span class="seal">✦</span></p>`,buttons:[{label:'소집을 계속한다',value:1}],tag:STOP==='whisper2'?'whisper2':'whisper2_'});
 }
 function eventIcon(id){
   const sv={whisper:'<rect x="30" y="8" width="100" height="84" fill="#4a3a28" stroke="#2a1d10" stroke-width="3"/><g stroke="#2a1d10" stroke-width="1.5" opacity=".7"><path d="M30 30h100M30 52h100M30 74h100M60 8v22M100 30v22M60 52v22M100 74v18"/></g><path d="M70 40 q10-12 22 0 q10 12 0 24 q-12 8 -22 -4z" fill="#f1e5c0" stroke="#2a1d10" stroke-width="2"/><path d="M76 48h12M76 54h14M76 60h10" stroke="#7c1620" stroke-width="1.6"/><g fill="none" stroke="#7c1620" stroke-width="2" stroke-linecap="round"><path d="M112 28 q8 4 0 10"/><path d="M120 22 q12 8 0 20" opacity=".6"/></g>',
@@ -2043,7 +2043,8 @@ async function playGame(){
   stageActors=win?[win.job]:[];
   await transition(()=>{ mode='title'; },{text:'막이 내립니다',job:me.job});
   if(win) await runCut(win);
-  return bookScreen({left:`<h3>Finale</h3><h2>${win?`${win.name} 승리`:'무승부'}</h2>${win?`<img class="hero" alt="" src="${spriteURL(win.job,1.7)}">`:''}`,right:`<h3>마지막 장</h3><p class="quote">${win?(escapeWin?(win.human?'발전기의 불빛이 문을 비췄고, 당신은 세 번 극장을 빠져나갔습니다.':'발전기 소리가 멎었을 때, 누군가는 이미 극장 밖에 있었습니다.'):(win.human?'당신의 줄만이 끝까지 팽팽했습니다.':'끝까지 서 있던 것은 당신이 아니었습니다.')):'마지막 두 줄이 동시에 끊어졌습니다.'}</p><p class="dim">${round}번의 소집 끝에 막이 내립니다.</p>`,buttons:[{label:'다시 하기',value:'again'}],tag:STOP==='end'?'end':'end_'});
+  P.forEach(p=>p.known=true); const stand=`<table><tr><th>배우</th><th>재화</th><th>듀얼 승</th><th>결과</th></tr>${[...P].sort((a,b)=>(b.alive-a.alive)||(b.duelWins-a.duelWins)).map(p=>`<tr><td>${nameOf(p)}</td><td>${p.gold}</td><td>${p.duelWins}</td><td>${p===win?'<b class="win">승리</b>':p.alive?'생존':'<span class="lose">탈락</span>'}</td></tr>`).join('')}</table>`;
+  return bookScreen({left:`<h3>Finale</h3><h2>${win?`${win.name} 승리`:'무승부'}</h2>${win?`<img class="hero" alt="" src="${spriteURL(win.job,1.7)}">`:''}`,right:`<h3>마지막 장</h3><p class="quote">${win?(escapeWin?(win.human?'발전기의 불빛이 문을 비췄고, 당신은 세 번 극장을 빠져나갔습니다.':'발전기 소리가 멎었을 때, 누군가는 이미 극장 밖에 있었습니다.'):(win.human?'당신의 줄만이 끝까지 팽팽했습니다.':'끝까지 서 있던 것은 당신이 아니었습니다.')):'마지막 두 줄이 동시에 끊어졌습니다.'}</p><p class="dim">${round}번의 소집 끝에 막이 내립니다.</p>${stand}`,buttons:[{label:'다시 하기',value:'again'}],tag:STOP==='end'?'end':'end_'});
 }
 (async function main(){
   P=makePlayers(0); frame();
