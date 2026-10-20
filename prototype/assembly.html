@@ -12,6 +12,7 @@
   --f-disp:"Gugi","Black Han Sans","Noto Serif KR","WenQuanYi Zen Hei",serif;
   --f-body:"Hahmlet","Noto Serif KR","Noto Sans KR","WenQuanYi Zen Hei",serif;
   --f-black:"UnifrakturCook","Gugi",serif}
+input,textarea{-webkit-user-select:text;user-select:text}
 html,body{margin:0;height:100%;overflow:hidden;background:#070403;color:var(--bone);font:16px/1.6 var(--f-body);-webkit-user-select:none;user-select:none;touch-action:none}
 canvas#cv{position:fixed;inset:0;width:100vw;height:100vh;display:block}
 #ui{position:fixed;inset:0;pointer-events:none}
@@ -105,6 +106,15 @@ th,td{border-bottom:1px solid #6b5c3e66;padding:5px 7px;text-align:left}th{font-
 .card2 .k{font:400 12px var(--f-disp);color:#8f7340;letter-spacing:.2em}.card2 .n{font:400 40px/1.1 var(--f-disp)}.card2 .n.w{color:#7fcf8a}.card2 .n.l{color:#e0506a}.card2 .n.z{color:#6a5a3e}
 .card2 .s{font-size:12px;color:#a89a78;min-height:2.6em}
 .body{display:block;height:min(26vh,200px);width:auto;flex:none}
+.wq{width:100%;box-sizing:border-box;margin:.5em 0;padding:.65em .8em;background:#f3e8c8cc;border:1px solid #5a4528;border-bottom:3px double #5a4528;color:#2a1d10;font:500 1em var(--f-body);outline:none}
+.wq:focus{background:#fbf2d6;border-color:#7c1620}
+.wc{display:inline-block;margin:.2em .3em .2em 0;padding:.3em .7em;background:#00000014;border:1px dashed #5a4528;color:#3a2a14;font:500 .85em var(--f-body);cursor:pointer;pointer-events:auto}
+.wc:hover{background:#7c162022}
+.slip{position:relative;background:linear-gradient(#f1e5c0,#e2d2a6);border:1px solid #6a5632;padding:.55em .8em;margin:.55em 0;color:#2a1d10;box-shadow:2px 3px 0 #0003;font:500 .95em/1.5 var(--f-body);opacity:0;animation:slipIn .6s forwards;clip-path:polygon(0 4%,3% 0,97% 2%,100% 0,100% 96%,97% 100%,4% 98%,0 100%)}
+.slip:nth-child(odd){transform:rotate(-.8deg)}.slip:nth-child(even){transform:rotate(.7deg);margin-left:.8em}
+.slip i{display:block;font:italic 400 .7em var(--f-body);color:#7c1620;margin-bottom:.1em}
+@keyframes slipIn{from{opacity:0;transform:translateY(-14px) rotate(2deg)}to{opacity:1}}
+.seal{display:inline-block;width:2.4em;height:2.4em;border-radius:50%;background:radial-gradient(#a3232f,#5a0a14);color:#e9c9a0;text-align:center;line-height:2.4em;font:400 1em var(--f-disp);box-shadow:0 2px 4px #0006;transform:rotate(-8deg)}
 #load .t{font:700 26px var(--f-black);letter-spacing:.22em;color:#d8ccb0;text-shadow:0 2px 0 #000}
 #load .tip{font-size:14px;color:#a89a78;max-width:80vw;text-align:center;min-height:42px}
 #load canvas{width:min(420px,86vw);height:auto}
@@ -410,6 +420,8 @@ const MON_TYPES={
 };
 const EXP_PERK={ent:{spd:1.12,chest:1,gen:1,sight:1},tech:{spd:1,chest:1,gen:0.5,sight:1},scout:{spd:1,chest:0.6,gen:1,sight:1},arch:{spd:1,chest:1,gen:1,sight:0.55}};
 const BOOK_EVENTS=[
+  {id:'whisper',title:'속삭이는 벽',tag:'이번 소집',gather:true,story:'극장의 벽은 오래전부터 비밀을 먹고 살았습니다. 오늘 밤, 벽이 쪽지를 기다립니다. 누가 썼는지는 아무도 모른 채로.',rule:'각자 쪽지를 한 장 남깁니다. 책이 모든 쪽지를 낭독하지만 누구의 것인지는 밝히지 않습니다. 진실을 써도, 거짓을 써도 됩니다.'},
+  {id:'mirror',title:'거울 바꾸기',tag:'다음 탐색 · 두 사람',story:'깨진 손거울이 두 사람의 얼굴을 한꺼번에 비췄습니다. 거울 속에서 두 개의 빛이 서로의 자리로 건너갔습니다.',rule:'한 라운드 동안 두 배우의 얼굴 빛 색이 서로 바뀝니다. 누구인지는 당사자들만 압니다. 빛 색으로 직업을 추리하던 사람은 속게 됩니다.'},
   {id:'fog',title:'안개 호수',tag:'다음 탐색 전체',story:'책장에서 차가운 물안개가 번져 나왔습니다. 다음 장에서는 눈이 쓸모없어지고, 모든 소리가 두 배로 크게 들립니다.',rule:'시야가 거의 사라집니다. 대신 걷는 소리·수리하는 소리가 물결로 보입니다. 귀로 움직이세요.'},
   {id:'sleep',title:'잠든 괴물들',tag:'다음 탐색 전체',story:'괴물들은 이번 장에서 깊이 잠들어 있습니다. 하지만 아주 얕은 잠입니다.',rule:'괴물이 잠들어 있습니다. 가까이서 소리를 내면 한 마리씩 깨어납니다. 발전기 수리는 특히 시끄럽습니다.'},
   {id:'shoes',title:'빨간 구두',tag:'다음 탐색 · 두 사람',story:'책이 한 사람의 발에 빨간 구두를 신겼습니다. 춤은 멈추지 않습니다. 누군가 붙잡아 벗겨 줄 때까지는.',rule:'구두를 신은 사람은 멈출 수 없습니다. 다른 사람이 3초 동안 곁에 붙어 있으면 벗겨집니다. 벗겨 준 사람은 재화 +1.'},
@@ -503,6 +515,8 @@ function makeExplore(P,opts={}){
   const [sx,sy]=w.spawn;
   w.ents=P.map((p,i)=>({p,i,human:!!p.human,x:sx+(i-1.5)*40,y:sy+30,r:13,stun:0,gain:0,goal:null,wps:null,srch:null,ix:0,iy:0,act:false,moving:false,face:1,flee:0,perk:{...EXP_PERK[p.job.id]},gens:0,out:false,escaped:false,disarms:0,recorded:{},recT:{},hidden:null,lock:false,hideT:0,shoes:false,lures:2,lureCd:0,lureT:6+rand()*10,dir:[0,1],light:false,lt:2+rand()*6,blind:0,snipped:0,resc:0,sdir:[0,-1],noiseT:0,helper:rand()<0.55,stuck:0,lx:0,ly:0}));
   w.ents.forEach(e=>{ e.p.viewers=(e.p.viewers||0)*0.8; });
+  if(opts.mirror&&opts.mirror.length===2){ const [a,b]=opts.mirror.map(i=>w.ents.find(e=>e.i===i)); if(a&&b){ a.mcol=b.p.job.color; b.mcol=a.p.job.color; } }
+  for(const e of w.ents) e.lcol=e.mcol||e.p.job.color;
   const mk=(type,x,y)=>({type:MON_TYPES[type],x,y,r:MON_TYPES[type].r,state:'patrol',path:[],rest:2,chase:null,lostT:0,face:1,anim:0,repath:0,asleep:w.ev==='sleep',alarm:null,searchT:0,isMon:true});
   const far=(d)=>{ for(let k=0;k<200;k++){ const x=150+rand()*(XW-300), y=150+rand()*(XH-300); if(Math.hypot(x-sx,y-sy)>d&&!solidAt(w,x,y,30)) return [x,y]; } return [300,300]; };
   const p1=far(900), p2=far(700), p3=far(800); w.mons=[mk('puppet',p1[0],p1[1]),mk('shears',p3[0],p3[1])];
@@ -802,7 +816,7 @@ const sfx=(()=>{
 function sfxFlip(n){ for(let k=0;k<n;k++) sfx.play('flip',{vol:0.55,v:k%3,at:0.52+k*0.14,rate:0.95+k*0.015}); sfx.play('bookOpen',{vol:0.8,at:0.05}); }
 document.addEventListener('click',e=>{ if(e.target.closest && e.target.closest('.btn,.sp')) sfx.play('click',{vol:0.8}); });
 (function(){ const mb=document.getElementById('mute'); const sync=()=>mb.classList.toggle('off',!sfx.on); mb.onclick=()=>{ sfx.init(); sfx.toggle(); sync(); }; sync();
-  addEventListener('keydown',e=>{ if(e.key==='m'||e.key==='M'){ sfx.toggle(); sync(); } }); })();
+  addEventListener('keydown',e=>{ if(e.target&&e.target.tagName==='INPUT') return; if(e.key==='m'||e.key==='M'){ sfx.toggle(); sync(); } }); })();
 
 /* 분위기 레이어: 필름 그레인 / 먼지 / 안개 */
 const grain=document.createElement('canvas'); grain.width=grain.height=200;
@@ -1425,11 +1439,12 @@ addEventListener('keydown',e=>{ if((e.key==='q'||e.key==='Q')&&mode==='explore')
 function xToast(text,col='#d9cdb0'){ if(xs) xs.toasts.push({text,col,t:0}); }
 function runExplore(P,o={}){
   return new Promise(res=>{
-    const w=makeExplore(P,{T:+(params.get('et')||opts.exploreT||EXP_T),ev:o.ev||params.get('ev')||null,theme:o.theme||params.get('theme')||null}); const me=w.ents.find(e=>e.human)||w.ents[0]; if(params.has('xbot')) me.human=false; if(params.has('xr')){ w.mons.forEach(m=>{ me.recorded[m.type.id]=true; }); w.mons.filter(m=>!m.type.fly).forEach((m,i)=>{ m.x=me.x+200+i*60; m.y=me.y-100+i*50; }); } if(params.has('xg')){ w.gate.x=me.x+150; w.gate.y=me.y-80; w.gate.open=true; w.gate.forE=me; me.gens=3; w.objs.filter(q=>q.type==='trap').slice(0,3).forEach((q,i)=>{ q.x=me.x-160+i*50; q.y=me.y+60; }); } if(params.has('xd')){ me.light=true; throwLure(w,me,me.x+160,me.y-40); w.mons.filter(m=>m.flock).forEach((m,i)=>{ m.rest=0; m.x=me.x+520+i*24; m.y=me.y+(i-1.5)*34; m.isLeader=i===0; }); } if(params.has('xl')){ me.light=true; w.mons.forEach(m=>{ if(m.type.fly){ m.x=me.x+140; m.y=me.y-60; } if(m.type.id==='shears'){ m.x=me.x-300; m.y=me.y+80; } }); } if(params.has('inb')){ const b=w.builds[0]; me.x=b.x+b.w*0.3; me.y=b.y+b.h*0.5; w.objs.filter(q=>q.type==='gen').slice(0,2).forEach(q=>{ q.lit=true; }); }
+    const w=makeExplore(P,{mirror:o.mirror||null,T:+(params.get('et')||opts.exploreT||EXP_T),ev:o.ev||params.get('ev')||null,theme:o.theme||params.get('theme')||null}); const me=w.ents.find(e=>e.human)||w.ents[0]; if(params.has('xbot')) me.human=false; if(params.has('xr')){ w.mons.forEach(m=>{ me.recorded[m.type.id]=true; }); w.mons.filter(m=>!m.type.fly).forEach((m,i)=>{ m.x=me.x+200+i*60; m.y=me.y-100+i*50; }); } if(params.has('xg')){ w.gate.x=me.x+150; w.gate.y=me.y-80; w.gate.open=true; w.gate.forE=me; me.gens=3; w.objs.filter(q=>q.type==='trap').slice(0,3).forEach((q,i)=>{ q.x=me.x-160+i*50; q.y=me.y+60; }); } if(params.has('xd')){ me.light=true; throwLure(w,me,me.x+160,me.y-40); w.mons.filter(m=>m.flock).forEach((m,i)=>{ m.rest=0; m.x=me.x+520+i*24; m.y=me.y+(i-1.5)*34; m.isLeader=i===0; }); } if(params.has('xl')){ me.light=true; w.mons.forEach(m=>{ if(m.type.fly){ m.x=me.x+140; m.y=me.y-60; } if(m.type.id==='shears'){ m.x=me.x-300; m.y=me.y+80; } }); } if(params.has('inb')){ const b=w.builds[0]; me.x=b.x+b.w*0.3; me.y=b.y+b.h*0.5; w.objs.filter(q=>q.type==='gen').slice(0,2).forEach(q=>{ q.lit=true; }); }
     xs={w,me,toasts:[],res,endT:0,hint:9,tick:0,stepT:0,srchT:0,ripT:0};
     mode='explore'; ui.innerHTML=''; hideSpellButtons(); actBtn.style.display='block'; lightBtn.style.display='block'; lureBtn.style.display='block'; joy=null; actHeld=false;
     const be=BOOK_EVENTS.find(b=>b.id===w.ev); xToast(be?`${be.title} — ${be.rule.split('.')[0]}`:'고요한 장. 괴물과 발전기를 조심하세요.','#bba878'); xToast('목표: '+me.p.job.goal.split(' (')[0],me.p.job.color);
     if(w.shoesOn&&w.shoesOn===me) xToast('빨간 구두가 신겨졌다! 누군가 붙잡아 줘야 멈춘다.','#ff6a7a');
+    if(me.mcol) xToast(`거울 때문에 내 얼굴 빛이 ${COLNAME[me.mcol]}으로 보인다`,me.mcol);
   });
 }
 function xFinish(){ const w=xs.w, gains=w.ents.map(e=>e.gain), res=xs.res; w.ents.forEach(e=>{ e.p.gold=Math.max(0,e.p.gold+e.gain); }); xs=null; actBtn.style.display='none'; lightBtn.style.display='none'; lureBtn.style.display='none'; mode='title'; res({escapeBy:w.escapeBy?w.escapeBy.i:-1,extra:w.ents.map(e=>{ const J=e.p.job.id; return J==='ent'?'시청자 '+Math.floor(e.p.viewers||0):J==='tech'?'탈출 '+(e.p.escapes||0)+'/3'+(e.escaped?' ✔':''):J==='scout'?'해제 '+e.disarms:'기록 '+Object.keys(e.recorded).length+'/4'; }),snips:w.ents.map(e=>e.snipped||0),gains,early:!!w.early,theme:w.theme.name,counts:{chest:w.objs.filter(o=>o.type==='chest'&&o.done).length,gen:w.objs.filter(o=>o.type==='gen'&&o.done).length}}); }
@@ -1498,7 +1513,7 @@ function drawExplore(c,t){
   for(const d of w.decoys) if(vis(d.x,d.y)&&d.delay<=0) items.push({y:d.y,f:()=>{ c.save(); c.translate(d.x,d.y); c.fillStyle='#00000066'; c.beginPath(); c.ellipse(2,10,10,4,0,0,7); c.fill(); c.rotate(Math.sin(t*28)*0.25); c.fillStyle=lg(c,-8,-10,8,10,[[0,'#f6e08a'],[1,'#a0761c']]); c.beginPath(); c.moveTo(-9,6); c.quadraticCurveTo(-9,-10,0,-12); c.quadraticCurveTo(9,-10,9,6); c.closePath(); c.fill(); c.strokeStyle='#3a2a08'; c.lineWidth=1.8; c.stroke(); c.fillStyle='#3a2a08'; c.beginPath(); c.arc(0,7,2.4,0,7); c.fill(); c.restore(); }});
   for(const o of w.circs){ if(o.kind==='pond'||!vis(o.x,o.y,60)) continue; if(o.kind==='tree'){ const under=Math.hypot(me.x-o.x,me.y-o.y)<o.vr*1.5; items.push({y:o.y+o.vr*0.6,f:()=>drawTree(c,o,t,under?0.5:1)}); } else if(o.kind==='rock') items.push({y:o.y,f:()=>drawRockProp(c,o)}); else if(o.kind==='stone') items.push({y:o.y,f:()=>drawStone(c,o)}); }
   for(const e of w.ents) if(e.p.alive&&!e.hidden&&!e.out) items.push({y:e.y,f:()=>{ const flick=e.stun>0&&Math.floor(t*12)%2===0; c.save(); if(flick) c.globalAlpha=0.5;
-      if(e===me||shown(e.p)) drawChar(c,e.x,e.y+e.r,0.62,e.p.job,{t:t+e.i,moving:e.moving,flip:e.face<0,face:e.stun>0?'hurt':'idle'}); else drawUnknown(c,e.x,e.y+e.r,0.62,{t:t+e.i,moving:e.moving,flip:e.face<0,light:e.light,color:e.p.job.color}); c.restore();
+      if(e===me||shown(e.p)) drawChar(c,e.x,e.y+e.r,0.62,e.p.job,{t:t+e.i,moving:e.moving,flip:e.face<0,face:e.stun>0?'hurt':'idle'}); else drawUnknown(c,e.x,e.y+e.r,0.62,{t:t+e.i,moving:e.moving,flip:e.face<0,light:e.light,color:e.lcol}); c.restore();
       if(e.shoes){ c.save(); c.globalCompositeOperation='lighter'; const gl=glowSprite('#ff3a4a',9); c.globalAlpha=0.8; c.drawImage(gl.c,e.x-gl.s,e.y+e.r-gl.s*0.8,gl.s*2,gl.s*1.6); c.restore(); c.fillStyle='#c0182a'; c.beginPath(); c.ellipse(e.x-7,e.y+e.r,7,3.5,0,0,7); c.ellipse(e.x+7,e.y+e.r,7,3.5,0,0,7); c.fill();
         if(e.resc>0){ c.strokeStyle='#00000099'; c.lineWidth=6; c.beginPath(); c.arc(e.x,e.y-96,13,0,7); c.stroke(); c.strokeStyle='#9be37a'; c.lineWidth=4; c.beginPath(); c.arc(e.x,e.y-96,13,-Math.PI/2,-Math.PI/2+6.283*e.resc/3); c.stroke(); } }
       if(e.srch){ const o=e.srch.o; c.strokeStyle='#00000099'; c.lineWidth=6; c.beginPath(); c.arc(o.x,o.y-46,13,0,7); c.stroke(); c.strokeStyle=e.p.job.color; c.lineWidth=4; c.beginPath(); c.arc(o.x,o.y-46,13,-Math.PI/2,-Math.PI/2+6.283*e.srch.prog); c.stroke(); }
@@ -1529,7 +1544,7 @@ function drawExplore(c,t){
   // 소리 물결 (안개 호수에서는 모든 소리가, 평소에는 방울 꼬마·허수아비 비명만)
   c.save(); c.lineWidth=2.5; for(const nz of w.noises){ if(!fog&&nz.kind!=='crow'&&nz.kind!=='bell'&&nz.kind!=='lure') continue; const k=nz.t/1.4, sx=(nz.x-cx)*z+W/2, sy=(nz.y-cy)*z+H/2, rad=(30+Math.min(nz.r,520)*0.5*k)*z; const col=nz.kind==='lure'?'246,210,122':nz.kind==='crow'?'255,120,80':nz.kind==='gen'||nz.kind==='shoes'?'255,220,140':'190,210,220'; c.strokeStyle=`rgba(${col},${0.55*(1-k)})`; c.beginPath(); c.ellipse(sx,sy,rad,rad*0.6,0,0,7); c.stroke(); }
   for(const m of w.mons){ if(m.asleep) continue; const md=Math.hypot(m.x-me.x,m.y-me.y); if(m.type.id==='bell'&&md<700){ const k=(t*1.1)%1, sx=(m.x-cx)*z+W/2, sy=(m.y-cy)*z+H/2; c.strokeStyle=`rgba(246,210,122,${0.4*(1-k)*(1-md/700)})`; c.beginPath(); c.ellipse(sx,sy,(20+120*k)*z,(20+120*k)*z*0.6,0,0,7); c.stroke(); } if(fog&&md<500){ const k=(t*0.9)%1, sx=(m.x-cx)*z+W/2, sy=(m.y-cy)*z+H/2; c.strokeStyle=`rgba(255,80,60,${0.6*(1-k)})`; c.beginPath(); c.ellipse(sx,sy,(30+200*k)*z,(30+200*k)*z*0.6,0,0,7); c.stroke(); } } c.restore();
-  c.save(); c.globalCompositeOperation='lighter'; for(const e of w.ents) if(e.light&&e.p.alive&&!e.hidden){ const sx=(e.x-cx)*z+W/2, sy=(e.y-cy-70)*z+H/2, gl=glowSprite(e.p.job.color,12); c.globalAlpha=0.75; c.drawImage(gl.c,sx-gl.s*z*0.9,sy-gl.s*z*0.9,gl.s*z*1.8,gl.s*z*1.8); }
+  c.save(); c.globalCompositeOperation='lighter'; for(const e of w.ents) if(e.light&&e.p.alive&&!e.hidden){ const sx=(e.x-cx)*z+W/2, sy=(e.y-cy-70)*z+H/2, gl=glowSprite(e.lcol,12); c.globalAlpha=0.75; c.drawImage(gl.c,sx-gl.s*z*0.9,sy-gl.s*z*0.9,gl.s*z*1.8,gl.s*z*1.8); }
   for(const m of w.mons){ if(!m.type.fly||m.asleep) continue; if(Math.hypot(m.x-me.x,m.y-me.y)>640) continue; const sx=(m.x-cx)*z+W/2, sy=(m.y-cy)*z+H/2, gl=glowSprite('#f0e8c0',6); c.globalAlpha=0.55; c.drawImage(gl.c,sx-gl.s*z*0.8,sy-gl.s*z*0.8,gl.s*z*1.6,gl.s*z*1.6); } c.restore();
   if(me.p.job.id==='arch'){ c.save(); c.lineCap='round'; for(const m of w.mons){ if(!me.recorded[m.type.id]||m.asleep) continue; const sx=(m.x-cx)*z+W/2, sy=(m.y-cy)*z+H/2; c.strokeStyle='rgba(205,182,255,.55)'; c.lineWidth=2; c.setLineDash([6,8]); c.lineDashOffset=-t*30; if(m.path&&m.path.length){ c.beginPath(); c.moveTo(sx,sy); for(const p of m.path.slice(0,8)) c.lineTo((p[0]-cx)*z+W/2,(p[1]-cy)*z+H/2); c.stroke(); } c.setLineDash([]); c.fillStyle='#cdb6ff'; c.font=`400 11px ${FD}`; c.textAlign='center'; c.fillText('기록: '+m.type.name,sx,sy-52*z); c.strokeStyle='rgba(205,182,255,.5)'; c.beginPath(); c.arc(sx,sy,(m.type.sight||60)*z*(m.type.fly?0:1),0,7); if(!m.type.fly) c.stroke(); } c.restore(); }
   let danger=dng;
@@ -1753,7 +1768,7 @@ async function transition(prepare, o={}){
 /* ===================== 흐름 ===================== */
 const $ = s => document.querySelector(s);
 const ui = $('#ui');
-let escapeWin=null, nextEv=null, P=[], round=0, rules={...RULES0}, opts={timer:true, duelMode:'play', explore:true, exploreT:EXP_T};
+let nextMirror=null, escapeWin=null, nextEv=null, P=[], round=0, rules={...RULES0}, opts={timer:true, duelMode:'play', explore:true, exploreT:EXP_T};
 const nameOf = p => shown(p)?`<span class="chip"><i style="background:${p.job.color}"></i>${p.name}${p.human?'(나)':''}</span>`:`<span class="chip"><i style="background:#6a6a6a"></i>${code(p)}</span>`;
 let mode='title', now=0, lastTs=performance.now();
 let stageActors=[];
@@ -1875,8 +1890,30 @@ function bodySVG(vit){
   const pts=ANCHORS.map(([x,y],i)=>{ const v=vit.has(i); return `<circle cx="${x}" cy="${y+80}" r="7.4" fill="${v?'#8a1a28':'#d8c9a0'}" stroke="${v?'#3a0a12':'#5a4a30'}" stroke-width="1.4"/><text x="${x}" y="${y+83}" font-size="8" text-anchor="middle" fill="${v?'#fff':'#3a2a14'}" font-family="Gugi,serif">${i+1}</text>`; }).join('');
   return `<svg class="body" viewBox="-52 -100 104 190" aria-hidden="true"><g stroke="#5a4528" stroke-width="2.2" fill="none" stroke-linecap="round"><path d="M0 -76 L0 -22 M-17 -32 L17 -32 M-17 -32 L-27 -10 L-29 14 M17 -32 L27 -10 L29 14 M-9 -22 L-9 38 M9 -22 L9 38 M-9 38 L-10 74 M9 38 L10 74"/><ellipse cx="0" cy="-86" rx="13" ry="16" fill="#cdbb8a" stroke="#5a4528" transform="translate(0 6)"/></g>${pts}</svg>`;
 }
+const COLNAME={'#f6e3a6':'금색','#9be37a':'초록색','#7fe3ff':'청록색','#cdb6ff':'보라색'};
+function botNote(p,P_){
+  const others=P_.filter(q=>q!==p&&q.alive), r=rand(), fakeJobs=JOBS.filter(j=>j!==p.job);
+  if(r<0.15) return ['아무도 믿지 마라.','문은 열려 있었다.','벽이 웃고 있다.','실이 떨렸다.','불이 꺼지기 전에 도망쳐.'][ri(5)];
+  if(r<0.15+0.3*(0.4+p.skill*0.6)) return `나는 ${p.job.name}이다.`;
+  if(r<0.65) return `나는 ${fakeJobs[ri(fakeJobs.length)].name}이다.`;
+  const t=others[ri(Math.max(1,others.length))]||p; return rand()<0.5?`${code(t)}의 빛은 거짓이다.`:`${code(t)}를 조심해.`;
+}
+async function whisperScreen(){
+  const me=P.find(p=>p.human), be=BOOK_EVENTS.find(b=>b.id==='whisper'), fake=JOBS.filter(j=>j!==me.job)[ri(3)], others=alive(P).filter(p=>p!==me), tgt=others[ri(Math.max(1,others.length))]||me;
+  const chips=[[`나는 ${me.job.name}이다.`,'진실'],[`나는 ${fake.name}이다.`,'거짓'],[`${code(tgt)}를 조심해.`,'경고'],['나는 아무것도 모른다.','침묵']];
+  const left=`<h3>잔혹동화 책 · ${be.tag}</h3><h2>${be.title}</h2>${eventIcon('whisper')}<p class="quote">${be.story}</p>`;
+  const right=`<h3>쪽지를 남긴다</h3><p>${be.rule}</p><input id="wn" class="wq" maxlength="28" placeholder="벽에 속삭일 한 줄…" value="${chips[0][0]}"><div>${chips.map(([t,k])=>`<span class="wc" data-t="${t}">${t} <small>(${k})</small></span>`).join('')}</div><p class="dim" style="font-size:.85em">쪽지는 익명으로 낭독됩니다. 진실을 쓸지, 속일지는 당신의 몫입니다.</p>`;
+  const pr=bookScreen({left,right,buttons:[{label:'벽에 속삭인다',value:1}],tag:STOP==='whisper'?'whisper':'whisper_'});
+  document.querySelectorAll('.wc').forEach(el=>el.onclick=()=>{ document.getElementById('wn').value=el.dataset.t; sfx.play('click',{vol:0.6}); });
+  await pr; const mine=((document.getElementById('wn')||{}).value||'').trim()||'…';
+  const notes=shuffle([mine,...alive(P).filter(p=>!p.human).map(p=>botNote(p,P))]);
+  await transition(()=>{},{text:'벽이 낭독한다',tip:'쪽지들이 벽 틈에서 흘러나옵니다…',job:me.job});
+  await bookScreen({left:`<h3>잔혹동화 책 · 낭독</h3><h2>벽이 읽어 준다</h2><p class="dim">누가 썼는지는 아무도 모릅니다.</p><div>${notes.map((n,i)=>`<div class="slip" style="animation-delay:${0.5+i*0.9}s"><i>쪽지 ${i+1}</i>${n.replace(/[<>&]/g,'')}</div>`).join('')}</div>`,right:`<h3>속삭임의 규칙</h3><p>쪽지 중 일부는 거짓입니다. 직업은 비공개이니, 얼굴 빛 색과 이 쪽지를 맞춰 보며 정체를 추리하세요.</p><p class="quote">벽이 입을 다물었습니다. 하지만 누군가의 심장 소리는 아직 들립니다.</p><p style="text-align:center"><span class="seal">封</span></p>`,buttons:[{label:'소집을 계속한다',value:1}],tag:STOP==='whisper2'?'whisper2':'whisper2_'});
+}
 function eventIcon(id){
-  const sv={fog:'<g fill="none" stroke="#3a4a52" stroke-width="3" stroke-linecap="round"><path d="M10 40 q15-12 30 0 t30 0 t30 0 t30 0"/><path d="M0 62 q15-12 30 0 t30 0 t30 0 t30 0 t30 0" opacity=".7"/><path d="M14 84 q15-12 30 0 t30 0 t30 0" opacity=".45"/></g><circle cx="130" cy="20" r="11" fill="#cdd6d6"/><circle cx="135" cy="17" r="10" fill="#b9ab8c"/>',
+  const sv={whisper:'<rect x="30" y="8" width="100" height="84" fill="#4a3a28" stroke="#2a1d10" stroke-width="3"/><g stroke="#2a1d10" stroke-width="1.5" opacity=".7"><path d="M30 30h100M30 52h100M30 74h100M60 8v22M100 30v22M60 52v22M100 74v18"/></g><path d="M70 40 q10-12 22 0 q10 12 0 24 q-12 8 -22 -4z" fill="#f1e5c0" stroke="#2a1d10" stroke-width="2"/><path d="M76 48h12M76 54h14M76 60h10" stroke="#7c1620" stroke-width="1.6"/><g fill="none" stroke="#7c1620" stroke-width="2" stroke-linecap="round"><path d="M112 28 q8 4 0 10"/><path d="M120 22 q12 8 0 20" opacity=".6"/></g>',
+    mirror:'<ellipse cx="80" cy="46" rx="34" ry="40" fill="#cfd8dc" stroke="#2a1d10" stroke-width="3"/><ellipse cx="80" cy="46" rx="28" ry="34" fill="#8aa0a8"/><path d="M62 24 l12 22 -8 12 14 20 M96 30 l-10 18 12 6" stroke="#2a1d10" stroke-width="2" fill="none"/><circle cx="70" cy="42" r="4" fill="#f6e3a6"/><circle cx="92" cy="44" r="4" fill="#cdb6ff"/><path d="M76 42 h10" stroke="#fff" stroke-width="1.6" stroke-dasharray="2 2"/><rect x="74" y="86" width="12" height="12" fill="#6a4a2a" stroke="#2a1d10" stroke-width="2"/>',
+    fog:'<g fill="none" stroke="#3a4a52" stroke-width="3" stroke-linecap="round"><path d="M10 40 q15-12 30 0 t30 0 t30 0 t30 0"/><path d="M0 62 q15-12 30 0 t30 0 t30 0 t30 0 t30 0" opacity=".7"/><path d="M14 84 q15-12 30 0 t30 0 t30 0" opacity=".45"/></g><circle cx="130" cy="20" r="11" fill="#cdd6d6"/><circle cx="135" cy="17" r="10" fill="#b9ab8c"/>',
     sleep:'<path d="M70 18 a28 28 0 1 0 28 40 a22 22 0 1 1 -28 -40z" fill="#d9cdb0" stroke="#3a2a14" stroke-width="2"/><g fill="#3a2a14" font-family="Gugi,serif"><text x="104" y="36" font-size="20">Z</text><text x="120" y="56" font-size="15">z</text><text x="132" y="72" font-size="11">z</text></g><path d="M20 84 q20 -22 40 0 q-20 14 -40 0z" fill="#1a1030" stroke="#3a2a14" stroke-width="2"/><circle cx="40" cy="80" r="4" fill="#cdb6ff"/>',
     shoes:'<path d="M40 70 q0-30 12-40 l10 0 q2 14 22 22 q20 4 20 18 l0 6 -64 0z" fill="#b3202f" stroke="#3a0a12" stroke-width="2.5"/><path d="M40 76 l64 0" stroke="#3a0a12" stroke-width="3"/><path d="M62 30 q-4 -12 6 -16" stroke="#3a2a14" stroke-width="2" fill="none"/><g fill="#b3202f" opacity=".6"><circle cx="30" cy="40" r="2"/><circle cx="118" cy="44" r="2"/><circle cx="124" cy="68" r="3"/></g>'}[id]||'';
   return `<svg viewBox="0 0 160 100" style="display:block;margin:.4em auto;height:min(22vh,160px);width:auto">${sv}</svg>`;
@@ -1940,11 +1977,17 @@ async function playGame(){
   await assignScreen();
   while(alive(P).length>1 && round<40){
     round++; const human=P.find(p=>p.human); let xsum=null;
-    if(opts.explore && (!AUTO||params.has('xbot')) && human.alive){ await transition(()=>{},{text:`탐색 ${round}`,tip:'상자와 발전기를 찾아라. 그림자 인형사를 조심.',job:human.job}); xsum=await runExplore(P,{ev:nextEv?nextEv.id:null}); } else gainGold(P);
+    if(opts.explore && (!AUTO||params.has('xbot')) && human.alive){ await transition(()=>{},{text:`탐색 ${round}`,tip:'상자와 발전기를 찾아라. 그림자 인형사를 조심.',job:human.job}); xsum=await runExplore(P,{ev:nextEv?nextEv.id:null,mirror:nextMirror}); nextEv=null; nextMirror=null; } else gainGold(P);
     if(PLANS.on){ const ew=P.find(p=>p.alive&&(p.escapes||0)>=3); if(ew){ escapeWin=ew; break; } }
-    nextEv=(params.get('ev')?BOOK_EVENTS.find(b=>b.id===params.get('ev')):(rand()<0.85?BOOK_EVENTS[ri(BOOK_EVENTS.length)]:null))||null;
-    if(nextEv){ await transition(()=>{},{text:'잔혹동화 책',tip:'책이 스스로 펼쳐집니다…',job:human.job});
-      await bookScreen({left:`<h3>잔혹동화 책 · ${nextEv.tag}</h3><h2>${nextEv.title}</h2>${eventIcon(nextEv.id)}<p class="quote">${nextEv.story}</p>`,right:`<h3>다음 장의 규칙</h3><p style="font-size:1.1em">${nextEv.rule}</p><p class="dim">책은 소집이 시작될 때 펼쳐지고, 효과는 다음 탐색 라운드에 적용됩니다.</p>`,buttons:[{label:'이야기를 이어 간다',value:1}],tag:STOP==='event'?'event':'event_'}); }
+    nextEv=(params.get('ev')?BOOK_EVENTS.find(b=>b.id===params.get('ev')):(rand()<0.85?BOOK_EVENTS[ri(BOOK_EVENTS.length)]:null))||null; nextMirror=null;
+    if(nextEv){
+      const alv=alive(P); if(nextEv.id==='mirror'){ if(alv.length>=2) nextMirror=sample(alv,2).map(p=>p.i); else nextEv=null; }
+      if(nextEv){ await transition(()=>{},{text:'잔혹동화 책',tip:'책이 스스로 펼쳐집니다…',job:human.job});
+        if(nextEv.id==='whisper') await whisperScreen(); else {
+          const mine=nextMirror&&nextMirror.includes(human.i), swapCol=mine?P[nextMirror.find(i=>i!==human.i)].job.color:null;
+          const extra=nextMirror?(mine?`<div class="rew"><div class="dim">당신의 얼굴 빛이 이번 장에서 이렇게 보입니다</div><b style="color:${swapCol}">${COLNAME[swapCol]}</b></div>`:'<p class="dim">두 사람이 선택되었습니다. 당신은 아닙니다. 누구인지는 책도 알려 주지 않습니다.</p>'):'';
+          await bookScreen({left:`<h3>잔혹동화 책 · ${nextEv.tag}</h3><h2>${nextEv.title}</h2>${eventIcon(nextEv.id)}<p class="quote">${nextEv.story}</p>`,right:`<h3>다음 장의 규칙</h3><p style="font-size:1.1em">${nextEv.rule}</p>${extra}<p class="dim">책은 소집이 시작될 때 펼쳐지고, 효과는 다음 탐색 라운드에 적용됩니다.</p>`,buttons:[{label:'이야기를 이어 간다',value:1}],tag:STOP==='event'?'event':'event_'}); }
+        if(nextEv.gather) nextEv=null; } }
     const {pairs,bye}=pairUp(P);
     await transition(()=>{ mode='title'; stageActors=alive(P).map(p=>p.job); },{text:`소집 ${round}`,job:human.job});
     const briefL=`<h3>Act ${round} · 소집</h3><h2>제 ${round} 소집</h2><p class="quote">${FLAVOR[(round-1+ri(3))%FLAVOR.length]}</p>${xsum?`<table><tr><th>탐색 결과</th><th>재화</th><th>직업 목표</th><th>끊긴 실</th></tr>${P.map((p,i)=>`<tr><td>${nameOf(p)}</td><td>${xsum.gains[i]>0?'+':''}${xsum.gains[i]}</td><td>${xsum.extra[i]}</td><td>${xsum.snips[i]?'✂ '+xsum.snips[i]:'—'}</td></tr>`).join('')}</table><p class="dim">상자 ${xsum.counts.chest}개 · 발전기 ${xsum.counts.gen}개가 열렸습니다. 내 재화 Lv ${level(human)}.</p>`:`<p class="dim">모두 재화를 얻었습니다 (내 재화 Lv ${level(human)}).</p>`}`;
