@@ -66,6 +66,8 @@ th,td{border-bottom:1px solid #6b5c3e66;padding:5px 7px;text-align:left}th{font-
 #lightbtn{position:fixed;right:max(30px,env(safe-area-inset-right));bottom:max(130px,calc(env(safe-area-inset-bottom) + 118px));width:68px;height:68px;border-radius:50%;z-index:6;display:none;border:2px solid #5a4528;background:radial-gradient(#2a2418,#0e0a06);color:#cdbd96;font:400 12px/1.2 var(--f-disp);cursor:pointer;padding:0;touch-action:none;box-shadow:0 0 0 3px #0a0604,0 8px 20px #000c}
 #lightbtn.on{border-color:#ffe9a0;color:#fff2c0;background:radial-gradient(#5a4a22,#1a1408);box-shadow:0 0 0 3px #0a0604,0 0 24px #f6e3a6aa}
 #lightbtn:disabled{opacity:.4}
+#lurebtn{position:fixed;right:max(124px,calc(env(safe-area-inset-right) + 112px));bottom:max(30px,calc(env(safe-area-inset-bottom) + 24px));width:68px;height:68px;border-radius:50%;z-index:6;display:none;border:2px solid #8f7340;background:radial-gradient(#3a2c14,#120c06);color:#e3d29a;font:400 12px/1.2 var(--f-disp);cursor:pointer;padding:0;touch-action:none;box-shadow:0 0 0 3px #0a0604,0 8px 20px #000c}
+#lurebtn:disabled{opacity:.4}
 #actbtn.on{border-color:#ffe9a0;box-shadow:0 0 0 4px #0a0604,0 0 26px #f6e3a688,0 10px 26px #000c}
 #actbtn:disabled{opacity:.45}
 #load{position:fixed;inset:0;z-index:20;pointer-events:none;visibility:hidden}
@@ -114,6 +116,7 @@ th,td{border-bottom:1px solid #6b5c3e66;padding:5px 7px;text-align:left}th{font-
 <div id="spells"></div>
 <button id="actbtn" disabled>수색</button>
 <button id="lightbtn">얼굴 빛<br>OFF</button>
+<button id="lurebtn">미끼<br>×2</button>
 <button id="mute" title="소리 (M)">♪</button>
 <div id="load"><div class="cur l"></div><div class="cur r"></div>
   <div class="mid"><canvas id="lcv" width="420" height="170"></canvas><div class="t" id="lt">NOW LOADING</div><div class="tip" id="ltip"></div></div></div>
@@ -397,7 +400,7 @@ const THEMES={
 };
 const MON_TYPES={
   puppet:{id:'puppet',name:'그림자 인형사',r:18,patrol:78,chase:140,sight:330,stun:1.6,loss:1,rest:5.5},
-  bell:{id:'bell',name:'방울 꼬마',r:12,patrol:100,chase:152,sight:250,stun:0.9,loss:0,rest:3.2},
+  bell:{id:'bell',name:'방울 꼬마',r:12,patrol:100,chase:152,sight:250,stun:0.9,loss:0,rest:7},
   shears:{id:'shears',name:'줄 끊는 가위',r:16,patrol:68,chase:128,sight:270,stun:1.0,loss:0,rest:5,snip:1},
   moth:{id:'moth',name:'빛을 쫓는 나방',r:9,patrol:70,chase:112,sight:0,stun:0,loss:0,rest:3,fly:true},
 };
@@ -492,15 +495,33 @@ function makeExplore(P,opts={}){
   const themeId=opts.theme||sample(Object.keys(THEMES),1)[0], w=genMap(themeId); buildNav(w);
   Object.assign(w,{T:opts.T||EXP_T,t:0,events:[],over:false,noises:[],ev:opts.ev||null,planksT:0});
   const [sx,sy]=w.spawn;
-  w.ents=P.map((p,i)=>({p,i,human:!!p.human,x:sx+(i-1.5)*40,y:sy+30,r:13,stun:0,gain:0,goal:null,wps:null,srch:null,ix:0,iy:0,act:false,moving:false,face:1,flee:0,perk:EXP_PERK[p.job.id],hidden:null,lock:false,hideT:0,shoes:false,light:false,lt:2+rand()*6,blind:0,snipped:0,resc:0,sdir:[0,-1],noiseT:0,helper:rand()<0.55,stuck:0,lx:0,ly:0}));
+  w.ents=P.map((p,i)=>({p,i,human:!!p.human,x:sx+(i-1.5)*40,y:sy+30,r:13,stun:0,gain:0,goal:null,wps:null,srch:null,ix:0,iy:0,act:false,moving:false,face:1,flee:0,perk:EXP_PERK[p.job.id],hidden:null,lock:false,hideT:0,shoes:false,lures:2,lureCd:0,lureT:6+rand()*10,dir:[0,1],light:false,lt:2+rand()*6,blind:0,snipped:0,resc:0,sdir:[0,-1],noiseT:0,helper:rand()<0.55,stuck:0,lx:0,ly:0}));
   const mk=(type,x,y)=>({type:MON_TYPES[type],x,y,r:MON_TYPES[type].r,state:'patrol',path:[],rest:2,chase:null,lostT:0,face:1,anim:0,repath:0,asleep:w.ev==='sleep',alarm:null,searchT:0,isMon:true});
   const far=(d)=>{ for(let k=0;k<200;k++){ const x=150+rand()*(XW-300), y=150+rand()*(XH-300); if(Math.hypot(x-sx,y-sy)>d&&!solidAt(w,x,y,30)) return [x,y]; } return [300,300]; };
-  const p1=far(900), p2=far(700), p3=far(800); w.mons=[mk('puppet',p1[0],p1[1]),mk('bell',p2[0],p2[1]),mk('shears',p3[0],p3[1])];
+  const p1=far(900), p2=far(700), p3=far(800); w.mons=[mk('puppet',p1[0],p1[1]),mk('shears',p3[0],p3[1])];
+  for(let i=0;i<4;i++){ const b=mk('bell',p2[0]+(i%2?40:-40)*(1+i*0.2),p2[1]+(i<2?-30:30)); b.flock=true; b.off=[(i%2?1:-1)*(34+i*8),(i<2?-1:1)*(28+i*6)]; w.mons.push(b); }
+  w.leader=w.mons.find(m=>m.flock); w.leader.isLeader=true; w.decoys=[];
   for(let i=0;i<3;i++){ const pm=far(500), m=mk('moth',pm[0],pm[1]); m.dir=rand()*6.283; w.mons.push(m); }
   if(w.ev==='shoes'){ const al=w.ents.filter(e=>e.p.alive); const wr=al[ri(al.length)]; wr.shoes=true; wr.sdir=[0,-1]; w.shoesOn=wr; }
   return w;
 }
-function noise(w,x,y,r,kind){ w.noises.push({x,y,r,t:0,kind}); for(const m of w.mons) if(m.asleep&&Math.hypot(m.x-x,m.y-y)<r){ m.asleep=false; m.rest=0.6; w.events.push({type:'wake',m}); } }
+function noise(w,x,y,r,kind){ w.noises.push({x,y,r,t:0,kind});
+  for(const m of w.mons){ const d=Math.hypot(m.x-x,m.y-y); if(m.asleep&&d<r){ m.asleep=false; m.rest=0.6; w.events.push({type:'wake',m}); }
+    else if(m.flock&&!m.asleep&&m.state!=='chase'&&kind!=='step'&&kind!=='chest'&&d<r*1.2) m.alarm={x:x+(rand()-0.5)*90,y:y+(rand()-0.5)*90,t:8}; } }
+function throwLure(w,e,tx,ty){
+  if(e.lures<=0||e.lureCd>0||e.stun>0||e.hidden||!e.p.alive) return false;
+  if(tx===undefined){ const d=e.dir||[e.face,0]; tx=e.x+d[0]*380; ty=e.y+d[1]*380; }
+  let dx=tx-e.x, dy=ty-e.y, dd=Math.hypot(dx,dy)||1; if(dd>440){ tx=e.x+dx/dd*440; ty=e.y+dy/dd*440; dd=440; }
+  let k=1; while(k>0.1&&(solidAt(w,e.x+(tx-e.x)*k,e.y+(ty-e.y)*k,12)||!hasLOS(w,e.x,e.y,e.x+(tx-e.x)*k,e.y+(ty-e.y)*k))) k-=0.1;
+  const lx=e.x+(tx-e.x)*k, ly=e.y+(ty-e.y)*k; e.lures--; e.lureCd=3.2;
+  w.decoys.push({x:lx,y:ly,t:7,delay:0.35,owner:e,tick:0,sx:e.x,sy:e.y}); w.events.push({type:'lure',e,x:lx,y:ly}); return true;
+}
+function stepDecoys(w,dt){
+  for(let i=w.decoys.length-1;i>=0;i--){ const d=w.decoys[i];
+    if(d.delay>0){ d.delay-=dt; continue; }
+    d.t-=dt; d.tick-=dt;
+    if(d.tick<=0){ d.tick=0.6; noise(w,d.x,d.y,560,'lure'); for(const m of w.mons){ if(m.asleep||m.type.fly||m.state==='chase') continue; if(Math.hypot(m.x-d.x,m.y-d.y)<1300) m.alarm={x:d.x+(rand()-0.5)*70,y:d.y+(rand()-0.5)*70,t:3}; } }
+    if(d.t<=0) w.decoys.splice(i,1); } }
 function nearestObj(w,e,reach=56){ let best=null,bd=reach; for(const o of w.objs){ if(o.done&&o.type!=='ward') continue; if(o.type==='plank'&&o.state!=='up') continue; if(e.hidden&&o!==e.hidden) continue; if(e.shoes) continue; const d=Math.hypot(o.x-e.x,o.y-e.y); if(d<bd){ bd=d; best=o; } } return best; }
 function stepTo(w,e,tx,ty,sp,dt){ const dx=tx-e.x, dy=ty-e.y, d=Math.hypot(dx,dy); if(d<1) return 0; const st=Math.min(d,sp*dt); e.x+=dx/d*st; e.y+=dy/d*st; if(Math.abs(dx)>1) e.face=dx>=0?1:-1; pushOut(e,w); return d-st; }
 function followPath(w,e,sp,dt){ if(!e.wps||!e.wps.length) return true; const [tx,ty]=e.wps[0], rem=stepTo(w,e,tx,ty,sp,dt); e.moving=true; if(rem<(e.wps.length>1?18:10)) e.wps.shift(); return !e.wps.length; }
@@ -512,7 +533,8 @@ function stepExplore(w,dt){
   for(const nz of w.noises) nz.t+=dt; w.noises=w.noises.filter(n=>n.t<1.4);
   for(const e of w.ents){
     if(!e.p.alive) continue;
-    e.stun=Math.max(0,e.stun-dt); e.flee=Math.max(0,e.flee-dt); e.moving=false; let wantAct=false;
+    e.stun=Math.max(0,e.stun-dt); e.flee=Math.max(0,e.flee-dt); e.lureCd=Math.max(0,e.lureCd-dt); e.moving=false; let wantAct=false;
+    if(!e.human&&e.lures>0&&e.p.skill>0.4){ e.lureT-=dt; if(e.lureT<=0){ e.lureT=12+rand()*14; let tgt=null,td=900; for(const o of w.ents){ if(o===e||!o.p.alive||o.hidden) continue; const d=Math.hypot(o.x-e.x,o.y-e.y); if(d<td&&d>160){ td=d; tgt=o; } } if(tgt&&rand()<0.7) throwLure(w,e,tgt.x+(rand()-0.5)*120,tgt.y+(rand()-0.5)*120); } }
     if(e.blind>0){ e.blind-=dt; e.light=false; } else if(!e.human){ e.lt-=dt; if(e.lt<=0){ e.lt=5+rand()*7; e.light=rand()<0.2; } }
     if(e.hidden){ e.hideT+=dt; const mg=Math.hypot(e.ix,e.iy); if(e.human&&mg>0.4&&e.hideT>0.4){ e.x=e.hidden.x; e.y=e.hidden.y+34; e.hidden=null; } }
     if(e.stun<=0){
@@ -521,7 +543,7 @@ function stepExplore(w,dt){
         else { e.stuck-=dt; if(e.stuck<=0){ e.stuck=1+rand()*1.6; const a=rand()*6.283; e.sdir=[Math.cos(a),Math.sin(a)]; } dx=e.sdir[0]; dy=e.sdir[1]; }
         const ox=e.x, oy=e.y; e.x+=dx*sp*dt; e.y+=dy*sp*dt; pushOut(e,w); e.moving=true; if(Math.abs(dx)>0.1) e.face=dx>0?1:-1; if(Math.hypot(e.x-ox,e.y-oy)<sp*dt*0.4&&!e.human){ e.stuck=0; } noisy(e,300,'shoes'); }
       else if(e.hidden){ if(e.human){ wantAct=e.act&&!e.lock&&e.hideT>0.5; if(!e.act) e.lock=false; } else wantAct=e.hideT>2.5&&!w.mons.some(m=>!m.asleep&&Math.hypot(m.x-e.x,m.y-e.y)<280); }
-      else if(e.human){ const mg=Math.hypot(e.ix,e.iy); if(mg>0.08){ const sp=150*e.perk.spd; e.x+=e.ix/Math.max(1,mg)*sp*dt; e.y+=e.iy/Math.max(1,mg)*sp*dt; pushOut(e,w); e.moving=true; if(Math.abs(e.ix)>0.1) e.face=e.ix>0?1:-1; noisy(e,190,'step'); } wantAct=e.act&&!e.moving; if(!e.act) e.lock=false; if(e.lock) wantAct=false; }
+      else if(e.human){ const mg=Math.hypot(e.ix,e.iy); if(mg>0.08){ const sp=150*e.perk.spd; e.x+=e.ix/Math.max(1,mg)*sp*dt; e.y+=e.iy/Math.max(1,mg)*sp*dt; pushOut(e,w); e.moving=true; e.dir=[e.ix/Math.max(0.01,mg),e.iy/Math.max(0.01,mg)]; if(Math.abs(e.ix)>0.1) e.face=e.ix>0?1:-1; noisy(e,190,'step'); } wantAct=e.act&&!e.moving; if(!e.act) e.lock=false; if(e.lock) wantAct=false; }
       else wantAct=botStep(w,e,dt,noisy);
     }
     const o=nearestObj(w,e);
@@ -537,6 +559,7 @@ function stepExplore(w,dt){
   for(const c of w.crows){ c.cd=Math.max(0,c.cd-dt); c.alarm=Math.max(0,c.alarm-dt);
     if(c.cd<=0){ for(const e of w.ents){ if(!e.p.alive||e.hidden) continue; if(Math.hypot(e.x-c.x,e.y-c.y)<230&&hasLOS(w,c.x,c.y,e.x,e.y)){ c.cd=9; c.alarm=2.2; noise(w,c.x,c.y,520,'crow'); for(const m of w.mons) if(!m.asleep&&m.state!=='chase') m.alarm={x:c.x,y:c.y,t:10}; w.events.push({type:'alarm',e,c}); break; } } } }
   for(const m of w.mons) stepMon(w,m,dt);
+  stepDecoys(w,dt);
   if(w.t>=w.T) w.over=true;
   if(w.objs.every(o=>o.done||o.type==='ward'||o.type==='plank')) w.over=true, w.early=true;
 }
@@ -579,8 +602,11 @@ function stepMon(w,m,dt){
     const c=m.chase; if(c&&c.p.alive&&!c.hidden&&Math.hypot(c.x-m.x,c.y-m.y)<m.r+c.r+6){ c.stun=T.stun; c.srch=null; const lost=T.loss&&(c.p.gold+c.gain>0)?1:0; c.gain-=lost; c.goal=null; c.wps=null; c.shoes=false; if(T.snip&&(c.p.snip||0)<2){ c.p.snip=(c.p.snip||0)+1; c.snipped++; w.events.push({type:'snip',e:c,m}); } else w.events.push({type:'caught',e:c,m,lost}); m.rest=T.rest; m.state='rest'; m.chase=null; m.path=[]; } }
   else { m.state=m.alarm?'alarm':'patrol';
     if(m.alarm){ if(m.repath<=0||!m.path.length){ m.path=findPath(w,m.x,m.y,m.alarm.x,m.alarm.y); m.repath=1; } }
+    else if(m.flock&&!m.isLeader&&w.leader&&!w.leader.asleep){ const L=w.leader, tx=L.x+m.off[0], ty=L.y+m.off[1]; if(Math.hypot(tx-m.x,ty-m.y)>46){ if(m.repath<=0||!m.path.length){ m.path=findPath(w,m.x,m.y,tx,ty); m.repath=0.8; } } else m.path=[]; }
     else if(!m.path.length){ const cand=w.objs.filter(o=>o.type==='gen'||o.type==='chest'), o=cand[ri(cand.length)]; m.path=o?findPath(w,m.x,m.y,o.x+(rand()-0.5)*160,o.y+(rand()-0.5)*160):[]; }
-    const [px,py]=m.path[0]||[m.x,m.y]; if(m.path.length&&stepTo(w,m,px,py,m.alarm?T.chase*0.8:T.patrol,dt)<14) m.path.shift();
+    const [px,py]=m.path[0]||[m.x,m.y]; if(m.path.length&&stepTo(w,m,px,py,m.alarm?T.chase*0.8:(m.flock&&!m.isLeader?T.patrol*1.25:T.patrol),dt)<14) m.path.shift();
+    if(m.alarm&&Math.hypot(m.alarm.x-m.x,m.alarm.y-m.y)<48){ m.alarm=null; m.path=[]; }
+    if(m.flock) for(const o of w.mons){ if(o===m||!o.flock) continue; const dx=m.x-o.x, dy=m.y-o.y, d=Math.hypot(dx,dy); if(d<26&&d>0.1){ m.x+=dx/d*(26-d)*0.5; m.y+=dy/d*(26-d)*0.5; } }
     // 숨은 사람 수색
     for(const e of w.ents){ if(e.hidden&&Math.hypot(e.hidden.x-m.x,e.hidden.y-m.y)<76){ m.searchT+=dt; if(m.searchT>1.8){ m.searchT=0; if(rand()<0.55){ const c=e; c.hidden=null; c.x=m.x; c.y=m.y+10; c.stun=T.stun; const lost=T.loss&&(c.p.gold+c.gain>0)?1:0; c.gain-=lost; w.events.push({type:'caught',e:c,m,lost}); m.rest=T.rest; } else m.path=[]; } } } }
 }
@@ -1348,17 +1374,21 @@ const lightBtn=document.getElementById('lightbtn');
 function toggleLight(){ if(!xs||xs.w.over) return; const me=xs.me; if(me.blind>0){ xToast('시야를 갉아먹혀 빛을 켤 수 없다','#c8c8d0'); return; } me.light=!me.light; sfx.play('click',{vol:0.7}); }
 lightBtn.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); toggleLight(); });
 addEventListener('keydown',e=>{ if((e.key==='f'||e.key==='F')&&mode==='explore') toggleLight(); });
+const lureBtn=document.getElementById('lurebtn');
+function doLure(){ if(!xs||xs.w.over) return; const me=xs.me; if(me.lures<=0){ xToast('미끼가 없다','#8a7a5a'); return; } if(throwLure(xs.w,me)) sfx.play('castTech',{vol:0.5,rate:1.8}); }
+lureBtn.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); doLure(); });
+addEventListener('keydown',e=>{ if((e.key==='q'||e.key==='Q')&&mode==='explore') doLure(); });
 function xToast(text,col='#d9cdb0'){ if(xs) xs.toasts.push({text,col,t:0}); }
 function runExplore(P,o={}){
   return new Promise(res=>{
-    const w=makeExplore(P,{T:+(params.get('et')||opts.exploreT||EXP_T),ev:o.ev||params.get('ev')||null,theme:o.theme||params.get('theme')||null}); const me=w.ents.find(e=>e.human)||w.ents[0]; if(params.has('xbot')) me.human=false; if(params.has('xl')){ me.light=true; w.mons.forEach(m=>{ if(m.type.fly){ m.x=me.x+140; m.y=me.y-60; } if(m.type.id==='shears'){ m.x=me.x-300; m.y=me.y+80; } }); } if(params.has('inb')){ const b=w.builds[0]; me.x=b.x+b.w*0.3; me.y=b.y+b.h*0.5; w.objs.filter(q=>q.type==='gen').slice(0,2).forEach(q=>{ q.lit=true; }); }
+    const w=makeExplore(P,{T:+(params.get('et')||opts.exploreT||EXP_T),ev:o.ev||params.get('ev')||null,theme:o.theme||params.get('theme')||null}); const me=w.ents.find(e=>e.human)||w.ents[0]; if(params.has('xbot')) me.human=false; if(params.has('xd')){ me.light=true; throwLure(w,me,me.x+160,me.y-40); w.mons.filter(m=>m.flock).forEach((m,i)=>{ m.rest=0; m.x=me.x+520+i*24; m.y=me.y+(i-1.5)*34; m.isLeader=i===0; }); } if(params.has('xl')){ me.light=true; w.mons.forEach(m=>{ if(m.type.fly){ m.x=me.x+140; m.y=me.y-60; } if(m.type.id==='shears'){ m.x=me.x-300; m.y=me.y+80; } }); } if(params.has('inb')){ const b=w.builds[0]; me.x=b.x+b.w*0.3; me.y=b.y+b.h*0.5; w.objs.filter(q=>q.type==='gen').slice(0,2).forEach(q=>{ q.lit=true; }); }
     xs={w,me,toasts:[],res,endT:0,hint:9,tick:0,stepT:0,srchT:0,ripT:0};
-    mode='explore'; ui.innerHTML=''; hideSpellButtons(); actBtn.style.display='block'; lightBtn.style.display='block'; joy=null; actHeld=false;
+    mode='explore'; ui.innerHTML=''; hideSpellButtons(); actBtn.style.display='block'; lightBtn.style.display='block'; lureBtn.style.display='block'; joy=null; actHeld=false;
     const be=BOOK_EVENTS.find(b=>b.id===w.ev); xToast(be?`${be.title} — ${be.rule.split('.')[0]}`:'고요한 장. 괴물과 발전기를 조심하세요.','#bba878');
     if(w.shoesOn&&w.shoesOn===me) xToast('빨간 구두가 신겨졌다! 누군가 붙잡아 줘야 멈춘다.','#ff6a7a');
   });
 }
-function xFinish(){ const w=xs.w, gains=w.ents.map(e=>e.gain), res=xs.res; w.ents.forEach(e=>{ e.p.gold=Math.max(0,e.p.gold+e.gain); }); xs=null; actBtn.style.display='none'; lightBtn.style.display='none'; mode='title'; res({snips:w.ents.map(e=>e.snipped||0),gains,early:!!w.early,theme:w.theme.name,counts:{chest:w.objs.filter(o=>o.type==='chest'&&o.done).length,gen:w.objs.filter(o=>o.type==='gen'&&o.done).length}}); }
+function xFinish(){ const w=xs.w, gains=w.ents.map(e=>e.gain), res=xs.res; w.ents.forEach(e=>{ e.p.gold=Math.max(0,e.p.gold+e.gain); }); xs=null; actBtn.style.display='none'; lightBtn.style.display='none'; lureBtn.style.display='none'; mode='title'; res({snips:w.ents.map(e=>e.snipped||0),gains,early:!!w.early,theme:w.theme.name,counts:{chest:w.objs.filter(o=>o.type==='chest'&&o.done).length,gen:w.objs.filter(o=>o.type==='gen'&&o.done).length}}); }
 function xUpdate(dt){
   const w=xs.w, me=xs.me; xs.tick+=dt;
   if(!w.over){
@@ -1374,14 +1404,15 @@ function xUpdate(dt){
       else if(ev.type==='mimic'){ if(ev.e.human){ xToast('미믹이다! '+(ev.lost?'재화 -1 · ':'')+'기절','#e0506a'); sfx.play('hit',{vol:0.8}); } }
       else if(ev.type==='empty'){ if(ev.e.human) xToast('텅 비어 있다','#8a7a5a'); }
       else if(ev.type==='caught'){ if(ev.e.human){ xToast(`${ev.m.type.name}에게 붙잡혔다! `+(ev.lost?'재화 -1':''),'#e0506a'); sfx.play('slam',{vol:0.6}); } }
+      else if(ev.type==='lure'){ if(ev.e.human) xToast('미끼 방울을 던졌다! 괴물들이 소리를 쫓는다','#e3d29a'); else if(Math.hypot(ev.x-me.x,ev.y-me.y)<520) xToast('가까이서 방울 소리가 울린다! 괴물이 몰려온다','#ff8a5a'); else if(Math.hypot(ev.x-me.x,ev.y-me.y)<1100) xToast('어디선가 방울 소리가 울린다…','#bba878'); sfx.play('bell',{arg:1.8,vol:0.5}); }
       else if(ev.type==='snip'){ if(ev.e.human){ xToast('가위가 내 실 하나를 끊어 갔다! 다음 공격 선택 -1','#ff6a7a'); sfx.play('snap',{vol:0.9}); } else if(Math.hypot(ev.e.x-me.x,ev.e.y-me.y)<600) xToast('누군가의 실이 끊어지는 소리가 들렸다…','#bba878'); }
       else if(ev.type==='moth'){ if(ev.e.human){ xToast('나방이 시야를 갉아먹는다! 잠시 빛을 켤 수 없다','#c8c8d0'); sfx.play('flip',{vol:0.5,rate:1.6}); } }
-      else if(ev.type==='monster'){ xToast(`${ev.m.type.name}이(가) 쫓아온다!`,'#ff6a5a'); sfx.play('lose',{vol:0.45}); }
+      else if(ev.type==='monster'){ xs.mt=xs.mt||{}; if(xs.tick-(xs.mt[ev.m.type.id]||-9)>5){ xs.mt[ev.m.type.id]=xs.tick; xToast(`${ev.m.type.name}${ev.m.flock?' 무리':''} — 추격 시작!`,'#ff6a5a'); sfx.play('lose',{vol:0.45}); } }
       else if(ev.type==='plank'){ if(ev.e.human) { xToast('판자를 쓰러뜨렸다','#d9b25a'); sfx.play('click',{vol:1}); } }
-      else if(ev.type==='plankhit'){ if(Math.hypot(ev.m.x-me.x,ev.m.y-me.y)<500){ xToast(`${ev.m.type.name}이(가) 판자에 걸려 멈췄다`,'#d9b25a'); sfx.play('hit',{vol:0.5}); } }
+      else if(ev.type==='plankhit'){ if(Math.hypot(ev.m.x-me.x,ev.m.y-me.y)<500){ xToast(`${ev.m.type.name} — 판자에 걸려 멈췄다`,'#d9b25a'); sfx.play('hit',{vol:0.5}); } }
       else if(ev.type==='hide'){ if(ev.e.human) xToast('숨었다. 움직이거나 [나오기]로 나온다','#9aa8b0'); }
       else if(ev.type==='alarm'){ xToast(ev.e.human?'허수아비가 비명을 질렀다! 괴물이 몰려온다':'어디선가 허수아비 비명이 들렸다…','#ff8a5a'); sfx.play('castScout',{vol:0.6,rate:1.5}); }
-      else if(ev.type==='wake'){ if(Math.hypot(ev.m.x-me.x,ev.m.y-me.y)<700) xToast(`${ev.m.type.name}이(가) 깨어났다…`,'#ff8a5a'); }
+      else if(ev.type==='wake'){ if(Math.hypot(ev.m.x-me.x,ev.m.y-me.y)<700) xToast(`${ev.m.type.name} — 깨어났다…`,'#ff8a5a'); }
       else if(ev.type==='rescued'){ if(ev.by.human) xToast('구두를 벗겨 줬다 +1','#9be37a'); else if(ev.e.human) xToast('구두가 벗겨졌다!','#9be37a'); }
     }
     xs.hb=(xs.hb||0)-dt; xs.cue=(xs.cue||0)-dt; let dmin=1e9,dm=null; for(const m of w.mons){ if(m.asleep||m.type.fly) continue; const d=Math.hypot(m.x-me.x,m.y-me.y); if(d<dmin){ dmin=d; dm=m; } }
@@ -1393,6 +1424,7 @@ function xUpdate(dt){
   } else { xs.endT+=dt; if(xs.endT>2.2) xFinish(); }
   if(!xs) return;
   const o=nearestObj(w,me), canAct=!!o&&me.stun<=0&&!w.over; actBtn.disabled=!canAct; actBtn.classList.toggle('on',canAct&&me.act);
+  lureBtn.disabled=me.lures<=0||me.lureCd>0||w.over; lureBtn.innerHTML='미끼<br>×'+me.lures;
   lightBtn.classList.toggle('on',me.light); lightBtn.disabled=me.blind>0; lightBtn.innerHTML=me.blind>0?'실명<br>'+Math.ceil(me.blind)+'s':'얼굴 빛<br>'+(me.light?'ON':'OFF');
   actBtn.textContent=!o?'수색':o.type==='gen'?'수리':o.type==='plank'?'판자':o.type==='ward'?(me.hidden?'나오기':'숨기'):'수색';
   for(const t of xs.toasts) t.t+=dt; xs.toasts=xs.toasts.filter(t=>t.t<3).slice(-4);
@@ -1413,6 +1445,7 @@ function drawExplore(c,t){
   for(const l of w.lamps) if(vis(l.x,l.y)) items.push({y:l.y,f:()=>drawLamp(c,l,t)});
   for(const o of w.objs){ if(!vis(o.x,o.y)) continue; items.push({y:o.y,f:()=>{ if(o.type==='gen') drawGen(c,o,t); else if(o.type==='chest') drawChest(c,o,t); else if(o.type==='ward') drawWard(c,o,t); else if(o.type==='plank'&&o.state!=='broken') drawPlank(c,o,t); }}); }
   for(const o of w.crows) if(vis(o.x,o.y)) items.push({y:o.y,f:()=>drawCrow(c,o,t)});
+  for(const d of w.decoys) if(vis(d.x,d.y)&&d.delay<=0) items.push({y:d.y,f:()=>{ c.save(); c.translate(d.x,d.y); c.fillStyle='#00000066'; c.beginPath(); c.ellipse(2,10,10,4,0,0,7); c.fill(); c.rotate(Math.sin(t*28)*0.25); c.fillStyle=lg(c,-8,-10,8,10,[[0,'#f6e08a'],[1,'#a0761c']]); c.beginPath(); c.moveTo(-9,6); c.quadraticCurveTo(-9,-10,0,-12); c.quadraticCurveTo(9,-10,9,6); c.closePath(); c.fill(); c.strokeStyle='#3a2a08'; c.lineWidth=1.8; c.stroke(); c.fillStyle='#3a2a08'; c.beginPath(); c.arc(0,7,2.4,0,7); c.fill(); c.restore(); }});
   for(const o of w.circs){ if(o.kind==='pond'||!vis(o.x,o.y,60)) continue; if(o.kind==='tree'){ const under=Math.hypot(me.x-o.x,me.y-o.y)<o.vr*1.5; items.push({y:o.y+o.vr*0.6,f:()=>drawTree(c,o,t,under?0.5:1)}); } else if(o.kind==='rock') items.push({y:o.y,f:()=>drawRockProp(c,o)}); else if(o.kind==='stone') items.push({y:o.y,f:()=>drawStone(c,o)}); }
   for(const e of w.ents) if(e.p.alive&&!e.hidden) items.push({y:e.y,f:()=>{ const flick=e.stun>0&&Math.floor(t*12)%2===0; c.save(); if(flick) c.globalAlpha=0.5;
       drawChar(c,e.x,e.y+e.r,0.62,e.p.job,{t:t+e.i,moving:e.moving,flip:e.face<0,face:e.stun>0?'hurt':'idle'}); c.restore();
@@ -1444,7 +1477,7 @@ function drawExplore(c,t){
   c.save(); c.globalCompositeOperation='lighter'; const wg=c.createRadialGradient(W/2+(me.x-cx)*z,H/2+(me.y-cy-40)*z,10,W/2+(me.x-cx)*z,H/2+(me.y-cy-40)*z,(fog?110:240)*z); wg.addColorStop(0,'rgba(255,190,110,.13)'); wg.addColorStop(1,'rgba(255,190,110,0)'); c.fillStyle=wg; c.fillRect(0,0,W,H); c.restore();
   if(fog){ c.save(); c.globalCompositeOperation='lighter'; for(let i=0;i<4;i++){ const fx=((t*0.03*(i+1)+i*0.3)%1.3-0.15)*W, g_=c.createRadialGradient(fx,H*(0.3+i*0.18),0,fx,H*(0.3+i*0.18),W*0.5); g_.addColorStop(0,'rgba(140,160,170,.07)'); g_.addColorStop(1,'rgba(140,160,170,0)'); c.fillStyle=g_; c.fillRect(0,0,W,H); } c.restore(); }
   // 소리 물결 (안개 호수에서는 모든 소리가, 평소에는 방울 꼬마·허수아비 비명만)
-  c.save(); c.lineWidth=2.5; for(const nz of w.noises){ if(!fog&&nz.kind!=='crow'&&nz.kind!=='bell') continue; const k=nz.t/1.4, sx=(nz.x-cx)*z+W/2, sy=(nz.y-cy)*z+H/2, rad=(30+Math.min(nz.r,520)*0.5*k)*z; const col=nz.kind==='crow'?'255,120,80':nz.kind==='gen'||nz.kind==='shoes'?'255,220,140':'190,210,220'; c.strokeStyle=`rgba(${col},${0.55*(1-k)})`; c.beginPath(); c.ellipse(sx,sy,rad,rad*0.6,0,0,7); c.stroke(); }
+  c.save(); c.lineWidth=2.5; for(const nz of w.noises){ if(!fog&&nz.kind!=='crow'&&nz.kind!=='bell'&&nz.kind!=='lure') continue; const k=nz.t/1.4, sx=(nz.x-cx)*z+W/2, sy=(nz.y-cy)*z+H/2, rad=(30+Math.min(nz.r,520)*0.5*k)*z; const col=nz.kind==='lure'?'246,210,122':nz.kind==='crow'?'255,120,80':nz.kind==='gen'||nz.kind==='shoes'?'255,220,140':'190,210,220'; c.strokeStyle=`rgba(${col},${0.55*(1-k)})`; c.beginPath(); c.ellipse(sx,sy,rad,rad*0.6,0,0,7); c.stroke(); }
   for(const m of w.mons){ if(m.asleep) continue; const md=Math.hypot(m.x-me.x,m.y-me.y); if(m.type.id==='bell'&&md<700){ const k=(t*1.1)%1, sx=(m.x-cx)*z+W/2, sy=(m.y-cy)*z+H/2; c.strokeStyle=`rgba(246,210,122,${0.4*(1-k)*(1-md/700)})`; c.beginPath(); c.ellipse(sx,sy,(20+120*k)*z,(20+120*k)*z*0.6,0,0,7); c.stroke(); } if(fog&&md<500){ const k=(t*0.9)%1, sx=(m.x-cx)*z+W/2, sy=(m.y-cy)*z+H/2; c.strokeStyle=`rgba(255,80,60,${0.6*(1-k)})`; c.beginPath(); c.ellipse(sx,sy,(30+200*k)*z,(30+200*k)*z*0.6,0,0,7); c.stroke(); } } c.restore();
   c.save(); c.globalCompositeOperation='lighter'; for(const e of w.ents) if(e.light&&e.p.alive&&!e.hidden){ const sx=(e.x-cx)*z+W/2, sy=(e.y-cy-70)*z+H/2, gl=glowSprite(e.p.job.color,12); c.globalAlpha=0.75; c.drawImage(gl.c,sx-gl.s*z*0.9,sy-gl.s*z*0.9,gl.s*z*1.8,gl.s*z*1.8); }
   for(const m of w.mons){ if(!m.type.fly||m.asleep) continue; if(Math.hypot(m.x-me.x,m.y-me.y)>640) continue; const sx=(m.x-cx)*z+W/2, sy=(m.y-cy)*z+H/2, gl=glowSprite('#f0e8c0',6); c.globalAlpha=0.55; c.drawImage(gl.c,sx-gl.s*z*0.8,sy-gl.s*z*0.8,gl.s*z*1.6,gl.s*z*1.6); } c.restore();
