@@ -1639,10 +1639,10 @@ function xUpdate(dt){
   for(const t of xs.toasts) t.t+=dt; xs.toasts=xs.toasts.filter(t=>t.t<2.6).slice(-3);
 }
 function drawExplore(c,t){
-  const w=xs.w, me=xs.me, th=w.theme, z=Math.max(0.7,Math.min(W/640,H/680))*(1+0.05*(xs.dngS||0)), vw=W/z, vh=H/z;
+  const w=xs.w, me=xs.me, th=w.theme, z=params.has('xo')?Math.min(W/XW,H/XH)*0.98:Math.max(0.7,Math.min(W/640,H/680))*(1+0.05*(xs.dngS||0)), vw=W/z, vh=H/z;
   const la=me.moving?64:0, ldx=(me.dir?me.dir[0]:0)*la, ldy=(me.dir?me.dir[1]:0)*la, tcx=Math.max(vw/2,Math.min(XW-vw/2,me.x+ldx)), tcy=Math.max(vh/2,Math.min(XH-vh/2,me.y+ldy));
   if(!xs.cam) xs.cam={x:tcx,y:tcy}; { const dtd=Math.min(0.1,Math.max(0,t-(xs.lastT||t))); xs.lastT=t; const kk=Math.min(1,dtd*6); xs.cam.x+=(tcx-xs.cam.x)*kk; xs.cam.y+=(tcy-xs.cam.y)*kk; }
-  const cx=xs.cam.x+(Math.random()-0.5)*xs.shake*12, cy=xs.cam.y+(Math.random()-0.5)*xs.shake*12;
+  const cx=params.has('xo')?XW/2:xs.cam.x+(Math.random()-0.5)*xs.shake*12, cy=params.has('xo')?XH/2:xs.cam.y+(Math.random()-0.5)*xs.shake*12;
   const vx0=cx-vw/2-60, vx1=cx+vw/2+60, vy0=cy-vh/2-80, vy1=cy+vh/2+60, vis=(x,y,m=80)=>x>vx0-m&&x<vx1+m&&y>vy0-m&&y<vy1+m;
   c.fillStyle='#050302'; c.fillRect(0,0,W,H);
   c.save(); c.translate(W/2,H/2); c.scale(z,z); c.translate(-cx,-cy);
@@ -1692,7 +1692,7 @@ function drawExplore(c,t){
   for(const k of Object.keys(w.expose)){ const t_=w.ents[+k]; if(t_&&t_.p.alive&&!t_.out) hole(t_.x,t_.y-40,170,0.9); }
   for(const e of w.ents) if(e!==me&&e.light&&e.p.alive&&!e.hidden) hole(e.x,e.y-40,fog?100:230,0.9);
   if(!fog){ for(const o of w.objs) if(o.type==='gen'&&o.lit){ hole(o.x,o.y,380,0.95); hole(o.x-110,o.y,260,0.8); hole(o.x+110,o.y,260,0.8); } for(const l of w.lamps) hole(l.x,l.y-30,135,0.75); }
-  c.drawImage(dk,0,0,W,H);
+  if(!params.has('xo')) c.drawImage(dk,0,0,W,H);
   c.save(); c.globalCompositeOperation='lighter'; const wg=c.createRadialGradient(W/2+(me.x-cx)*z,H/2+(me.y-cy-40)*z,10,W/2+(me.x-cx)*z,H/2+(me.y-cy-40)*z,(fog?110:240)*z); wg.addColorStop(0,'rgba(255,190,110,.13)'); wg.addColorStop(1,'rgba(255,190,110,0)'); c.fillStyle=wg; c.fillRect(0,0,W,H); c.restore();
   if(fog){ c.save(); c.globalCompositeOperation='lighter'; for(let i=0;i<4;i++){ const fx=((t*0.03*(i+1)+i*0.3)%1.3-0.15)*W, g_=c.createRadialGradient(fx,H*(0.3+i*0.18),0,fx,H*(0.3+i*0.18),W*0.5); g_.addColorStop(0,'rgba(140,160,170,.07)'); g_.addColorStop(1,'rgba(140,160,170,0)'); c.fillStyle=g_; c.fillRect(0,0,W,H); } c.restore(); }
   // 소리 물결 (안개 호수에서는 모든 소리가, 평소에는 방울 꼬마·허수아비 비명만)
