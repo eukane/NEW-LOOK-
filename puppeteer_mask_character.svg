@@ -1,0 +1,217 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="800" height="1000">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="30%" r="80%">
+      <stop offset="0" stop-color="#3a2a4d"/>
+      <stop offset="0.6" stop-color="#15101f"/>
+      <stop offset="1" stop-color="#07060b"/>
+    </radialGradient>
+    <linearGradient id="wood" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e8d3aa"/>
+      <stop offset="0.55" stop-color="#c9a672"/>
+      <stop offset="1" stop-color="#8a6238"/>
+    </linearGradient>
+    <linearGradient id="coat" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#14101a"/>
+      <stop offset="0.5" stop-color="#2a1f35"/>
+      <stop offset="1" stop-color="#100c16"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#ff3b2f" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#ff3b2f" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="moon" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#f4eede"/>
+      <stop offset="0.7" stop-color="#d9d1bd"/>
+      <stop offset="1" stop-color="#d9d1bd" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="blur"><feGaussianBlur stdDeviation="12"/></filter>
+  </defs>
+
+  <!-- background -->
+  <rect width="800" height="1000" fill="url(#bg)"/>
+  <circle cx="400" cy="250" r="230" fill="url(#moon)" opacity="0.35"/>
+  <circle cx="400" cy="250" r="150" fill="#f4eede" opacity="0.10"/>
+  <!-- floor fog -->
+  <ellipse cx="400" cy="950" rx="460" ry="70" fill="#4b3a63" opacity="0.5" filter="url(#blur)"/>
+  <ellipse cx="400" cy="975" rx="360" ry="30" fill="#000" opacity="0.7"/>
+
+  <!-- hanging wooden dolls in background -->
+  <g stroke="#6b5233" stroke-width="2" opacity="0.5">
+    <line x1="90" y1="0" x2="90" y2="170"/><line x1="710" y1="0" x2="710" y2="120"/>
+    <line x1="170" y1="0" x2="170" y2="90"/>
+  </g>
+  <g fill="#a98456" opacity="0.5">
+    <circle cx="90" cy="185" r="16"/><rect x="78" y="201" width="24" height="46" rx="6"/>
+    <circle cx="710" cy="135" r="14"/><rect x="699" y="149" width="22" height="40" rx="6"/>
+    <circle cx="170" cy="103" r="11"/><rect x="161" y="114" width="18" height="32" rx="5"/>
+  </g>
+  <g fill="#0a0810" opacity="0.8">
+    <circle cx="86" cy="182" r="3"/><circle cx="95" cy="182" r="3"/>
+    <circle cx="706" cy="132" r="3"/><circle cx="715" cy="132" r="3"/>
+  </g>
+
+  <!-- ===== PUPPET on strings ===== -->
+  <g>
+    <!-- control bar -->
+    <g transform="rotate(8 575 372)">
+      <rect x="505" y="364" width="140" height="14" rx="5" fill="#5a3d22" stroke="#2b1b0e" stroke-width="2"/>
+      <rect x="568" y="340" width="14" height="60" rx="5" fill="#5a3d22" stroke="#2b1b0e" stroke-width="2"/>
+    </g>
+    <!-- strings -->
+    <g stroke="#e9e2cf" stroke-width="1.4" opacity="0.85">
+      <line x1="512" y1="361" x2="500" y2="690"/>
+      <line x1="640" y1="383" x2="625" y2="690"/>
+      <line x1="574" y1="372" x2="562" y2="618"/>
+      <line x1="578" y1="372" x2="520" y2="800"/>
+      <line x1="582" y1="372" x2="610" y2="810"/>
+    </g>
+    <!-- puppet body -->
+    <g stroke="#2b1b0e" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
+      <!-- torso -->
+      <path d="M538 660 L586 660 L592 740 L532 740 Z" fill="url(#wood)"/>
+      <!-- arms -->
+      <path d="M538 668 L505 690 L498 720" fill="none" stroke-width="9" stroke="#b08a58"/>
+      <path d="M586 668 L622 690 L628 722" fill="none" stroke-width="9" stroke="#b08a58"/>
+      <circle cx="505" cy="690" r="6" fill="#8a6238"/><circle cx="622" cy="690" r="6" fill="#8a6238"/>
+      <!-- legs -->
+      <path d="M548 740 L530 790 L520 835" fill="none" stroke-width="10" stroke="#b08a58"/>
+      <path d="M576 740 L596 792 L612 840" fill="none" stroke-width="10" stroke="#b08a58"/>
+      <circle cx="530" cy="790" r="7" fill="#8a6238"/><circle cx="596" cy="792" r="7" fill="#8a6238"/>
+      <rect x="506" y="832" width="30" height="10" rx="4" fill="#3a2a1a"/>
+      <rect x="600" y="837" width="30" height="10" rx="4" fill="#3a2a1a"/>
+      <!-- neck + head -->
+      <rect x="555" y="646" width="14" height="16" fill="#8a6238"/>
+      <ellipse cx="562" cy="630" rx="28" ry="32" fill="url(#wood)"/>
+    </g>
+    <!-- puppet face -->
+    <circle cx="552" cy="626" r="9" fill="url(#glow)"/>
+    <circle cx="573" cy="626" r="9" fill="url(#glow)"/>
+    <circle cx="552" cy="626" r="4" fill="#ff3b2f"/><circle cx="573" cy="626" r="4" fill="#ff3b2f"/>
+    <path d="M548 642 Q562 652 577 642" fill="none" stroke="#2b1b0e" stroke-width="2.5"/>
+    <g stroke="#2b1b0e" stroke-width="1.5"><line x1="554" y1="641" x2="554" y2="647"/><line x1="562" y1="644" x2="562" y2="650"/><line x1="570" y1="642" x2="570" y2="648"/></g>
+    <line x1="562" y1="598" x2="562" y2="606" stroke="#2b1b0e" stroke-width="2"/>
+    <!-- puppet chest stitch -->
+    <path d="M545 690 L579 690 M545 700 L579 700" stroke="#2b1b0e" stroke-width="1.5" stroke-dasharray="3 4"/>
+  </g>
+
+  <!-- ===== PUPPETEER ===== -->
+  <!-- long coat tails -->
+  <path d="M330 330 Q300 600 270 930 L360 905 L400 940 L440 905 L535 930 Q505 600 470 330 Z" fill="url(#coat)" stroke="#05030a" stroke-width="3"/>
+  <!-- coat center seam & buttons -->
+  <line x1="400" y1="345" x2="400" y2="935" stroke="#05030a" stroke-width="3"/>
+  <g fill="#c9a672" stroke="#2b1b0e" stroke-width="1.5">
+    <circle cx="388" cy="420" r="6"/><circle cx="388" cy="490" r="6"/><circle cx="388" cy="560" r="6"/><circle cx="388" cy="630" r="6"/>
+  </g>
+  <!-- coat tattered hem -->
+  <path d="M270 930 L290 900 L310 925 L335 898 L360 905" fill="none" stroke="#05030a" stroke-width="2"/>
+  <path d="M440 905 L465 898 L490 925 L510 900 L535 930" fill="none" stroke="#05030a" stroke-width="2"/>
+  <!-- high collar / scarf -->
+  <path d="M325 320 L360 300 L400 340 L440 300 L475 320 L470 365 L400 385 L330 365 Z" fill="#7a1420" stroke="#05030a" stroke-width="3"/>
+  <path d="M345 330 L400 370 L455 330" fill="none" stroke="#3b0810" stroke-width="3"/>
+  <!-- belt with tools -->
+  <rect x="318" y="640" width="164" height="16" fill="#3b2a1a" stroke="#05030a" stroke-width="2"/>
+  <rect x="392" y="637" width="16" height="22" rx="3" fill="#c9a672" stroke="#2b1b0e" stroke-width="2"/>
+  <g stroke="#2b1b0e" stroke-width="2" stroke-linejoin="round">
+    <!-- hanging carving chisel -->
+    <path d="M345 656 L345 720" stroke="#999" stroke-width="3"/>
+    <path d="M338 720 L352 720 L345 745 Z" fill="#c8c8d0"/>
+    <!-- hanging wooden hand -->
+    <path d="M455 656 L455 690" stroke="#999" stroke-width="2"/>
+    <path d="M444 690 H468 V712 H444 Z" fill="url(#wood)"/>
+    <g stroke-width="4" stroke="#b08a58" stroke-linecap="round"><line x1="447" y1="712" x2="446" y2="730"/><line x1="453" y1="712" x2="453" y2="734"/><line x1="459" y1="712" x2="460" y2="733"/><line x1="465" y1="712" x2="467" y2="728"/></g>
+    <!-- keys -->
+    <circle cx="425" cy="668" r="6" fill="none" stroke="#c9a672"/>
+    <line x1="425" y1="674" x2="425" y2="700" stroke="#c9a672" stroke-width="3"/>
+  </g>
+
+  <!-- LOWER arm (viewer's left) hanging, long fingers -->
+  <path d="M335 345 Q290 460 292 600" fill="none" stroke="#1d1526" stroke-width="40" stroke-linecap="round"/>
+  <path d="M335 345 Q290 460 292 600" fill="none" stroke="#05030a" stroke-width="40" stroke-linecap="round" opacity="0.25"/>
+  <circle cx="292" cy="612" r="19" fill="#e9e2cf" stroke="#05030a" stroke-width="3"/>
+  <g stroke="#e9e2cf" stroke-width="6" stroke-linecap="round"><line x1="280" y1="626" x2="268" y2="690"/><line x1="288" y1="630" x2="282" y2="700"/><line x1="297" y1="630" x2="298" y2="702"/><line x1="305" y1="626" x2="312" y2="690"/></g>
+  <g stroke="#05030a" stroke-width="1.5" fill="none"><path d="M268 690 l-3 8"/><path d="M282 700 l-1 8"/><path d="M298 702 l1 8"/><path d="M312 690 l3 8"/></g>
+
+  <!-- RAISED arm (viewer's right) holding the control bar -->
+  <path d="M468 350 Q560 420 545 480" fill="none" stroke="#1d1526" stroke-width="38" stroke-linecap="round"/>
+  <path d="M545 480 Q575 440 580 395" fill="none" stroke="#1d1526" stroke-width="30" stroke-linecap="round"/>
+  <circle cx="580" cy="392" r="17" fill="#e9e2cf" stroke="#05030a" stroke-width="3"/>
+  <g stroke="#e9e2cf" stroke-width="6" stroke-linecap="round"><line x1="566" y1="384" x2="552" y2="366"/><line x1="572" y1="378" x2="566" y2="352"/><line x1="582" y1="376" x2="584" y2="350"/><line x1="592" y1="380" x2="604" y2="358"/></g>
+
+  <!-- neck -->
+  <rect x="384" y="305" width="32" height="40" fill="#0c0911"/>
+
+  <!-- hair strands behind mask -->
+  <path d="M345 215 Q320 300 340 360 M355 230 Q335 310 350 370 M455 215 Q480 300 462 360" fill="none" stroke="#0a070f" stroke-width="7" stroke-linecap="round"/>
+
+  <!-- HAT -->
+  <g stroke="#05030a" stroke-width="3" stroke-linejoin="round">
+    <path d="M300 148 Q400 175 500 148 L492 134 Q400 156 308 134 Z" fill="#17101f"/>
+    <path d="M338 140 L350 30 Q370 8 410 14 L452 22 L462 140 Q400 158 338 140 Z" fill="#1d1526"/>
+    <path d="M338 128 Q400 146 462 128 L460 108 Q400 126 340 108 Z" fill="#7a1420"/>
+  </g>
+  <!-- hat buckle & patch -->
+  <rect x="388" y="112" width="26" height="22" rx="3" fill="none" stroke="#c9a672" stroke-width="3"/>
+  <path d="M368 56 l22 10 l-6 22 l-20 -8 z" fill="#2f2340" stroke="#05030a" stroke-width="2"/>
+  <path d="M372 62 l12 6 M370 72 l12 6" stroke="#c9a672" stroke-width="1.5" stroke-dasharray="3 3"/>
+  <!-- hat cracked top -->
+  <path d="M410 14 L418 40 L406 56" fill="none" stroke="#05030a" stroke-width="2"/>
+
+  <!-- ===== MASK ===== -->
+  <g>
+    <!-- main wooden face: asymmetric, long chin -->
+    <path d="M340 190 Q345 150 400 148 Q458 150 462 195 Q468 250 440 300 Q420 330 400 336 Q378 330 360 300 Q332 250 340 190 Z"
+          fill="url(#wood)" stroke="#2b1b0e" stroke-width="4" stroke-linejoin="round"/>
+    <!-- wood grain -->
+    <g fill="none" stroke="#7a5430" stroke-width="1.6" opacity="0.7">
+      <path d="M352 190 Q350 240 370 300"/><path d="M366 168 Q360 240 384 322"/>
+      <path d="M432 170 Q444 240 424 318"/><path d="M450 200 Q452 250 438 296"/>
+    </g>
+    <!-- crack across forehead to eye -->
+    <path d="M398 150 L390 176 L402 190 L384 214" fill="none" stroke="#2b1b0e" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M402 190 L416 200" fill="none" stroke="#2b1b0e" stroke-width="2"/>
+    <!-- brow ridges (angry, uneven) -->
+    <path d="M352 205 Q372 186 392 204" fill="none" stroke="#2b1b0e" stroke-width="6" stroke-linecap="round"/>
+    <path d="M410 200 Q432 192 452 214" fill="none" stroke="#2b1b0e" stroke-width="6" stroke-linecap="round"/>
+    <!-- left eye: big hollow -->
+    <ellipse cx="372" cy="226" rx="17" ry="21" fill="#07040b" stroke="#2b1b0e" stroke-width="3"/>
+    <circle cx="372" cy="228" r="12" fill="url(#glow)"/>
+    <circle cx="372" cy="228" r="5" fill="#ff3b2f"/>
+    <!-- right eye: thin slit -->
+    <path d="M418 228 Q436 214 454 228 Q436 240 418 228 Z" fill="#07040b" stroke="#2b1b0e" stroke-width="3"/>
+    <circle cx="436" cy="228" r="5" fill="#ff3b2f"/>
+    <!-- nose: sharp wedge -->
+    <path d="M404 232 L414 272 L398 278 Z" fill="#a67c4a" stroke="#2b1b0e" stroke-width="3" stroke-linejoin="round"/>
+    <!-- cheek paint -->
+    <circle cx="361" cy="268" r="10" fill="#b3202e" opacity="0.8"/>
+    <circle cx="448" cy="268" r="8" fill="#b3202e" opacity="0.8"/>
+    <!-- carved tear -->
+    <path d="M372 250 Q368 266 372 280" fill="none" stroke="#7a1420" stroke-width="3" stroke-linecap="round"/>
+    <!-- huge stitched grin -->
+    <path d="M352 292 Q400 330 452 288" fill="#07040b" stroke="#2b1b0e" stroke-width="4" stroke-linecap="round"/>
+    <g fill="#e9e2cf" stroke="#2b1b0e" stroke-width="1.5">
+      <path d="M368 304 L376 301 L378 312 L370 311 Z"/>
+      <path d="M384 311 L394 312 L394 322 L385 320 Z"/>
+      <path d="M402 313 L412 311 L413 321 L403 322 Z"/>
+      <path d="M420 309 L429 305 L431 315 L422 318 Z"/>
+      <path d="M437 301 L445 296 L447 305 L439 309 Z"/>
+    </g>
+    <!-- stitches across mouth -->
+    <g stroke="#e9e2cf" stroke-width="2.5" stroke-linecap="round">
+      <line x1="362" y1="288" x2="364" y2="316"/><line x1="379" y1="298" x2="381" y2="326"/>
+      <line x1="398" y1="304" x2="399" y2="332"/><line x1="418" y1="304" x2="418" y2="330"/>
+      <line x1="436" y1="296" x2="436" y2="322"/><line x1="450" y1="284" x2="452" y2="308"/>
+    </g>
+    <!-- jaw hinge screws -->
+    <circle cx="345" cy="262" r="5" fill="#8a6238" stroke="#2b1b0e" stroke-width="2"/>
+    <circle cx="458" cy="262" r="5" fill="#8a6238" stroke="#2b1b0e" stroke-width="2"/>
+  </g>
+
+  <!-- shoulder stitches & patch -->
+  <path d="M330 372 l22 -4 M334 384 l22 -4" stroke="#c9a672" stroke-width="2" stroke-dasharray="4 4"/>
+  <!-- ground sparks of wood chips -->
+  <g fill="#c9a672" opacity="0.7">
+    <rect x="246" y="940" width="8" height="3" transform="rotate(20 246 940)"/>
+    <rect x="560" y="945" width="10" height="3" transform="rotate(-15 560 945)"/>
+    <rect x="610" y="930" width="7" height="3" transform="rotate(35 610 930)"/>
+  </g>
+</svg>
