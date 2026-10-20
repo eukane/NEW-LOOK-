@@ -1,0 +1,311 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="800" height="1000" stroke-linecap="round" stroke-linejoin="round">
+<defs>
+<path id="skull" d="M336 196 C332 138 364 112 402 112 C442 112 472 138 466 196 L468 240 C440 252 360 252 334 240 Z"/>
+<path id="ponyL" d="M356 160 C300 118 214 104 146 138 C108 158 92 188 104 218 C150 204 198 204 240 212 C286 222 326 226 358 230 Z"/>
+<path id="ponyR" d="M444 156 C510 134 600 150 650 208 C690 254 684 312 698 352 C706 380 722 396 738 410 C690 424 640 410 622 372 C608 342 620 318 604 296 C580 262 520 246 452 226 Z"/>
+<path id="earL" d="M344 210 C324 206 320 238 340 252 Z"/>
+<path id="earR" d="M456 210 C476 206 480 238 460 252 Z"/>
+<path id="neck" d="M384 286 L382 328 C392 340 408 340 418 328 L416 286 Z"/>
+<path id="face" d="M338 214 C338 160 362 142 400 142 C438 142 462 160 462 214 C462 262 438 292 414 304 Q400 312 386 304 C362 292 338 262 338 214 Z"/>
+<path id="torso" d="M342 330 C372 346 430 344 462 322 L454 486 C420 500 380 498 350 480 Z"/>
+<path id="jacketL" d="M344 322 C334 332 322 340 316 352 C318 392 320 420 324 446 C344 456 366 458 384 452 L386 340 C372 338 356 332 344 322 Z"/>
+<path id="jacketR" d="M460 314 C470 326 482 334 488 346 C486 386 482 414 476 440 C456 450 432 452 416 446 L414 336 C432 334 448 326 460 314 Z"/>
+<path id="collarL" d="M346 324 L330 290 L388 318 Z"/>
+<path id="collarR" d="M458 316 L476 284 L414 314 Z"/>
+<path id="belt" d="M350 466 L454 480 L454 498 L350 484 Z"/>
+<path id="buckle" d="M389 474 L416 478 L414 497 L387 493 Z"/>
+<path id="skirtU" d="M346 488 L458 500 C474 530 494 560 512 596 C490 606 470 598 454 586 C440 604 422 604 410 590 C396 606 378 606 366 590 C346 604 322 602 302 592 C322 556 342 524 346 488 Z"/>
+<path id="skirt" d="M350 470 L454 484 C462 514 478 540 494 566 C476 574 462 568 450 558 C438 574 424 574 412 562 C400 576 386 576 374 562 C358 574 340 572 322 564 C336 534 348 504 350 470 Z"/>
+<path id="legL" d="M348 510 C346 570 352 640 350 700 L392 700 C390 640 388 570 396 510 Z" transform="rotate(4 372 505)"/>
+<path id="legR" d="M410 508 C420 560 436 610 450 664 L492 654 C480 604 468 560 452 508 Z"/>
+<path id="bootL" d="M348 690 C346 740 352 786 354 826 C354 836 350 842 342 846 C330 850 322 856 324 866 L412 866 C410 856 398 852 394 840 C394 790 394 740 392 690 Q370 700 348 690 Z" transform="rotate(4 372 505)"/>
+<path id="soleL" d="M320 862 L416 862 L416 884 Q416 894 404 894 L334 894 Q320 894 320 882 Z" transform="rotate(4 372 505)"/>
+<path id="bootR" d="M440 666 Q464 672 488 658 C484 720 474 780 470 820 C470 832 476 838 486 842 C500 846 510 852 508 862 L424 860 C428 848 434 842 434 828 C434 780 436 720 440 666 Z" transform="rotate(-5 464 664)"/>
+<path id="soleR" d="M418 856 L512 858 L512 880 Q512 890 500 890 L432 888 Q418 886 418 874 Z" transform="rotate(-5 464 664)"/>
+<path id="armL" d="M328.6 317.8 Q306 330 287.9 345.8 L299.6 318.7 Q289 308 279.6 309.3 L243.3 380.1 C236 392 244 404 264.3 398.5 Q306 376 347.4 346.2 C356 334 342 318 328.6 317.8 Z"/>
+<path id="armR" d="M472.5 310.7 Q522 334 557.3 380.2 Q574 408 592 440.5 Q584 449 572.6 452.7 Q552 430 536.2 399.4 Q490 372 451.5 337.3 C446 326 458 308 472.5 310.7 Z"/>
+<path id="cuffL" d="M279.6 309.3 L299.6 318.7 L295.8 327 L275.8 317.6 Z"/>
+<path id="cuffR" d="M592 440.5 L572.6 452.7 L567.8 445.1 L587.2 432.9 Z"/>
+<path id="epL" d="M318 352 L294 326 L320 334 L312 304 L336 328 L346 302 L354 338 Z"/>
+<path id="epR" d="M486 344 L510 316 L484 326 L492 296 L468 320 L458 294 L450 330 Z"/>
+<path id="palmL" d="M289 308 C285 296 280 282 283 268 C286 258 308 256 313 266 C318 278 316 296 309 308 Z"/>
+<path id="palmR" d="M578 446 C574 462 586 482 604 490 C620 494 630 482 626 468 C622 452 606 442 592 440 Z"/>
+<path id="bangs" d="M336 218 C326 150 356 122 402 122 C448 122 474 152 464 216 C458 190 446 170 430 162 C416 178 398 184 384 178 C370 176 356 180 348 190 C342 200 340 208 336 218 Z"/>
+<path id="catL" d="M340 160 L328 106 L380 138 Z"/>
+<path id="catR" d="M462 160 L474 106 L420 138 Z"/>
+<path id="micH" d="M610 480 L664 522"/>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a1a4e"/><stop offset="0.6" stop-color="#4d3578"/><stop offset="1" stop-color="#a65b86"/></linearGradient>
+<radialGradient id="floorGlow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ffe9a0" stop-opacity="0.55"/><stop offset="1" stop-color="#ffe9a0" stop-opacity="0"/></radialGradient>
+<radialGradient id="eyeG" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ffb14d"/><stop offset="1" stop-color="#ff7a1a"/></radialGradient>
+<pattern id="grill" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M0 0 L6 6 M6 0 L0 6" stroke="#2a1745" stroke-width="1.2"/></pattern>
+<filter id="blur"><feGaussianBlur stdDeviation="9"/></filter>
+<clipPath id="c-skull"><use href="#skull"/></clipPath>
+<clipPath id="c-ponyL"><use href="#ponyL"/></clipPath>
+<clipPath id="c-ponyR"><use href="#ponyR"/></clipPath>
+<clipPath id="c-earL"><use href="#earL"/></clipPath>
+<clipPath id="c-earR"><use href="#earR"/></clipPath>
+<clipPath id="c-neck"><use href="#neck"/></clipPath>
+<clipPath id="c-face"><use href="#face"/></clipPath>
+<clipPath id="c-torso"><use href="#torso"/></clipPath>
+<clipPath id="c-jacketL"><use href="#jacketL"/></clipPath>
+<clipPath id="c-jacketR"><use href="#jacketR"/></clipPath>
+<clipPath id="c-collarL"><use href="#collarL"/></clipPath>
+<clipPath id="c-collarR"><use href="#collarR"/></clipPath>
+<clipPath id="c-belt"><use href="#belt"/></clipPath>
+<clipPath id="c-buckle"><use href="#buckle"/></clipPath>
+<clipPath id="c-skirtU"><use href="#skirtU"/></clipPath>
+<clipPath id="c-skirt"><use href="#skirt"/></clipPath>
+<clipPath id="c-legL"><use href="#legL"/></clipPath>
+<clipPath id="c-legR"><use href="#legR"/></clipPath>
+<clipPath id="c-bootL"><use href="#bootL"/></clipPath>
+<clipPath id="c-soleL"><use href="#soleL"/></clipPath>
+<clipPath id="c-bootR"><use href="#bootR"/></clipPath>
+<clipPath id="c-soleR"><use href="#soleR"/></clipPath>
+<clipPath id="c-armL"><use href="#armL"/></clipPath>
+<clipPath id="c-armR"><use href="#armR"/></clipPath>
+<clipPath id="c-cuffL"><use href="#cuffL"/></clipPath>
+<clipPath id="c-cuffR"><use href="#cuffR"/></clipPath>
+<clipPath id="c-epL"><use href="#epL"/></clipPath>
+<clipPath id="c-epR"><use href="#epR"/></clipPath>
+<clipPath id="c-palmL"><use href="#palmL"/></clipPath>
+<clipPath id="c-palmR"><use href="#palmR"/></clipPath>
+<clipPath id="c-bangs"><use href="#bangs"/></clipPath>
+<clipPath id="c-catL"><use href="#catL"/></clipPath>
+<clipPath id="c-catR"><use href="#catR"/></clipPath>
+<mask id="ml-skull" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#skull" transform="translate(6,5)" fill="#000"/></mask>
+<mask id="md-skull" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#skull" transform="translate(-7,-6)" fill="#000"/></mask>
+<mask id="ml-ponyL" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#ponyL" transform="translate(9,8)" fill="#000"/></mask>
+<mask id="md-ponyL" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#ponyL" transform="translate(-11,-9)" fill="#000"/></mask>
+<mask id="ml-ponyR" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#ponyR" transform="translate(9,8)" fill="#000"/></mask>
+<mask id="md-ponyR" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#ponyR" transform="translate(-11,-9)" fill="#000"/></mask>
+<mask id="ml-neck" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#neck" transform="translate(6,5)" fill="#000"/></mask>
+<mask id="md-neck" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#neck" transform="translate(-7,-6)" fill="#000"/></mask>
+<mask id="ml-face" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#face" transform="translate(6,5)" fill="#000"/></mask>
+<mask id="md-face" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#face" transform="translate(-7,-6)" fill="#000"/></mask>
+<mask id="ml-torso" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#torso" transform="translate(9,8)" fill="#000"/></mask>
+<mask id="md-torso" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#torso" transform="translate(-11,-9)" fill="#000"/></mask>
+<mask id="ml-jacketL" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#jacketL" transform="translate(9,8)" fill="#000"/></mask>
+<mask id="md-jacketL" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#jacketL" transform="translate(-11,-9)" fill="#000"/></mask>
+<mask id="ml-jacketR" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#jacketR" transform="translate(9,8)" fill="#000"/></mask>
+<mask id="md-jacketR" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#jacketR" transform="translate(-11,-9)" fill="#000"/></mask>
+<mask id="ml-skirt" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#skirt" transform="translate(9,8)" fill="#000"/></mask>
+<mask id="md-skirt" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#skirt" transform="translate(-11,-9)" fill="#000"/></mask>
+<mask id="ml-skirtU" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#skirtU" transform="translate(6,5)" fill="#000"/></mask>
+<mask id="md-skirtU" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#skirtU" transform="translate(-7,-6)" fill="#000"/></mask>
+<mask id="ml-legL" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#legL" transform="translate(6,5)" fill="#000"/></mask>
+<mask id="md-legL" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#legL" transform="translate(-7,-6)" fill="#000"/></mask>
+<mask id="ml-legR" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#legR" transform="translate(6,5)" fill="#000"/></mask>
+<mask id="md-legR" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#legR" transform="translate(-7,-6)" fill="#000"/></mask>
+<mask id="ml-bootL" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#bootL" transform="translate(6,5)" fill="#000"/></mask>
+<mask id="md-bootL" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#bootL" transform="translate(-7,-6)" fill="#000"/></mask>
+<mask id="ml-bootR" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#bootR" transform="translate(6,5)" fill="#000"/></mask>
+<mask id="md-bootR" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#bootR" transform="translate(-7,-6)" fill="#000"/></mask>
+<mask id="ml-armL" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#armL" transform="translate(9,8)" fill="#000"/></mask>
+<mask id="md-armL" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#armL" transform="translate(-11,-9)" fill="#000"/></mask>
+<mask id="ml-armR" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#armR" transform="translate(9,8)" fill="#000"/></mask>
+<mask id="md-armR" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#armR" transform="translate(-11,-9)" fill="#000"/></mask>
+<mask id="ml-palmL" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#palmL" transform="translate(6,5)" fill="#000"/></mask>
+<mask id="md-palmL" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#palmL" transform="translate(-7,-6)" fill="#000"/></mask>
+<mask id="ml-palmR" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#palmR" transform="translate(6,5)" fill="#000"/></mask>
+<mask id="md-palmR" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#palmR" transform="translate(-7,-6)" fill="#000"/></mask>
+<mask id="ml-bangs" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#bangs" transform="translate(6,5)" fill="#000"/></mask>
+<mask id="md-bangs" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#bangs" transform="translate(-7,-6)" fill="#000"/></mask>
+<mask id="ml-soleL" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#soleL" transform="translate(6,5)" fill="#000"/></mask>
+<mask id="md-soleL" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#soleL" transform="translate(-7,-6)" fill="#000"/></mask>
+<mask id="ml-soleR" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#soleR" transform="translate(6,5)" fill="#000"/></mask>
+<mask id="md-soleR" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#soleR" transform="translate(-7,-6)" fill="#000"/></mask>
+<mask id="ml-epL" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#epL" transform="translate(6,5)" fill="#000"/></mask>
+<mask id="md-epL" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#epL" transform="translate(-7,-6)" fill="#000"/></mask>
+<mask id="ml-epR" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#epR" transform="translate(6,5)" fill="#000"/></mask>
+<mask id="md-epR" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#epR" transform="translate(-7,-6)" fill="#000"/></mask>
+<mask id="ml-collarL" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#collarL" transform="translate(6,5)" fill="#000"/></mask>
+<mask id="md-collarL" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#collarL" transform="translate(-7,-6)" fill="#000"/></mask>
+<mask id="ml-collarR" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#collarR" transform="translate(6,5)" fill="#000"/></mask>
+<mask id="md-collarR" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="1000"><rect width="800" height="1000" fill="#fff"/><use href="#collarR" transform="translate(-7,-6)" fill="#000"/></mask>
+</defs>
+<rect width="800" height="1000" fill="url(#bg)"/>
+<polygon points="90,0 170,0 420,640 250,640" fill="#5be8d4" opacity="0.07"/>
+<polygon points="710,0 630,0 380,640 550,640" fill="#ffe14d" opacity="0.07"/>
+<g stroke="#ff9ad8" stroke-width="1.5" opacity="0.16" fill="none"><path d="M0 650 H800 M0 720 H800 M0 800 H800 M0 900 H800"/><path d="M400 620 L-120 1000 M400 620 L90 1000 M400 620 L260 1000 M400 620 L540 1000 M400 620 L710 1000 M400 620 L920 1000"/></g>
+<ellipse cx="400" cy="892" rx="300" ry="44" fill="url(#floorGlow)"/>
+<circle cx="400" cy="214" r="152" fill="none" stroke="#fff3c4" stroke-width="20" opacity="0.5" filter="url(#blur)"/>
+<circle cx="400" cy="214" r="152" fill="none" stroke="#fff8dc" stroke-width="5" opacity="0.9"/>
+<ellipse cx="342" cy="896" rx="66" ry="10" fill="#12062b" opacity="0.55"/><ellipse cx="484" cy="893" rx="62" ry="9" fill="#12062b" opacity="0.5"/>
+<g fill="#1a0b33" stroke="#1a0b33" stroke-width="14">
+<use href="#skull"/>
+<use href="#ponyL"/>
+<use href="#ponyR"/>
+<use href="#neck"/>
+<use href="#face"/>
+<use href="#torso"/>
+<use href="#jacketL"/>
+<use href="#jacketR"/>
+<use href="#collarL"/>
+<use href="#collarR"/>
+<use href="#skirtU"/>
+<use href="#skirt"/>
+<use href="#legL"/>
+<use href="#legR"/>
+<use href="#bootL"/>
+<use href="#soleL"/>
+<use href="#bootR"/>
+<use href="#soleR"/>
+<use href="#armL"/>
+<use href="#armR"/>
+<use href="#epL"/>
+<use href="#epR"/>
+<use href="#palmL"/>
+<use href="#palmR"/>
+<use href="#bangs"/>
+<use href="#catL"/>
+<use href="#catR"/>
+<path d="M292 266 Q286 244 282 224 M304 264 Q310 244 316 226" fill="none" stroke-width="18"/>
+<use href="#micH" fill="none" stroke-width="30"/><circle cx="686" cy="540" r="36" stroke-width="12"/>
+</g>
+<use href="#skull" fill="#3fe0c5"/>
+<g clip-path="url(#c-skull)"><rect width="800" height="1000" fill="#fff" opacity="0.26" mask="url(#ml-skull)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.3" mask="url(#md-skull)"/></g>
+<use href="#ponyL" fill="#3fe0c5"/>
+<g clip-path="url(#c-ponyL)"><rect width="800" height="1000" fill="#fff" opacity="0.26" mask="url(#ml-ponyL)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.3" mask="url(#md-ponyL)"/></g>
+<use href="#ponyR" fill="#3fe0c5"/>
+<g clip-path="url(#c-ponyR)"><rect width="800" height="1000" fill="#fff" opacity="0.26" mask="url(#ml-ponyR)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.3" mask="url(#md-ponyR)"/></g>
+<g clip-path="url(#c-ponyL)"><path d="M190 100 Q176 170 208 230 L60 230 L60 100 Z" fill="#a98bff"/><path d="M190 100 Q176 170 208 230" fill="none" stroke="#fff" stroke-width="2" opacity="0.5"/></g>
+<g clip-path="url(#c-ponyR)"><path d="M600 372 Q660 352 700 372 Q730 380 760 400 L760 450 L600 450 Z" fill="#a98bff"/></g>
+<g fill="none" stroke="#0f8f80" stroke-width="2.5" opacity="0.8"><path d="M336 170 C280 146 214 140 160 168 C130 184 118 200 120 214"/><path d="M344 196 C300 180 240 178 190 194"/><path d="M470 168 C540 160 610 196 648 244 C676 282 672 322 686 366"/><path d="M456 196 C516 196 576 226 600 270 C614 298 608 330 618 360"/></g>
+<g fill="none" stroke="#fff" stroke-width="3" opacity="0.7"><path d="M326 152 C276 130 214 128 168 148"/><path d="M492 156 C550 150 604 176 636 214"/></g>
+<ellipse cx="354" cy="190" rx="10" ry="9" fill="#ffe14d" stroke="#1a0b33" stroke-width="3"/><ellipse cx="446" cy="182" rx="10" ry="9" fill="#ffe14d" stroke="#1a0b33" stroke-width="3"/>
+<use href="#neck" fill="#f6c3a0"/>
+<g clip-path="url(#c-neck)"><rect width="800" height="1000" fill="#fff" opacity="0.26" mask="url(#ml-neck)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.3" mask="url(#md-neck)"/></g>
+<use href="#neck" fill="none" stroke="#1a0b33" stroke-width="3"/>
+<g clip-path="url(#c-neck)"><ellipse cx="400" cy="296" rx="32" ry="15" fill="#2a0f5a" opacity="0.40"/></g>
+<use href="#torso" fill="#19c9bd"/>
+<g clip-path="url(#c-torso)"><rect width="800" height="1000" fill="#fff" opacity="0.26" mask="url(#ml-torso)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.3" mask="url(#md-torso)"/></g>
+<use href="#torso" fill="none" stroke="#1a0b33" stroke-width="3"/>
+<use href="#legL" fill="#f6c3a0"/>
+<g clip-path="url(#c-legL)"><rect width="800" height="1000" fill="#fff" opacity="0.26" mask="url(#ml-legL)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.3" mask="url(#md-legL)"/></g>
+<use href="#legL" fill="none" stroke="#1a0b33" stroke-width="3.5"/>
+<use href="#legR" fill="#f6c3a0"/>
+<g clip-path="url(#c-legR)"><rect width="800" height="1000" fill="#fff" opacity="0.26" mask="url(#ml-legR)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.3" mask="url(#md-legR)"/></g>
+<use href="#legR" fill="none" stroke="#1a0b33" stroke-width="3.5"/>
+<g clip-path="url(#c-legL)"><rect x="340" y="500" width="70" height="110" fill="#2a0f5a" opacity="0.30"/></g>
+<g clip-path="url(#c-legR)"><rect x="400" y="500" width="100" height="100" fill="#2a0f5a" opacity="0.30"/></g>
+<use href="#bootL" fill="#6a3fe0"/>
+<g clip-path="url(#c-bootL)"><rect width="800" height="1000" fill="#fff" opacity="0.26" mask="url(#ml-bootL)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.3" mask="url(#md-bootL)"/></g>
+<use href="#bootL" fill="none" stroke="#1a0b33" stroke-width="3.5"/>
+<use href="#bootR" fill="#6a3fe0"/>
+<g clip-path="url(#c-bootR)"><rect width="800" height="1000" fill="#fff" opacity="0.26" mask="url(#ml-bootR)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.3" mask="url(#md-bootR)"/></g>
+<use href="#bootR" fill="none" stroke="#1a0b33" stroke-width="3.5"/>
+<g clip-path="url(#c-bootL)"><g transform="rotate(4 372 505)"><path d="M392 700 C396 760 394 800 394 840 L412 866 L330 866 L392 846 Z" fill="#1a0b5a" opacity="0.30"/></g></g>
+<g stroke="#fff" stroke-width="3" opacity="0.55" fill="none"><path transform="rotate(4 372 505)" d="M356 706 C353 750 358 790 360 822"/><path transform="rotate(-5 464 664)" d="M446 676 C442 724 438 770 440 812"/></g>
+<use href="#soleL" fill="#a8f03a"/>
+<g clip-path="url(#c-soleL)"><rect width="800" height="1000" fill="#fff" opacity="0.26" mask="url(#ml-soleL)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.3" mask="url(#md-soleL)"/></g>
+<use href="#soleL" fill="none" stroke="#1a0b33" stroke-width="3.5"/>
+<use href="#soleR" fill="#a8f03a"/>
+<g clip-path="url(#c-soleR)"><rect width="800" height="1000" fill="#fff" opacity="0.26" mask="url(#ml-soleR)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.3" mask="url(#md-soleR)"/></g>
+<use href="#soleR" fill="none" stroke="#1a0b33" stroke-width="3.5"/>
+<g stroke="#1a0b33" stroke-width="2" opacity="0.5" fill="none"><path transform="rotate(4 372 505)" d="M330 884 H408"/><path transform="rotate(-5 464 664)" d="M428 880 H506"/></g>
+<path transform="rotate(4 372 505)" d="M347 696 Q370 706 393 696" fill="none" stroke="#ffe14d" stroke-width="9"/><path transform="rotate(-5 464 664)" d="M439 672 Q464 680 489 664" fill="none" stroke="#ffe14d" stroke-width="9"/>
+<use href="#skirtU" fill="#7a46e8"/>
+<g clip-path="url(#c-skirtU)"><rect width="800" height="1000" fill="#fff" opacity="0.26" mask="url(#ml-skirtU)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.3" mask="url(#md-skirtU)"/></g>
+<use href="#skirtU" fill="none" stroke="#1a0b33" stroke-width="3.5"/>
+<use href="#skirt" fill="#a8f03a"/>
+<g clip-path="url(#c-skirt)"><rect width="800" height="1000" fill="#fff" opacity="0.26" mask="url(#ml-skirt)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.3" mask="url(#md-skirt)"/></g>
+<use href="#skirt" fill="none" stroke="#1a0b33" stroke-width="3.5"/>
+<g stroke="#1a0b33" stroke-width="2.5" opacity="0.55" fill="none"><path d="M372 482 C366 510 358 540 350 566"/><path d="M402 486 C402 520 400 548 398 568"/><path d="M432 490 C440 518 452 540 462 560"/></g>
+<g clip-path="url(#c-skirt)"><path d="M322 560 Q340 572 358 562 Q378 576 400 566 Q422 576 440 562 Q460 570 494 566 L494 600 L322 600 Z" fill="#2a0f5a" opacity="0.22"/></g>
+<use href="#belt" fill="#ffe14d"/>
+<g clip-path="url(#c-belt)"><rect width="800" height="1000" fill="#fff" opacity="0.26" mask="url(#ml-belt)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.3" mask="url(#md-belt)"/></g>
+<use href="#belt" fill="none" stroke="#1a0b33" stroke-width="3"/>
+<use href="#buckle" fill="#ff3d82"/>
+<g clip-path="url(#c-buckle)"><rect width="800" height="1000" fill="#fff" opacity="0.26" mask="url(#ml-buckle)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.3" mask="url(#md-buckle)"/></g>
+<use href="#buckle" fill="none" stroke="#1a0b33" stroke-width="2.5"/>
+<use href="#jacketL" fill="#ff6a2a"/>
+<g clip-path="url(#c-jacketL)"><rect width="800" height="1000" fill="#fff" opacity="0.26" mask="url(#ml-jacketL)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.3" mask="url(#md-jacketL)"/></g>
+<use href="#jacketL" fill="none" stroke="#1a0b33" stroke-width="3.5"/>
+<use href="#jacketR" fill="#ff6a2a"/>
+<g clip-path="url(#c-jacketR)"><rect width="800" height="1000" fill="#fff" opacity="0.26" mask="url(#ml-jacketR)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.3" mask="url(#md-jacketR)"/></g>
+<use href="#jacketR" fill="none" stroke="#1a0b33" stroke-width="3.5"/>
+<g clip-path="url(#c-jacketL)"><ellipse cx="350" cy="372" rx="24" ry="34" fill="#2a0f5a" opacity="0.30"/></g>
+<g clip-path="url(#c-jacketR)"><ellipse cx="450" cy="366" rx="24" ry="34" fill="#2a0f5a" opacity="0.30"/></g>
+<path d="M326 440 C348 450 366 451 384 446 M416 440 C432 446 454 444 476 434" fill="none" stroke="#ff3d82" stroke-width="7" opacity="0.9"/>
+<use href="#collarL" fill="#ffe14d"/>
+<g clip-path="url(#c-collarL)"><rect width="800" height="1000" fill="#fff" opacity="0.26" mask="url(#ml-collarL)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.3" mask="url(#md-collarL)"/></g>
+<use href="#collarL" fill="none" stroke="#1a0b33" stroke-width="3"/>
+<use href="#collarR" fill="#ffe14d"/>
+<g clip-path="url(#c-collarR)"><rect width="800" height="1000" fill="#fff" opacity="0.26" mask="url(#ml-collarR)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.3" mask="url(#md-collarR)"/></g>
+<use href="#collarR" fill="none" stroke="#1a0b33" stroke-width="3"/>
+<path d="M400 372 l6 13 l14 2 l-10 10 l3 14 l-13 -7 l-13 7 l3 -14 l-10 -10 l14 -2 z" fill="#ffe14d" stroke="#1a0b33" stroke-width="2.5"/>
+<use href="#armL" fill="#ff6a2a"/>
+<g clip-path="url(#c-armL)"><rect width="800" height="1000" fill="#fff" opacity="0.26" mask="url(#ml-armL)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.3" mask="url(#md-armL)"/></g>
+<use href="#armL" fill="none" stroke="#1a0b33" stroke-width="4"/>
+<use href="#armR" fill="#ff6a2a"/>
+<g clip-path="url(#c-armR)"><rect width="800" height="1000" fill="#fff" opacity="0.26" mask="url(#ml-armR)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.3" mask="url(#md-armR)"/></g>
+<use href="#armR" fill="none" stroke="#1a0b33" stroke-width="4"/>
+<g fill="none" stroke="#1a0b33" stroke-width="2.5" opacity="0.6"><path d="M262 392 Q272 376 286 370"/><path d="M552 392 Q566 398 574 410"/></g>
+<use href="#cuffL" fill="#ffe14d"/>
+<g clip-path="url(#c-cuffL)"><rect width="800" height="1000" fill="#fff" opacity="0.26" mask="url(#ml-cuffL)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.3" mask="url(#md-cuffL)"/></g>
+<use href="#cuffL" fill="none" stroke="#1a0b33" stroke-width="3"/>
+<use href="#cuffR" fill="#ffe14d"/>
+<g clip-path="url(#c-cuffR)"><rect width="800" height="1000" fill="#fff" opacity="0.26" mask="url(#ml-cuffR)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.3" mask="url(#md-cuffR)"/></g>
+<use href="#cuffR" fill="none" stroke="#1a0b33" stroke-width="3"/>
+<use href="#epL" fill="#ffe14d"/>
+<g clip-path="url(#c-epL)"><rect width="800" height="1000" fill="#fff" opacity="0.26" mask="url(#ml-epL)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.3" mask="url(#md-epL)"/></g>
+<use href="#epL" fill="none" stroke="#1a0b33" stroke-width="3"/>
+<use href="#epR" fill="#ffe14d"/>
+<g clip-path="url(#c-epR)"><rect width="800" height="1000" fill="#fff" opacity="0.26" mask="url(#ml-epR)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.3" mask="url(#md-epR)"/></g>
+<use href="#epR" fill="none" stroke="#1a0b33" stroke-width="3"/>
+<use href="#earL" fill="#f6c3a0"/>
+<g clip-path="url(#c-earL)"><rect width="800" height="1000" fill="#fff" opacity="0.26" mask="url(#ml-earL)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.3" mask="url(#md-earL)"/></g>
+<use href="#earL" fill="none" stroke="#1a0b33" stroke-width="3"/>
+<use href="#earR" fill="#f6c3a0"/>
+<g clip-path="url(#c-earR)"><rect width="800" height="1000" fill="#fff" opacity="0.26" mask="url(#ml-earR)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.3" mask="url(#md-earR)"/></g>
+<use href="#earR" fill="none" stroke="#1a0b33" stroke-width="3"/>
+<use href="#face" fill="#f6c3a0"/>
+<g clip-path="url(#c-face)"><rect width="800" height="1000" fill="#fff" opacity="0.3" mask="url(#ml-face)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.28" mask="url(#md-face)"/></g>
+<use href="#face" fill="none" stroke="#1a0b33" stroke-width="4.5"/>
+<g clip-path="url(#c-face)"><use href="#bangs" transform="translate(0,11)" fill="#2a0f5a" opacity="0.22"/><ellipse cx="400" cy="304" rx="40" ry="12" fill="#2a0f5a" opacity="0.15"/></g>
+<ellipse cx="360" cy="254" rx="14" ry="8.5" fill="#ff5b8d" opacity="0.5"/><ellipse cx="440" cy="254" rx="14" ry="8.5" fill="#ff5b8d" opacity="0.5"/>
+<path d="M352 224 Q372 204 392 224" fill="none" stroke="#1a0b33" stroke-width="5.5"/><path d="M354 219 L344 213 M364 210 L358 200" fill="none" stroke="#1a0b33" stroke-width="3.5"/>
+<ellipse cx="428" cy="217" rx="17" ry="20" fill="#fff" stroke="#1a0b33" stroke-width="3.5"/><circle cx="429" cy="219" r="12.5" fill="url(#eyeG)"/><circle cx="429" cy="219" r="6.5" fill="#2a0f4a"/><circle cx="424" cy="212" r="3.8" fill="#fff"/><circle cx="434" cy="225" r="2" fill="#fff" opacity="0.8"/>
+<path d="M409 207 Q428 191 448 205" fill="none" stroke="#1a0b33" stroke-width="5.5"/><path d="M447 205 L456 197" fill="none" stroke="#1a0b33" stroke-width="3.5"/>
+<path d="M354 199 Q372 188 392 195 M410 194 Q428 187 448 199" fill="none" stroke="#1a0b33" stroke-width="4"/>
+<path d="M401 232 Q406 246 399 250" fill="none" stroke="#c97c5a" stroke-width="2.8"/>
+<path d="M378 271 Q402 297 428 269 Q404 281 378 271 Z" fill="#8a0f3c" stroke="#1a0b33" stroke-width="3"/><path d="M380 273 Q404 285 426 271 L423 277 Q404 291 383 279 Z" fill="#ff3d82"/><path d="M394 286 Q402 297 412 286" fill="#ff7ab0" stroke="#1a0b33" stroke-width="2"/><path d="M386 276 l4 8 l5 -6 z" fill="#fff" stroke="#1a0b33" stroke-width="1.8"/>
+<use href="#bangs" fill="#3fe0c5"/>
+<g clip-path="url(#c-bangs)"><rect width="800" height="1000" fill="#fff" opacity="0.28" mask="url(#ml-bangs)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.28" mask="url(#md-bangs)"/></g>
+<use href="#bangs" fill="none" stroke="#1a0b33" stroke-width="4.5"/>
+<path d="M352 150 Q380 134 410 140" fill="none" stroke="#fff" stroke-width="3.5" opacity="0.75"/><g fill="none" stroke="#0f8f80" stroke-width="2.5" opacity="0.8"><path d="M440 150 C452 168 456 190 454 206"/><path d="M416 162 C418 176 414 186 408 192"/><path d="M356 166 C346 182 342 200 340 214"/></g>
+<use href="#catL" fill="#ffe14d"/>
+<g clip-path="url(#c-catL)"><rect width="800" height="1000" fill="#fff" opacity="0.2" mask="url(#ml-catL)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.14" mask="url(#md-catL)"/></g>
+<use href="#catL" fill="none" stroke="#1a0b33" stroke-width="3.5"/>
+<use href="#catR" fill="#ffe14d"/>
+<g clip-path="url(#c-catR)"><rect width="800" height="1000" fill="#fff" opacity="0.2" mask="url(#ml-catR)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.14" mask="url(#md-catR)"/></g>
+<use href="#catR" fill="none" stroke="#1a0b33" stroke-width="3.5"/>
+<path d="M340 146 L334 122 L358 134 Z" fill="#ff3d82"/><path d="M460 146 L466 122 L442 134 Z" fill="#ff3d82"/>
+<circle cx="336" cy="232" r="14" fill="#ff3d82" stroke="#1a0b33" stroke-width="3.5"/><circle cx="336" cy="232" r="5.5" fill="#ffe14d"/>
+<path d="M338 246 Q344 288 372 288" fill="none" stroke="#1a0b33" stroke-width="3.5"/><circle cx="376" cy="288" r="6" fill="#2a1745" stroke="#1a0b33" stroke-width="2.5"/>
+<use href="#micH" fill="none" stroke="#1a0b33" stroke-width="24"/><use href="#micH" fill="none" stroke="#7a46e8" stroke-width="17"/>
+<circle cx="686" cy="540" r="36" fill="#3a2370" stroke="#1a0b33" stroke-width="3.5"/><circle cx="686" cy="540" r="31" fill="url(#grill)"/><circle cx="686" cy="540" r="33" fill="none" stroke="#ffe14d" stroke-width="5"/><path d="M664 522 Q674 510 688 509" fill="none" stroke="#fff" stroke-width="4" opacity="0.85"/><circle cx="686" cy="540" r="4.5" fill="#ff3d82"/>
+<use href="#palmR" fill="#f6c3a0"/>
+<g clip-path="url(#c-palmR)"><rect width="800" height="1000" fill="#fff" opacity="0.26" mask="url(#ml-palmR)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.3" mask="url(#md-palmR)"/></g>
+<use href="#palmR" fill="none" stroke="#1a0b33" stroke-width="3.5"/>
+<path d="M632.7 482.9 Q630.2 494.8 619.7 500.7" fill="none" stroke="#1a0b33" stroke-width="12.5"/><path d="M632.7 482.9 Q630.2 494.8 619.7 500.7" fill="none" stroke="#f6c3a0" stroke-width="8"/>
+<path d="M639.9 488.2 Q637.4 500.1 626.9 506.0" fill="none" stroke="#1a0b33" stroke-width="12.5"/><path d="M639.9 488.2 Q637.4 500.1 626.9 506.0" fill="none" stroke="#f6c3a0" stroke-width="8"/>
+<path d="M647.2 493.5 Q644.7 505.4 634.2 511.3" fill="none" stroke="#1a0b33" stroke-width="12.5"/><path d="M647.2 493.5 Q644.7 505.4 634.2 511.3" fill="none" stroke="#f6c3a0" stroke-width="8"/>
+<path d="M598 486 Q604 500 620 500" fill="none" stroke="#1a0b33" stroke-width="12.5"/><path d="M598 486 Q604 500 620 500" fill="none" stroke="#f6c3a0" stroke-width="8"/>
+<ellipse cx="588" cy="450" rx="9" ry="5" transform="rotate(-35 588 450)" fill="#c9a672" stroke="#1a0b33" stroke-width="2"/>
+<use href="#palmL" fill="#f6c3a0"/>
+<g clip-path="url(#c-palmL)"><rect width="800" height="1000" fill="#fff" opacity="0.26" mask="url(#ml-palmL)"/><rect width="800" height="1000" fill="#2a0f5a" opacity="0.3" mask="url(#md-palmL)"/></g>
+<use href="#palmL" fill="none" stroke="#1a0b33" stroke-width="3.5"/>
+<g fill="none"><path d="M292 268 Q286 246 282 224" stroke="#1a0b33" stroke-width="13.5"/><path d="M292 268 Q286 246 282 224" stroke="#f6c3a0" stroke-width="9"/><path d="M304 266 Q310 246 316 228" stroke="#1a0b33" stroke-width="13.5"/><path d="M304 266 Q310 246 316 228" stroke="#f6c3a0" stroke-width="9"/><path d="M286 288 Q298 298 312 288" stroke="#1a0b33" stroke-width="12.5"/><path d="M286 288 Q298 298 312 288" stroke="#f6c3a0" stroke-width="8"/></g>
+<g fill="none" stroke="#1a0b33" stroke-width="2" opacity="0.7"><path d="M293 276 q4 4 9 1"/><path d="M302 282 q4 3 9 0"/></g>
+<ellipse cx="297" cy="304" rx="10" ry="4.5" transform="rotate(-25 297 304)" fill="#c9a672" stroke="#1a0b33" stroke-width="2"/>
+<g fill="#ffe14d"><circle cx="336" cy="370" r="2.8"/><circle cx="342" cy="386" r="2.8"/><circle cx="347" cy="402" r="2.8"/><circle cx="352" cy="418" r="2.8"/><circle cx="358" cy="432" r="2.8"/><circle cx="466" cy="360" r="2.8"/><circle cx="460" cy="376" r="2.8"/><circle cx="455" cy="392" r="2.8"/><circle cx="450" cy="408" r="2.8"/><circle cx="444" cy="424" r="2.8"/></g>
+<g fill="none" stroke="#b6ff3b" stroke-width="3.5"><path d="M310 150 V126 H330"/><path d="M490 150 V126 H470"/><path d="M312 308 V330 H334"/><path d="M488 308 V330 H466"/></g>
+<g fill="none" stroke="#fff" stroke-width="3" opacity="0.65"><path d="M30 80 V30 H80"/><path d="M770 80 V30 H720"/><path d="M30 920 V970 H80"/><path d="M770 920 V970 H720"/></g>
+<circle cx="62" cy="62" r="7" fill="#ff3b3b"/><text x="76" y="68" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="18" fill="#fff" opacity="0.9">REC 00:42</text>
+<rect x="650" y="46" width="84" height="28" rx="8" fill="#e8337a" stroke="#fff" stroke-width="2" opacity="0.92"/><text x="664" y="66" font-family="Arial,Helvetica,sans-serif" font-weight="800" font-size="18" fill="#fff">LIVE</text>
+<g transform="translate(676 130) scale(0.8)" opacity="0.8"><path d="M-34 -16 L34 16 M34 -16 L-34 16" stroke="#1a0b33" stroke-width="5"/><ellipse cx="-34" cy="-18" rx="16" ry="4" fill="#5be8d4" opacity="0.7"/><ellipse cx="34" cy="-18" rx="16" ry="4" fill="#5be8d4" opacity="0.7"/><ellipse cx="-34" cy="18" rx="16" ry="4" fill="#5be8d4" opacity="0.7"/><ellipse cx="34" cy="18" rx="16" ry="4" fill="#5be8d4" opacity="0.7"/><rect x="-18" y="-12" width="36" height="24" rx="8" fill="#2a1745" stroke="#1a0b33" stroke-width="3"/><circle cx="-4" cy="0" r="9" fill="#12062b" stroke="#5be8d4" stroke-width="3"/><circle cx="12" cy="-5" r="3" fill="#ff3b3b"/></g>
+<g stroke="#1a0b33" stroke-width="2.5" opacity="0.85"><path d="M112 560 c-12 -18 -38 -3 -22 16 l22 18 l22 -18 c16 -19 -10 -34 -22 -16 z" fill="#ff5b8d"/><path d="M694 668 c-10 -15 -32 -2 -19 14 l19 15 l19 -15 c13 -16 -9 -29 -19 -14 z" fill="#5be8d4"/><path d="M168 640 c-7 -11 -22 -2 -13 9 l13 10 l13 -10 c8 -11 -6 -19 -13 -9 z" fill="#ffe14d"/></g>
+<g font-family="Arial,Helvetica,sans-serif" font-weight="800" font-size="18" opacity="0.9"><rect x="56" y="722" width="98" height="34" rx="12" fill="#fff" stroke="#1a0b33" stroke-width="2.5"/><text x="70" y="745" fill="#1a0b33">WOW!!</text><rect x="600" y="772" width="120" height="34" rx="12" fill="#b6ff3b" stroke="#1a0b33" stroke-width="2.5"/><text x="614" y="795" fill="#1a0b33">SO CUTE</text></g>
+<g fill="#fff" opacity="0.85"><path d="M236 110 l3 9 l9 3 l-9 3 l-3 9 l-3 -9 l-9 -3 l9 -3 z"/><path d="M590 90 l2.5 7 l7 2.5 l-7 2.5 l-2.5 7 l-2.5 -7 l-7 -2.5 l7 -2.5 z"/></g>
+</svg>
