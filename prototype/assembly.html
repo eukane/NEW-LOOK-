@@ -71,6 +71,18 @@ th,td{border-bottom:1px solid #6b5c3e66;padding:5px 7px;text-align:left}th{font-
 #load .mid{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;opacity:0;transition:opacity .25s .25s}
 #load.closed .mid{opacity:1}
 @media (max-height:720px){.panel{padding:16px 22px}.title{font-size:34px}label.opt{padding:5px 9px;margin:5px 0;font-size:13px}.panel p{margin:5px 0;font-size:14px}.row{margin-top:10px}}
+@keyframes stampIn{0%{transform:rotate(-12deg) scale(2.6);opacity:0}60%{transform:rotate(-12deg) scale(.92);opacity:1}100%{transform:rotate(-12deg) scale(1);opacity:1}}
+.bk .hv{display:flex;align-items:flex-end;justify-content:center;gap:.2em;position:relative;margin:.1em 0 .3em}
+.bk .hv img{height:min(30vh,250px)}.bk .hv .vs{align-self:center;font-size:2em}
+.bk .hv .dead{filter:grayscale(1) brightness(.6);transform:rotate(-8deg) translateY(6%)}
+.bk .hp{text-align:center;letter-spacing:.12em;color:#8a1a28;font-size:1.1em}.bk .hp i{font-style:normal;color:#3a2a1488}
+.bk .nm{text-align:center;font:400 .95em var(--f-disp)}
+.stamp{position:absolute;left:50%;margin-left:-1.7em;top:3%;white-space:nowrap;font:400 2.1em var(--f-disp);padding:.05em .45em;border:.1em solid currentColor;border-radius:.15em;transform:rotate(-12deg);animation:stampIn .45s .15s both;text-shadow:0 0 1px currentColor;mix-blend-mode:multiply;background:#ffffff0d}
+.stamp.w{color:#1e5a2a}.stamp.l{color:#8a1a28}
+.mini{display:flex;align-items:center;gap:.5em;border-top:1px solid #3a2c1855;padding:.45em 0}
+.mini img{height:3.4em}.mini .mid{flex:1;font-size:.88em}.mini .res{font:400 .9em var(--f-disp);color:#3a0a12}
+.rew{border:1px solid #5a4528;background:#00000010;padding:.6em .8em;margin:.7em 0;text-align:center}
+.rew b{font:400 1.5em var(--f-disp);color:#1e5a2a}.rew.l b{color:#8a1a28}
 #load .t{font:700 26px var(--f-black);letter-spacing:.22em;color:#d8ccb0;text-shadow:0 2px 0 #000}
 #load .tip{font-size:14px;color:#a89a78;max-width:80vw;text-align:center;min-height:42px}
 #load canvas{width:min(420px,86vw);height:auto}
@@ -886,7 +898,7 @@ function drawDuel(c,t){
   for(const b of d.banners){ const k=b.t/1.4, a=Math.min(1,k*6)*Math.min(1,(1-k)*3), yy=midY+(b.side==='A'?bandY:-bandY);
     c.save(); c.globalAlpha=a; c.font=`400 ${Math.min(40,W*0.075)}px ${FD}`; c.textAlign='center'; c.textBaseline='middle'; c.lineWidth=7; c.strokeStyle='#0e0907'; const xx=W/2+(1-k)*40*(b.side==='A'?1:-1); c.translate(xx,yy); c.transform(1,0,-0.18,1,0,0); c.strokeText(b.text,0,0); c.fillStyle=b.col; c.fillText(b.text,0,0); c.restore(); }
   if(sc.count>0){ c.save(); c.textAlign='center'; c.textBaseline='middle'; c.font=`400 ${Math.min(150,W*0.3)}px ${FD}`; c.lineWidth=10; c.strokeStyle='#0e0907'; const txt=String(Math.ceil(Math.min(sc.count,3))); c.strokeText(txt,W/2,midY); c.fillStyle='#d9cdb0'; c.fillText(txt,W/2,midY); c.restore(); }
-  if(sc.endT>0 && sc.res){ c.save(); c.textAlign='center'; c.textBaseline='middle'; c.font=`400 ${Math.min(80,W*0.14)}px ${FD}`; c.lineWidth=9; c.strokeStyle='#0e0907'; const w=sc.res.winner; const txt = w.human?'승리':(sc.humanIn?'패배':w.name+' 승'); c.strokeText(txt,W/2,midY); c.fillStyle= w.human?'#d9cdb0':'#b3202f'; c.fillText(txt,W/2,midY); c.restore(); }
+  if(sc.endT>0 && sc.res){ c.fillStyle=`rgba(0,0,0,${Math.min(0.55,(1.6-sc.endT)*1.2)})`; c.fillRect(0,0,W,H); c.save(); c.textAlign='center'; c.textBaseline='middle'; c.font=`400 ${Math.min(80,W*0.14)}px ${FD}`; c.lineWidth=9; c.strokeStyle='#0e0907'; const w=sc.res.winner; const txt = w.human?'승리':(sc.humanIn?'패배':w.name+' 승'); c.strokeText(txt,W/2,midY); c.fillStyle= w.human?'#d9cdb0':'#b3202f'; c.fillText(txt,W/2,midY); c.restore(); }
 }
 
 /* ---- 실 선택/공개용 인형 (일반 비율 캐릭터 + 12개 연결점) ---- */
@@ -1376,7 +1388,14 @@ async function playGame(){
     const rows=plan.map(x=>`<tr><td>${nameOf(x.a)} vs ${nameOf(x.b)}</td><td>${nameOf(x.w)}</td><td>${x.r.hitsA} : ${x.r.hitsB}</td></tr>`).join('');
     let msg=''; if(mine && human.alive){ msg = mine.w===human ? `<p class="win">승리 — 이번 공격에서 실을 ${picksFor(human,true,rules)}개 고를 수 있습니다.</p>` : `<p class="lose">패배 — 이번 공격의 선택은 ${picksFor(human,false,rules)}개입니다.</p>`; }
     await transition(()=>{},{text:'결과',job:human.job});
-    await bookScreen({left:`<h3>Act ${round} · 결과</h3><h2>듀얼 결과</h2><table><tr><th>대결</th><th>승자</th><th>피격</th></tr>${rows}</table>`,right:`<h3>다음 장</h3>${msg||'<p class="dim">당신은 관전 중입니다.</p>'}<p class="quote">책장이 넘어가자, 인형들의 실이 다시 팽팽해졌습니다.</p>`,buttons:[{label:'실 선택으로',value:1}],tag:STOP==='result'?'result':'result_'});
+    const hp=n=>'<div class="hp">'+'♥'.repeat(Math.max(0,n))+'<i>'+'♥'.repeat(Math.max(0,HP0-n))+'</i></div>';
+    const card=(x,big)=>{ const a=x.a,b=x.b, ha=HP0-x.r.hitsA, hb=HP0-x.r.hitsB; // hitsA = a가 맞은 횟수
+      return big?`<div class="hv"><div><img class="${x.w===a?'':'dead'}" alt="" src="${spriteURL(a.job,1.5)}">${hp(ha)}<div class="nm">${a.name}${a.human?'(나)':''}</div></div><span class="vs">VS</span><div><img class="${x.w===b?'':'dead'}" alt="" src="${spriteURL(b.job,1.5)}" style="transform:scaleX(-1)">${hp(hb)}<div class="nm">${b.name}${b.human?'(나)':''}</div></div></div>`
+        :`<div class="mini"><img alt="" src="${spriteURL(a.job,0.8)}"><div class="mid">${nameOf(a)} ${HP0-x.r.hitsA}<br>${nameOf(b)} ${HP0-x.r.hitsB}</div><div class="res">${x.w.name} 승</div></div>`; };
+    const others=plan.filter(x=>x!==mine);
+    const leftHTML=mine&&human.alive?`<h3>Act ${round} · 결과</h3><h2>나의 듀얼</h2><div style="position:relative">${card(mine,true)}<div class="stamp ${mine.w===human?'w':'l'}">${mine.w===human?'승리':'패배'}</div></div>`:`<h3>Act ${round} · 결과</h3><h2>듀얼 결과</h2>${plan.map(x=>card(x,false)).join('')}`;
+    const rew=mine&&human.alive?(mine.w===human?`<div class="rew"><div class="dim">이번 공격에서 고를 수 있는 실</div><b>${picksFor(human,true,rules)}개</b></div>`:`<div class="rew l"><div class="dim">이번 공격에서 고를 수 있는 실</div><b>${picksFor(human,false,rules)}개</b></div>`):'<p class="dim">당신은 관전 중입니다.</p>';
+    await bookScreen({left:leftHTML,right:`<h3>${mine&&human.alive?'다른 대결':'다음 장'}</h3>${mine&&human.alive?(others.map(x=>card(x,false)).join('')||'<p class="dim">이번 소집은 한 판뿐입니다.</p>'):''}${rew}<p class="quote">책장이 넘어가자, 인형들의 실이 다시 팽팽해졌습니다.</p>`,buttons:[{label:'실 선택으로',value:1}],tag:STOP==='result'?'result':'result_'});
     const attacks=[];
     for(const x of plan) for(const [att,tar] of [[x.a,x.b],[x.b,x.a]]){
       const n=picksFor(att,x.w===att,rules); let picks;
