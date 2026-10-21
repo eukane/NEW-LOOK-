@@ -1,0 +1,26 @@
+name: Deploy to Cloudflare
+on:
+  push:
+    branches: [ccr-bfec9ed5-p5tnl8, main]
+    paths: ['prototype/assembly.html', 'prototype/cloudflare/**']
+  workflow_dispatch:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Skip if secrets are not set
+        if: env.CF_TOKEN == ''
+        run: echo "CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID 시크릿이 없어 배포를 건너뜁니다."
+      - uses: actions/setup-node@v4
+        if: env.CF_TOKEN != ''
+        with: { node-version: 22 }
+      - name: Deploy
+        if: env.CF_TOKEN != ''
+        working-directory: prototype/cloudflare
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npm install && npx wrangler deploy
