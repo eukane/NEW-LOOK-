@@ -2735,7 +2735,7 @@ shakeBtn.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagati
 lockBtn.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); doLockUI(); });
 addEventListener('keydown',e=>{ if(mode!=='explore') return; if(e.key==='r'||e.key==='R') doShakeUI(); if(e.key==='g'||e.key==='G') doLockUI(); });
 const skBtn=document.getElementById('skbtn');
-function doSkillUI(){ if(!xs||xs.w.over) return; const me=xs.me, K=XSK[me.p.job.id]; if(!K) return; if(me.skN<=0||me.xsT>0){ xToast(me.skN<=0?(K.name+'을(를) 다 썼다'):(K.name+' — 재사용 대기 '+Math.ceil(me.xsT)+'초'),'#8a7a5a'); return; } if(me.stun>0||me.hidden) return; if(xs.net){ netCmd('sk'); return; } if(!doSkill(xs.w,me)) xToast(K.fail||'지금은 쓸 수 없다','#8a7a5a'); }
+function doSkillUI(){ if(!xs||xs.w.over) return; const me=xs.me, K=XSK[me.p.job.id]; if(!K||!K.use) return; if(me.skN<=0||me.xsT>0){ xToast(me.skN<=0?(K.name+'을(를) 다 썼다'):(K.name+' — 재사용 대기 '+Math.ceil(me.xsT)+'초'),'#8a7a5a'); return; } if(me.stun>0||me.hidden) return; if(xs.net){ netCmd('sk'); return; } if(!doSkill(xs.w,me)) xToast(K.fail||'지금은 쓸 수 없다','#8a7a5a'); }
 skBtn.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); doSkillUI(); });
 addEventListener('keydown',e=>{ if(mode==='explore'&&(e.key==='f'||e.key==='F')) doSkillUI(); });
 const morphBtn=document.getElementById('morphbtn');
