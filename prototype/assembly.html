@@ -260,14 +260,14 @@ function ev(d,type,a,b){ if(d.onEvent) d.onEvent(type,a,b); }
 const KIND={ent:'star',tech:'spark',scout:'ember',arch:'ink',shear:'spark',mender:'star',digger:'ink',scare:'ember'};
 function shoot(d,m,o){
   const b={x:o.x!==undefined?o.x:m.x, y:o.y!==undefined?o.y:m.y+m.dir*18, vx:Math.cos(o.ang)*o.sp, vy:Math.sin(o.ang)*o.sp,
-           r:o.r||6, col:o.col||m.job.color, owner:m, tgt:m===d.A?d.B:d.A, upd:o.upd||null, age:0, shape:o.shape||'orb', spin:o.spin||0, rot:o.ang, trail:o.trail||0, tr:[], a0:o.ang, seed:rand()*100, ch:o.ch||''};
+           r:o.r||6, col:o.col||m.job.color, owner:m, tgt:m===d.A?d.B:d.A, upd:o.upd||null, age:0, shape:o.shape||'orb', spin:o.spin||0, rot:o.ang, trail:o.trail||0, tr:[], a0:o.ang, seed:rand()*100, ch:o.ch||'', id:(d.nid=(d.nid||0)+1), spinv:o.spin||0};
   if(d.bul.length<900) d.bul.push(b); return b;
 }
 function setVel(b,ang,sp){ b.vx=Math.cos(ang)*sp; b.vy=Math.sin(ang)*sp; b.rot=ang; }
 const downAng = m => m.dir>0 ? Math.PI/2 : -Math.PI/2;
-function burst(d,x,y,col,n,sp,k){ if(!d.fxOn) return; for(let i=0;i<n;i++){ const a=rand()*6.283, v=sp*(0.3+rand()); d.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,t:0,life:0.4+rand()*0.5,col,sz:2+rand()*3,k:k||'dot',rot:rand()*6.283}); } }
-function castFx(d,m,kind){ if(!d.fxOn) return; d.fx.push({kind,x:m.x,y:m.y,t:0,col:m.job.color,job:m.job.id}); burst(d,m.x,m.y,m.job.color,22,260,KIND[m.job.id]); }
-function damage(d,t,col,k){ t.hp--; t.hits++; t.inv=1.2; t.face='hurt'; d.sparks.push({x:t.x,y:t.y,t:0,col}); burst(d,t.x,t.y,col,20,330,k); d.shake=0.35; d.flash=0.35; ev(d,'hit',t); }
+function burst(d,x,y,col,n,sp,k){ if(d.fxq) d.fxq.push(['b',Math.round(x),Math.round(y),col,n,sp,k||'']); if(!d.fxOn) return; for(let i=0;i<n;i++){ const a=rand()*6.283, v=sp*(0.3+rand()); d.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,t:0,life:0.4+rand()*0.5,col,sz:2+rand()*3,k:k||'dot',rot:rand()*6.283}); } }
+function castFx(d,m,kind){ if(d.fxq){ d.fxq.push(['f',kind,Math.round(m.x),Math.round(m.y),m.job.color,m.job.id]); if(!d.fxOn){ d.fxq.push(['b',Math.round(m.x),Math.round(m.y),m.job.color,22,260,KIND[m.job.id]]); } } if(!d.fxOn) return; d.fx.push({kind,x:m.x,y:m.y,t:0,col:m.job.color,job:m.job.id}); burst(d,m.x,m.y,m.job.color,22,260,KIND[m.job.id]); }
+function damage(d,t,col,k){ t.hp--; t.hits++; t.inv=1.2; t.face='hurt'; d.sparks.push({x:t.x,y:t.y,t:0,col}); if(d.fxq) d.fxq.push(['sp',Math.round(t.x),Math.round(t.y),col]); burst(d,t.x,t.y,col,20,330,k); d.shake=0.35; d.flash=0.35; ev(d,'hit',t); }
 const GLYPHS=['가','나','다','라','마','바','사','아','자','차','카','타','파','하','ㄱ','ㅁ','ㅅ','ㅇ','ㅈ','ㅎ','Ω','§','†','Ж','Σ'];
 
 /* 직업별 기본 사격: 모양과 리듬이 다르다 */
@@ -375,10 +375,11 @@ const SPELLS = {
 function unlocked(m,i){ return level(m.p) >= SPELLS[m.job.id][i].lv; }
 function canCast(d,m,i){ return !d.over && unlocked(m,i) && m.cd[i]<=0; }
 function castSpell(d,m,i){
+  if(d.netClient){ if(m===d.A&&canCast(d,m,i)){ m.cd[i]=0.3; NET.to(0,{k:'dc',i}); } return false; }
   if(!canCast(d,m,i)) return false;
   const sp = SPELLS[m.job.id][i], f = m===d.A ? d.B : d.A;
   m.cd[i] = sp.cd*(m.cdMul||1); sp.cast(d,m,f); ev(d,'cast',m,i);
-  d.banners.push({text:sp.name,col:m.job.color,t:0,side:m===d.A?'A':'B'}); d.log.push([d.t.toFixed(1),m.job.name,sp.name]);
+  d.banners.push({text:sp.name,col:m.job.color,t:0,side:m===d.A?'A':'B'}); if(d.fxq) d.fxq.push(['bn',sp.name,m.job.color,m===d.A?'A':'B']); d.log.push([d.t.toFixed(1),m.job.name,sp.name]);
   return true;
 }
 
@@ -482,7 +483,7 @@ function runDuelHeadless(A,B,skillA,skillB){
 /* ===================== CORE:END ===================== */
 
 /* ===================== EXPLORE:BEGIN (DOM 없음: 탐색 라운드 엔진 v2 — 야외 + 건물 + 괴물 + 상호작용) ===================== */
-const NETRT={explore:true,duel:false};   // 원격 사람이 실시간 단계에 참여하는지 (단계별로 켜짐)
+const NETRT={explore:true,duel:true};   // 원격 사람이 실시간 단계에 참여하는지 (단계별로 켜짐)
 const XW=3000, XH=2000, GS=40, WT=24, DG=120, EXP_T=120, NAVR=22;
 const THEMES={
   theatre:{id:'theatre',name:'버려진 극장의 뒤뜰',ground:['#34402e','#222c20'],path:'#4a3f2c',tree:'leaf',variants:['hall','plain','yard','plain','plain'],landmark:'스포트라이트 탑',bld:['대극장 본관','소품 창고','분장실 동','리허설 홀','무대 장치고']},
@@ -2563,17 +2564,23 @@ cv.addEventListener('pointerup',endDrag); cv.addEventListener('pointercancel',en
 function update(dt){
   { const vis=['duel','explore','pick','reveal','book','title'].includes(mode)&&!document.getElementById('load').classList.contains('on'); if(update.pv!==vis){ update.pv=vis; pauseBtn.style.display=vis?'block':'none'; } }
   if(!update.mt||now-update.mt>0.5){ update.mt=now; musicTick(); }
+  for(const rsn of NETDUELS.slice()) stepRemoteDuel(rsn,dt);
   if(mode==='duel' && duelScene){
     const sc=duelScene, d=sc.d;
+    if(sc.net&&sc.net.client){ ndClientStep(sc,dt); }
+    else {
+    if(sc.netHost) ndApplyIn(sc.netHost);
     if(sc.count>0){ sc.count=Math.max(0,sc.count-dt); const c1=Math.ceil(sc.count); if(c1!==sc.lastC && sc.count<9000){ sc.lastC=c1; if(c1>0) sfx.play('tom',{arg:c1===1?1.25:1,vol:0.9}); else { sfx.play('tom',{arg:1.7,vol:1}); sfx.play('gong',{vol:0.3}); } } }
     else if(!d.over){
       if(sc.humanCtl){ const m=d.A; m.mx=(keys['d']||keys['arrowright']?1:0)-(keys['a']||keys['arrowleft']?1:0); m.my=(keys['s']||keys['arrowdown']?1:0)-(keys['w']||keys['arrowup']?1:0); }
       else aiControl(d,d.A,d.B,sc.skillA,dt);
-      aiControl(d,d.B,d.A,sc.skillB,dt);
+      if(d.B.p.remote==null) aiControl(d,d.B,d.A,sc.skillB,dt);
       stepDuel(d,dt); updateSpellButtons();
       if(d.over){ sc.res=duelResult(d); sc.endT=1.6; hideSpellButtons(); if(sc.humanIn){ if(sc.res.winner.human) sfx.play('gong',{vol:0.7}); else sfx.play('lose',{vol:0.8}); } }
     } else { sc.endT-=dt; if(sc.endT<=0 && sc.done){ const f=sc.done; sc.done=null; f(sc.res); } }
     if(sc.count>0 || d.over){ d.shake=Math.max(0,d.shake-dt); d.flash=Math.max(0,d.flash-dt); }
+    if(sc.netHost){ sc.netHost.count=sc.count; sc.netHost.res=sc.res; ndSend(sc.netHost,dt,d.over&&!sc._so); if(d.over) sc._so=true; }
+    }
   }
   if(mode==='pick' && pickScene && opts.timer && !AUTO){ pickScene.left-=dt; if(pickScene.left<=0 && pickScene.finish) pickScene.finish(); }
   if(mode==='reveal' && revScene){ revScene.t+=dt; for(const e of [...revScene.evMe,...revScene.evFoe]) if(!e.snd && revScene.t>=e.at){ e.snd=1; if(e.hit){ sfx.play('snap',{vol:0.9}); sfx.play('hit',{vol:0.45,at:0.02}); } else sfx.play('miss',{vol:0.7}); } if(revScene.t>=revScene.total && revScene.done){ const f=revScene.done; revScene.done=null; f(); } }
@@ -2759,7 +2766,7 @@ function unkURL(sz=1.6){ const c=document.createElement('canvas'); c.width=Math.
 function spritesRow(pairs,bye){
   return pairs.map(([a,b])=>`<div class="pairs"><img alt="" src="${spr(a,1.2)}"><span class="vs">VS</span><img alt="" src="${spr(b,1.2)}" style="transform:scaleX(-1)"></div><p style="text-align:center;margin:.1em 0 .6em">${nameOf(a)} &nbsp;대&nbsp; ${nameOf(b)}</p>`).join('')+(bye?`<p style="text-align:center">${nameOf(bye)} — 이번 소집은 쉽니다</p>`:'');
 }
-function startDuelScene(A,B){
+function startDuelScene(A,B,netRemote){
   return new Promise(res=>{
     const d=makeDuel(A,B); d.fxOn=true; setTimeout(()=>showTip('duel','듀얼','화면을 드래그하거나 WASD로 탄을 피하세요. 작은 하얀 점이 피격 판정입니다. 스펠 버튼(1·2·3)은 쿨타임마다 쓸 수 있고, 10초가 지나면 탄이 점점 빨라집니다.',8000),3200);
     duelScene={d,count:(AUTO&&STOP==='duel')?9999:3,humanCtl:!AUTO,skillA:A.skill,skillB:B.skill,done:res,endT:0,res:null,humanIn:A.human||B.human,lastC:4};
@@ -2768,6 +2775,7 @@ function startDuelScene(A,B){
       else if(type==='hit') sfx.play('hit',{vol:mine?1:0.65,rate:mine?1:1.12});
       else if(type==='slam') sfx.play('slam',{vol:0.9});
       else if(type==='zap') sfx.play('zap',{vol:0.8}); };
+    if(netRemote){ const nh={d,A,B,count:3,res:null,inp:{},snapT:0}; duelScene.netHost=nh; ndHook(nh); ndHostHandlers(); }
     clearScreen(); mode='duel'; if(duelScene.humanCtl) showSpellButtons(d.A); else hideSpellButtons();
   });
 }
@@ -2920,19 +2928,12 @@ async function playGame(net){
     await transAll({text:`소집 ${round}`,actors:alive(P).map(p=>p.job.id)});
     const briefR=`<h3>대진표</h3>${spritesRow(pairs,bye)}`, flavor=FLAVOR[(round-1+ri(3))%FLAVOR.length];
     await bookEach(h=>({left:`<h3>Act ${round} · 소집</h3><h2>제 ${round} 소집</h2><p class="quote">${flavor}</p>${xsum?`<table><tr><th>탐색 결과</th><th>재화</th><th>직업 목표</th><th>끊긴 실</th></tr>${P.map((p,i)=>`<tr><td>${nameOf(p)}</td><td>${xsum.gains[i]>0?'+':''}${xsum.gains[i]}</td><td>${xsum.extra[i]}</td><td>${xsum.snips[i]?'✂ '+xsum.snips[i]:'—'}</td></tr>`).join('')}</table><p class="dim">상자 ${xsum.counts.chest}개 · 발전기 ${xsum.counts.gen}개가 열렸습니다. 내 재화 Lv ${level(h)}.</p>`:`<p class="dim">모두 재화를 얻었습니다 (내 재화 Lv ${level(h)}).</p>`}`,right:briefR,buttons:[{label:h.alive?'듀얼 시작':'관전 중… 계속',value:1}],tag:STOP==='brief'?'brief':'brief_'}));
-    const plan=[];
-    for(const [a,b] of pairs){
-      let r;
-      if((a.human||b.human) && me.alive){
-        const A=a.human?a:b, B=a.human?b:a; let rs;
-        if((opts.duelMode==='play' && !AUTO) || (AUTO&&STOP==='duel')){
-          await transition(()=>{},{text:'입장',tip:`${lab(B)}과(와)의 1대1. 사용 가능: ${SPELLS[A.job.id].filter(s=>level(A)>=s.lv).map(s=>s.name).join(' · ')}`,job:A.job});
-          rs=await startDuelScene(A,B); duelScene=null; hideSpellButtons(); mode='title';
-        } else rs=runDuelHeadless(A,B,0.6,B.skill);
-        r={winner:rs.winner,hitsA:a===A?rs.hitsA:rs.hitsB,hitsB:a===A?rs.hitsB:rs.hitsA};
-      } else { const rs=runDuelHeadless(a,b,a.skill,b.skill); r={winner:rs.winner,hitsA:rs.hitsA,hitsB:rs.hitsB}; }
-      const w=r.winner,l=w===a?b:a; w.duelWins++; w.gold+=1; plan.push({a,b,w,l,r});
-    }
+    const plan=[], dj=[], interactiveOn=(opts.duelMode==='play' && !AUTO) || (AUTO&&STOP==='duel') || params.has('netduel');
+    for(const [a,b] of pairs){ const item={a,b,w:null,l:null,r:null}; plan.push(item); const hum=[a,b].filter(p=>p.ctl&&p.alive);
+      if(hum.length && interactiveOn){ dj.push(runInteractivePair(a,b).then(({rs,A,B})=>{ item.r={winner:rs.winner,hitsA:a===A?rs.hitsA:rs.hitsB,hitsB:a===A?rs.hitsB:rs.hitsA}; })); }
+      else { const sa=a.ctl?0.6:a.skill, sb=b.ctl?0.6:b.skill, rs=runDuelHeadless(a,b,sa,sb); item.r={winner:rs.winner,hitsA:rs.hitsA,hitsB:rs.hitsB}; } }
+    await Promise.all(dj);
+    for(const it of plan){ const w=it.r.winner; it.w=w; it.l=w===it.a?it.b:it.a; w.duelWins++; w.gold+=1; }
     mode='title'; stageActors=alive(P).map(p=>p.job);
     await transAll({text:'결과'});
     const hp=n=>'<div class="hp">'+'♥'.repeat(Math.max(0,n))+'<i>'+'♥'.repeat(Math.max(0,HP0-n))+'</i></div>';
@@ -3044,7 +3045,7 @@ function netBuildWorld(a,Pm){
   const init=a.init, sv=rand; rand=mulberry32(init.oseed); const w=genMap(init.themeId,init.seed); rand=sv;
   if(w.objs.length!==init.nBase) console.warn('월드 불일치',w.objs.length,init.nBase);
   w.round=init.round; w.T=init.T; w.t=0; w.phase=0; w.over=false; w.ev=init.ev; w.events=[]; w.noises=[]; w.expose={}; w.decoys=[]; w.crumbs=init.ev==='crumbs'?[]:null; w.crows.forEach(c=>{ c.cd=0; c.alarm=0; c.disarmed=false; });
-  const ED={}; E_NUM.forEach(k=>{ ED[k]=0; }); E_BOOL.forEach(k=>{ ED[k]=false; }); Object.assign(ED,{shakes:2,locks:2,lures:2,traps:3,matches:3,face:1});
+  const ED={}; E_NUM.forEach(k=>{ ED[k]=0; }); E_BOOL.forEach(k=>{ ED[k]=false; }); Object.assign(ED,{shakes:2,locks:2,lures:2,traps:3,matches:3,face:1,dugAt:[],cutSet:[],stairCd:0,gTgt:null});
   w.ents=Pm.map((p,i)=>({...ED,p,i,human:i===a.me,ctl:false,x:init.ents[i].x,y:init.ents[i].y,tx:init.ents[i].x,ty:init.ents[i].y,r:13,fid:0,stun:0,gain:0,light:false,lcol:p.job.color,blind:0,hidden:null,shoes:false,moving:false,face:1,srch:null,dir:[0,1],recorded:{},recT:{},mis:init.ents[i].mis,perk:{},cutSet:[],ix:0,iy:0,act:false,lock:false,matches:3,flee:0}));
   for(const d of init.extra){ const o={...d}; if(d.ownerI!==undefined) o.owner=w.ents[d.ownerI]; if(d.bI!==undefined&&d.bI>=0) o.b=w.builds[d.bI]; else if(d.bI===-2) o.b=w.cloud.b; w.objs.push(o); }
   init.extra.forEach((d,k)=>{ const o=w.objs[init.nBase+k]; if(d.pairI!==undefined&&d.pairI>=0) o.pair=w.objs[d.pairI]; });
@@ -3090,6 +3091,117 @@ OPS.xrun=a=>new Promise(res=>{
   const be=BOOK_EVENTS.find(b=>b.id===w.ev); if(be) xToast(`${be.title} — ${be.rule.split('.')[0]}`,'#bba878');
   if(w.mirrorPair&&w.mirrorPair.includes(me)) xToast('거울에 비쳤다 — 라운드 중간에 위치가 맞바뀐다','#cfd8dc');
 });
+/* ===================== 듀얼 온라인 동기화 ===================== */
+const NETDUELS=[];   // 호스트: 화면 없이 도는 원격 듀얼 세션
+const ndCodeOf=(map,v)=>{ let i=map.get(v); if(i===undefined){ i=map.size; map.set(v,i); } return i; };
+function ndPlayerPack(m){ return [Math.round(m.x),Math.round(m.y),m.hp,r2(m.inv),m.face==='hurt'?1:0,r2(m.mx),r2(m.my),m.tx===null?0:1,Math.round(m.tx||0),Math.round(m.ty||0),r1(m.cd[0]),r1(m.cd[1]),r1(m.cd[2])]; }
+function ndSnap(sc){
+  const d=sc.d, shp=sc.shapeMap||(sc.shapeMap=new Map()), col=sc.colMap||(sc.colMap=new Map());
+  const S={c:r2(sc.count),t:r2(d.t),sp:r2(d.spd),ov:d.over?1:0,A:ndPlayerPack(d.A),B:ndPlayerPack(d.B)};
+  S.b=d.bul.map(b=>[b.id,Math.round(b.x),Math.round(b.y),Math.round(b.vx),Math.round(b.vy),b.r,ndCodeOf(col,b.col),ndCodeOf(shp,b.shape),r2(b.rot),r1(b.age),b.trail||0,b.ch||'',r2(b.spinv||0),b.owner===d.A?0:1]);
+  S.sd=[[...shp.keys()],[...col.keys()]];
+  S.z=d.zones.map(z=>{ const o={}; for(const k of Object.keys(z)){ const v=z[k]; if(typeof v==='number') o[k]=Math.round(v*100)/100; else if(typeof v==='string'||typeof v==='boolean') o[k]=v; } o.os=z.owner===d.A?'A':'B'; return o; });
+  S.q=d.fxq.splice(0);
+  if(d.over&&sc.res) S.res={w:sc.res.winner===d.A.p?'A':'B',hA:sc.res.hitsA,hB:sc.res.hitsB};
+  return S;
+}
+function ndRemotes(sc){ const o=[]; if(sc.A.remote!=null) o.push({id:sc.A.remote,side:'A'}); if(sc.B.remote!=null) o.push({id:sc.B.remote,side:'B'}); return o; }
+function ndSend(sc,dt,force){ sc.snapT=(sc.snapT||0)+dt; if(sc.snapT<1/15&&!force) return; sc.snapT=0; const rs=ndRemotes(sc); if(!rs.length){ sc.d.fxq.length=0; return; } const S=ndSnap(sc); for(const r of rs) NET.to(r.id,{k:'ds',d:S},true); }
+function ndApplyIn(sc){ for(const side of ['A','B']){ const p=sc[side]; const m=sc.d[side], inp=sc.inp&&sc.inp[side]; if(p.remote!=null&&inp){ const fl=side==='B'; m.mx=fl?-inp.mx:inp.mx; m.my=fl?-inp.my:inp.my; if(inp.tx===null||inp.tx===undefined){ m.tx=null; m.ty=null; } else { m.tx=fl?AW-inp.tx:inp.tx; m.ty=fl?AH-inp.ty:inp.ty; } } } }
+function ndHostHandlers(){
+  NET.handlers.di=(m,from)=>{ for(const sc of ndAll()){ for(const side of ['A','B']){ if(sc[side].remote===from){ (sc.inp||(sc.inp={}))[side]={mx:+m.mx||0,my:+m.my||0,tx:m.tx===null||m.tx===undefined?null:+m.tx,ty:+m.ty||0}; } } } };
+  NET.handlers.dc=(m,from)=>{ for(const sc of ndAll()){ for(const side of ['A','B']){ if(sc[side].remote===from&&sc.count<=0&&!sc.d.over) castSpell(sc.d,sc.d[side],m.i|0); } } };
+}
+function ndAll(){ const a=NETDUELS.slice(); if(duelScene&&duelScene.netHost) a.push(duelScene.netHost); return a; }
+function ndHook(sc){ const d=sc.d; d.fxq=[]; const old=d.onEvent; d.onEvent=(type,a,b)=>{ if(old) old(type,a,b); d.fxq.push(['ev',type,a===d.A?'A':a===d.B?'B':'',(typeof b==='number')?b:0]); }; }
+// 화면 없는 원격 듀얼 (두 사람 모두 원격이거나, 원격 vs 봇)
+function runRemoteDuel(A,B){
+  return new Promise(res=>{
+    const d=makeDuel(A,B); d.fxOn=false; const sc={d,A,B,count:3,endT:0,res:null,skillA:A.skill,skillB:B.skill,done:res,snapT:0,inp:{},remote:true};
+    ndHook(sc); NETDUELS.push(sc); ndHostHandlers();
+  });
+}
+function stepRemoteDuel(sc,dt){
+  const d=sc.d;
+  if(sc.count>0){ sc.count=Math.max(0,sc.count-dt); }
+  else if(!d.over){
+    ndApplyIn(sc);
+    if(sc.A.remote==null) aiControl(d,d.A,d.B,sc.skillA,dt); if(sc.B.remote==null) aiControl(d,d.B,d.A,sc.skillB,dt);
+    stepDuel(d,dt);
+    if(d.over){ sc.res=duelResult(d); sc.endT=1.8; ndSend(sc,0,true); }
+  } else { sc.endT-=dt; if(sc.endT<=0&&sc.done){ const f=sc.done; sc.done=null; const i=NETDUELS.indexOf(sc); if(i>=0) NETDUELS.splice(i,1); f(sc.res); return; } }
+  d.shake=Math.max(0,d.shake-dt); d.flash=Math.max(0,d.flash-dt);
+  ndSend(sc,dt);
+}
+// 호스트에 이미 로컬 듀얼 장면이 있고, 상대(B)가 원격인 경우의 동기화
+function ndLocalSync(sc,dt){ const hs=sc.netHost; if(!hs) return; hs.count=sc.count; hs.res=sc.res; ndApplyIn(hs); ndSend(hs,dt,sc.d.over&&!sc._sentOver); if(sc.d.over) sc._sentOver=true; }
+// ---------- 클라이언트 ----------
+OPS.duel=a=>new Promise(res=>{
+  const self=P[a.me], foe=P[a.foe], d=makeDuel(self,foe); d.fxOn=true; d.netClient=true; d.fxq=null;
+  duelScene={d,count:3,humanCtl:true,skillA:0,skillB:0,done:res,endT:0,res:null,humanIn:true,lastC:4,net:{client:true,flip:!!a.flip,snaps:[],bmap:new Map(),inT:0,shapes:[],cols:[]}};
+  d.onEvent=null; clearScreen(); mode='duel'; showSpellButtons(d.A);
+  NET.handlers.ds=m=>{ if(duelScene&&duelScene.net&&duelScene.net.client){ const q=duelScene.net.snaps; q.push(m.d); if(q.length>5) q.splice(0,q.length-2); } };
+  setTimeout(()=>showTip('duel','듀얼','화면을 드래그하거나 WASD로 탄을 피하세요. 작은 하얀 점이 피격 판정입니다. 스펠 버튼(1·2·3)은 쿨타임마다 쓸 수 있고, 10초가 지나면 탄이 점점 빨라집니다.',8000),3200);
+});
+function ndClientApply(sc,S){
+  const d=sc.d, n=sc.net, fl=n.flip, X=x=>fl?AW-x:x, Y=y=>fl?AH-y:y, mine=fl?S.B:S.A, foe=fl?S.A:S.B;
+  const setM=(m,a,self)=>{ m.sx=X(a[0]); m.sy=Y(a[1]); m.hp=a[2]; m.inv=a[3]; m.face=a[4]?'hurt':'idle'; if(!self){ m.mx=fl?-a[5]:a[5]; m.my=fl?-a[6]:a[6]; if(a[7]){ m.tx=X(a[8]); m.ty=Y(a[9]); } else { m.tx=null; m.ty=null; } } m.cd[0]=a[10]; m.cd[1]=a[11]; m.cd[2]=a[12]; if(!n.init){ m.x=m.sx; m.y=m.sy; } };
+  setM(d.A,mine,true); setM(d.B,foe,false); n.init=true;
+  sc.count=S.c; d.t=S.t; d.spd=S.sp; n.shapes=S.sd[0]; n.cols=S.sd[1];
+  const keep=new Map(); d.bul=S.b.map(a=>{ const id=a[0]; let b=n.bmap.get(id); const own=a[13]; const sideSelf=(own===0)!==fl;   // 발사한 쪽이 나인가
+    const vx=fl?-a[3]:a[3], vy=fl?-a[4]:a[4];
+    if(!b){ b={id,tr:[],seed:id*7.31%100,owner:sideSelf?d.A:d.B,tgt:sideSelf?d.B:d.A}; }
+    b.x=X(a[1]); b.y=Y(a[2]); b.vx=vx; b.vy=vy; b.r=a[5]; b.col=n.cols[a[6]]; b.shape=n.shapes[a[7]]; b.rot=a[8]+(fl?Math.PI:0); b.age=a[9]; b.trail=a[10]; b.ch=a[11]; b.spin=a[12]; keep.set(id,b); return b; });
+  n.bmap=keep;
+  d.zones=S.z.map(z=>{ const o={...z}; if(fl){ o.x=AW-o.x; if(o.y!==undefined) o.y=AH-o.y; } o.owner=(z.os==='A')!==fl?d.A:d.B; return o; });
+  for(const q of S.q){ const t=q[0];
+    if(t==='b'){ burst(d,X(q[1]),Y(q[2]),q[3],q[4],q[5],q[6]||undefined); }
+    else if(t==='f'){ d.fx.push({kind:q[1],x:X(q[2]),y:Y(q[3]),t:0,col:q[4],job:q[5]}); }
+    else if(t==='sp'){ d.sparks.push({x:X(q[1]),y:Y(q[2]),t:0,col:q[3]}); }
+    else if(t==='bn'){ const side=q[3]; d.banners.push({text:q[1],col:q[2],t:0,side:fl?(side==='A'?'B':'A'):side}); }
+    else if(t==='ev'){ const side=q[2], isMe=(side==='A')!==fl; const m=isMe?d.A:d.B;
+      if(q[1]==='cast') sfx.play({ent:'castEnt',tech:'castTech',scout:'castScout',arch:'castArch',shear:'shearsSnip',mender:'castArch',digger:'castTech',scare:'castScout'}[m.job.id],{vol:isMe?0.85:0.55});
+      else if(q[1]==='hit'){ sfx.play('hit',{vol:isMe?1:0.65,rate:isMe?1:1.12}); if(isMe){ d.shake=0.35; d.flash=0.35; vibrate(60); } }
+      else if(q[1]==='slam') sfx.play('slam',{vol:0.9}); else if(q[1]==='zap') sfx.play('zap',{vol:0.8}); } }
+  if(S.ov&&!d.over){ d.over=true; const meSide=fl?'B':'A', w=S.res&&S.res.w===meSide?d.A.p:d.B.p; sc.res={winner:w,hitsA:S.res?(fl?S.res.hB:S.res.hA):0,hitsB:S.res?(fl?S.res.hA:S.res.hB):0,t:d.t}; sc.endT=1.6; hideSpellButtons(); if(w.human) sfx.play('gong',{vol:0.7}); else sfx.play('lose',{vol:0.8}); }
+}
+function ndClientStep(sc,dt){
+  const d=sc.d, n=sc.net;
+  while(n.snaps.length) ndClientApply(sc,n.snaps.shift());
+  if(sc.count>0){ const before=Math.ceil(sc.count); sc.count=Math.max(0,sc.count-dt); const c1=Math.ceil(sc.count); if(c1!==sc.lastC){ sc.lastC=c1; if(c1>0) sfx.play('tom',{arg:c1===1?1.25:1,vol:0.9}); else { sfx.play('tom',{arg:1.7,vol:1}); sfx.play('gong',{vol:0.3}); } } }
+  const bdt=dt*(d.spd||1);
+  if(!d.over){
+    const m=d.A; m.mx=(keys['d']||keys['arrowright']?1:0)-(keys['a']||keys['arrowleft']?1:0); m.my=(keys['s']||keys['arrowdown']?1:0)-(keys['w']||keys['arrowup']?1:0);
+    // 예측 이동 (호스트와 같은 규칙) + 서버 위치로 부드럽게 보정
+    if(sc.count<=0){ let vx=m.mx, vy=m.my; if(m.tx!==null){ const dx=m.tx-m.x, dy=m.ty-m.y, dist=Math.hypot(dx,dy); if(dist>2){ const sp=Math.min(dist/dt, m.speed*1.15); m.x+=dx/dist*sp*dt; m.y+=dy/dist*sp*dt; } vx=vy=0; } const mag=Math.hypot(vx,vy); if(mag>0){ m.x+=vx/Math.max(1,mag)*m.speed*dt; m.y+=vy/Math.max(1,mag)*m.speed*dt; } m.x=Math.max(32,Math.min(AW-32,m.x)); m.y=Math.max(m.minY,Math.min(m.maxY,m.y)); }
+    if(m.sx!==undefined){ const k=Math.min(1,dt*6), ex=m.sx-m.x, ey=m.sy-m.y; if(Math.hypot(ex,ey)>90){ m.x=m.sx; m.y=m.sy; } else { m.x+=ex*k; m.y+=ey*k; } }
+    const f=d.B; if(f.sx!==undefined){ const k=Math.min(1,dt*18); f.x+=(f.sx-f.x)*k; f.y+=(f.sy-f.y)*k; }
+    for(const b of d.bul){ b.x+=b.vx*bdt; b.y+=b.vy*bdt; b.age+=bdt; if(b.spin) b.rot+=b.spin*bdt; if(b.trail){ b.tr.push(b.x,b.y); if(b.tr.length>b.trail*4) b.tr.splice(0,2); } }
+    n.inT-=dt; if(n.inT<=0){ n.inT=1/30; NET.to(0,{k:'di',mx:r2(m.mx),my:r2(m.my),tx:m.tx===null?null:Math.round(m.tx),ty:Math.round(m.ty||0)},true); }
+    updateSpellButtons();
+  } else { sc.endT-=dt; if(sc.endT<=0&&sc.done){ const f=sc.done; sc.done=null; NET.handlers.ds=null; hideSpellButtons(); duelScene=null; mode='title'; f(null); return; } }
+  if(d.fx){ for(let i=d.fx.length-1;i>=0;i--){ d.fx[i].t+=dt; if(d.fx[i].t>0.9) d.fx.splice(i,1); } }
+  for(const z of d.zones) z.t+=dt;
+  for(let i=d.parts.length-1;i>=0;i--){ const p=d.parts[i]; p.t+=dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.vx*=0.94; p.vy*=0.94; if(p.k==='ember') p.vy-=150*dt; else if(p.k==='spark') p.vy+=300*dt; else if(p.k==='ink') p.vy+=90*dt; if(p.t>p.life) d.parts.splice(i,1); }
+  for(let i=d.sparks.length-1;i>=0;i--){ d.sparks[i].t+=dt; if(d.sparks[i].t>0.5) d.sparks.splice(i,1); }
+  d.banners.forEach(b=>b.t+=dt); d.banners=d.banners.filter(b=>b.t<1.4);
+  d.shake=Math.max(0,d.shake-dt); d.flash=Math.max(0,d.flash-dt);
+  for(const m of [d.A,d.B]) if(m.face==='hurt'&&m.inv<0.8) m.face='idle';
+}
+// 한 쌍의 듀얼을 사람이 참여하는 방식으로 진행 (A,B: 플레이어). 결과: {winner,hitsA,hitsB}
+async function runInteractivePair(A0,B0){
+  const loc=[A0,B0].find(p=>p.human&&p.alive);
+  let A,B; if(loc){ A=loc; B=A===A0?B0:A0; } else { A=(A0.remote!=null)?A0:B0; B=A===A0?B0:A0; }
+  const tip=`${lab(B)}과(와)의 1대1. 사용 가능: ${SPELLS[A.job.id].filter(s=>level(A)>=s.lv).map(s=>s.name).join(' · ')}`;
+  const rem=[A,B].filter(p=>p.remote!=null&&p.ctl);
+  await Promise.all([A,B].filter(p=>p.ctl&&p.alive).map(h=>h.human?transition(()=>{},{text:'입장',tip,job:h.job}):(NET.to(h.remote,{k:'rpc',id:0,fn:'trans',args:{o:{text:'입장',tip:`${lab(h===A?B:A)}과(와)의 1대1.`,job:h.job.id},P:serAll(h)}}),null)));
+  const waits=rem.map(h=>NET.ask(h.remote,'duel',{me:h.i,foe:(h===A?B:A).i,flip:h===B,P:serAll(h)},null,300000));
+  let rs;
+  if(loc){ const sc0=startDuelScene(A,B,B.remote!=null); rs=await sc0; duelScene=null; hideSpellButtons(); mode='title'; }
+  else rs=await runRemoteDuel(A,B);
+  await Promise.all(waits);
+  return {rs,A,B};
+}
 (async function main(){
   P=makePlayers(0); frame();
   if(params.has('snd')){ sfx.init(); window.__pk=0; setInterval(()=>{ window.__pk=Math.max(window.__pk,sfx.level()); const q=sfx.status(); document.title='audio '+q.state+' '+q.rate+'Hz loops['+q.loops+'] err '+(window.__sfxErr||0)+' '+(window.__sfxLast||'')+' peak '+window.__pk.toFixed(3); },200); }
