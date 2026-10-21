@@ -242,7 +242,7 @@ function runBotGames(rules, n){
 const AW=720, AH=1280, DUR=45, HP0=5;
 const aimAng = (a,b) => Math.atan2(b.y-a.y, b.x-a.x);
 function makeDuel(A,B){
-  const mk=(p,y,dir,minY,maxY)=>({p,job:p.job,x:AW/2,y,homeY:y,dir,hp:HP0,inv:0,cd:[0,0,0],shot:0.5+rand()*0.4,r:7,speed:(p.job.id==='tech'&&PLANS.on?306:330),minY,maxY,mx:0,my:0,tx:null,ty:null,hits:0,face:'idle',ai:null,cdMul:p.job.id==='tech'&&PLANS.on?1.2:p.job.id==='ent'?1-0.02*Math.min(12,p.viewers||0):1});
+  const mk=(p,y,dir,minY,maxY)=>({p,job:p.job,x:AW/2,y,homeY:y,dir,hp:HP0,inv:0,cd:[0,0,0],shot:0.5+rand()*0.4,r:8,speed:(p.job.id==='tech'&&PLANS.on?306:330),minY,maxY,mx:0,my:0,tx:null,ty:null,hits:0,face:'idle',ai:null,cdMul:p.job.id==='tech'&&PLANS.on?1.2:p.job.id==='ent'?1-0.02*Math.min(12,p.viewers||0):1});
   return {t:0,over:false,fxOn:false,A:mk(A,AH-230,-1,AH*0.44,AH-70),B:mk(B,250,1,70,AH*0.56),bul:[],zones:[],timers:[],banners:[],sparks:[],log:[],fx:[],parts:[],shake:0,flash:0,spd:1,onEvent:null};
 }
 function after(d,sec,fn){ d.timers.push({t:sec,fn}); }
@@ -1436,7 +1436,7 @@ function drawDuel(c,t){
   c.restore();
   for(const b of d.bul) drawBullet(c,b,t);
   for(const m of [d.B,d.A]){
-    const sz=2.0, blink = m.inv>0 && Math.floor(t*14)%2===0;
+    const sz=1.3, blink = m.inv>0 && Math.floor(t*14)%2===0;
     c.save(); if(blink) c.globalAlpha=0.45;
     const moving = (Math.abs(m.mx)+Math.abs(m.my)>0.1) || (m.tx!==null && Math.hypot(m.tx-m.x,m.ty-m.y)>6);
     drawSD(c,m.x,m.y+36*sz*0.8,sz,m.job,{t,face:m.face,moving});
