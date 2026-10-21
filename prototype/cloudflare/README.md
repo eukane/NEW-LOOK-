@@ -6,7 +6,7 @@
 
 ## 처음 배포
 1. Cloudflare 계정 만들기 (무료): https://dash.cloudflare.com/sign-up
-2. Node.js(18+) 설치 후 이 폴더(`prototype/cloudflare`)에서:
+2. Node.js 22 이상(LTS 권장, https://nodejs.org) 설치 후 이 폴더(`prototype/cloudflare`)에서:
    ```
    npm install
    npx wrangler login      # 브라우저가 열리면 허용
