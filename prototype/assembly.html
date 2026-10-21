@@ -642,7 +642,7 @@ defJob({id:'thief',name:'도둑',color:'#7a8aa8',kind:'spark',
 
 // 순교자: 고통을 받아 낸다 — 못이 십자로 박히고, 가시관이 조여 오고, 성흔이 빗물처럼 내린다
 defJob({id:'martyr',name:'순교자',color:'#e8c8a0',kind:'ember',
-  goal:'승리 조건: 괴물에게 일부러 12번 붙잡힌다 (12초에 한 번만 인정, 재화는 잃지 않는다). [도발]로 괴물을 불러 모은다. 수색·수리는 서툴고 듀얼은 못과 가시로 싸운다',
+  goal:'승리 조건: 괴물에게 일부러 16번 붙잡힌다 (30초에 한 번만 인정, 재화는 잃지 않는다). [도발]로 괴물을 불러 모은다. 수색·수리는 서툴고 듀얼은 못과 가시로 싸운다',
   atk:(d,m,f)=>{ const a=aimAng(m,f); for(const o of [-0.12,0.12]) shoot(d,m,{ang:a+o,sp:320,r:5.5,shape:'needle',trail:3}); },
   spells:[
    {name:'속죄의 못', cd:5, lv:0, text:'못이 십자 모양으로 나뉘어 날아가 한꺼번에 박힌다', cast(d,m,f){ castFx(d,m,'dagger');
@@ -759,7 +759,7 @@ XSK.thief={ name:'소매치기', cd:3, max:2, regen:30, msg:'슬쩍 — 훔쳤�
 
 const WINC={ hunter:{n:6,why:'덫에 괴물을 여섯 번 가둔 사냥꾼이 극장의 주인이 되었습니다.',me:'당신의 덫은 한 번도 빗나가지 않았습니다.'},
   thief:{n:10,why:'소매를 뒤진 손이 가장 빨랐습니다. 극장의 금고는 이미 비어 있었습니다.',me:'아무도 당신이 훔치는 걸 보지 못했습니다.'},
-  martyr:{n:12,why:'열두 번 붙잡히고도 일어선 순교자 앞에서 괴물조차 고개를 숙였습니다.',me:'아픔이 당신을 이끌었습니다.'},
+  martyr:{n:16,why:'열여섯 번 붙잡히고도 일어선 순교자 앞에서 괴물조차 고개를 숙였습니다.',me:'아픔이 당신을 이끌었습니다.'},
   hermit:{n:180,why:'오래 숨어 있던 이가 마지막까지 보이지 않았습니다.',me:'어둠은 당신을 한 번도 놓지 않았습니다.'} };
 const wcOf=p=>WINC[p.job.id]?Math.floor(p.wc||0):0, wcDone=p=>WINC[p.job.id]&&wcOf(p)>=WINC[p.job.id].n;
 Object.assign(EXP_PERK,{martyr:{spd:1,chest:0.55,gen:0.55,sight:1},hermit:{spd:0.96,chest:0.5,gen:0.5,sight:1}});
@@ -1280,7 +1280,7 @@ function stepMon(w,m,dt){
     if(m.repath<=0||!m.path.length){ m.path=Math.hypot(tx-m.x,ty-m.y)<170&&clearLine(w,[m.x,m.y],[tx,ty],m.r)?[[tx,ty]]:findPath(w,m.x,m.y,tx,ty); m.repath=0.35; }
     m.lungeCd=Math.max(0,(m.lungeCd||0)-dt); m.lunge=Math.max(0,(m.lunge||0)-dt); if(T.id==='puppet'&&m.lungeCd<=0&&Math.hypot(tx-m.x,ty-m.y)<240&&m.chase&&!m.chase.hidden){ m.lunge=0.6; m.lungeCd=4.5; }
     const [px,py]=m.path[0]||[tx,ty]; if(stepTo(w,m,px,py,T.chase*w.mspdNow*(m.chase&&m.chase.recorded&&m.chase.recorded[T.id]?0.92:1)*(m.lunge>0?1.4:1)*(Object.keys(w.expose).length?1.12:1),dt)<12) m.path.shift();
-    const c=m.chase; if(c&&c.p.alive&&!c.hidden&&!(c.inv>0)&&Math.hypot(c.x-m.x,c.y-m.y)<m.r+c.r+6){ c.stun=T.stun*(c.p.job.id==='mender'?0.6:c.p.job.id==='martyr'?0.5:1); if(c.p.job.id==='martyr'&&!(c.mrT>0)){ c.p.wc=(c.p.wc||0)+1; c.mrT=12; } c.srch=null; addView(c,-2); addRage(w,c,32); const lost=T.loss&&c.p.job.id!=='martyr'&&(c.p.gold+c.gain>0)?1:0; c.gain-=lost; c.goal=null; c.wps=null; c.shoes=false; if(T.snip&&c.p.job.id!=='mender'&&(c.p.snip||0)<2){ c.p.snip=(c.p.snip||0)+1; c.snipped++; w.events.push({type:'snip',e:c,m}); } else w.events.push({type:'caught',e:c,m,lost}); m.rest=T.rest; m.state='rest'; m.chase=null; m.path=[]; } }
+    const c=m.chase; if(c&&c.p.alive&&!c.hidden&&!(c.inv>0)&&Math.hypot(c.x-m.x,c.y-m.y)<m.r+c.r+6){ c.stun=T.stun*(c.p.job.id==='mender'?0.6:c.p.job.id==='martyr'?0.5:1); if(c.p.job.id==='martyr'&&!(c.mrT>0)){ c.p.wc=(c.p.wc||0)+1; c.mrT=30; } c.srch=null; addView(c,-2); addRage(w,c,32); const lost=T.loss&&c.p.job.id!=='martyr'&&(c.p.gold+c.gain>0)?1:0; c.gain-=lost; c.goal=null; c.wps=null; c.shoes=false; if(T.snip&&c.p.job.id!=='mender'&&(c.p.snip||0)<2){ c.p.snip=(c.p.snip||0)+1; c.snipped++; w.events.push({type:'snip',e:c,m}); } else w.events.push({type:'caught',e:c,m,lost}); m.rest=T.rest; m.state='rest'; m.chase=null; m.path=[]; } }
   else { m.state=m.alarm?'alarm':'patrol';
     if(m.alarm){ if(m.repath<=0||!m.path.length){ m.path=findPath(w,m.x,m.y,m.alarm.x,m.alarm.y); m.repath=1; } }
     else if(m.flock&&!m.isLeader&&w.leader&&!w.leader.asleep){ const L=w.leader, tx=L.x+m.off[0], ty=L.y+m.off[1]; if(Math.hypot(tx-m.x,ty-m.y)>46){ if(m.repath<=0||!m.path.length){ m.path=findPath(w,m.x,m.y,tx,ty); m.repath=0.8; } } else m.path=[]; }
