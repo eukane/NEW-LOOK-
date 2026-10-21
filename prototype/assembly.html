@@ -482,7 +482,7 @@ function runDuelHeadless(A,B,skillA,skillB){
 /* ===================== CORE:END ===================== */
 
 /* ===================== EXPLORE:BEGIN (DOM 없음: 탐색 라운드 엔진 v2 — 야외 + 건물 + 괴물 + 상호작용) ===================== */
-const NETRT={explore:false,duel:false};   // 원격 사람이 실시간 단계에 참여하는지 (단계별로 켜짐)
+const NETRT={explore:true,duel:false};   // 원격 사람이 실시간 단계에 참여하는지 (단계별로 켜짐)
 const XW=3000, XH=2000, GS=40, WT=24, DG=120, EXP_T=120, NAVR=22;
 const THEMES={
   theatre:{id:'theatre',name:'버려진 극장의 뒤뜰',ground:['#34402e','#222c20'],path:'#4a3f2c',tree:'leaf',variants:['hall','plain','yard','plain','plain'],landmark:'스포트라이트 탑',bld:['대극장 본관','소품 창고','분장실 동','리허설 홀','무대 장치고']},
@@ -665,7 +665,8 @@ function findPath(w,x0,y0,x1,y1){
   const out=[]; let cur=[x0,y0], i=0; while(i<pts.length){ let j=pts.length-1; while(j>i&&!clearLine(w,cur,pts[j])) j--; out.push(pts[j]); cur=pts[j]; i=j+1; } return out;
 }
 function makeExplore(P,opts={}){
-  const themeId=opts.theme||sample(Object.keys(THEMES),1)[0], w=genMap(themeId,opts.seed); buildNav(w); w.round=opts.round||1; w.mspd=1+0.04*Math.min(5,w.round-1); w.mspdNow=w.mspd;
+  const themeId=opts.theme||sample(Object.keys(THEMES),1)[0], seedUsed=opts.seed!==undefined?opts.seed:Math.floor(rand()*4294967295), oseed=opts.oseed!==undefined?opts.oseed:Math.floor(rand()*4294967295), savedG=rand; rand=mulberry32(oseed);
+  const w=genMap(themeId,seedUsed); w.oseed=oseed; w.seedUsed=seedUsed; w.nBase=w.objs.length; buildNav(w); w.round=opts.round||1; w.mspd=1+0.04*Math.min(5,w.round-1); w.mspdNow=w.mspd;
   Object.assign(w,{phase:0,toll:3,expose:{},exTick:0,T:opts.T||EXP_T,t:0,events:[],over:false,noises:[],ev:opts.ev||null,planksT:0});
   const [sx,sy]=w.spawn;
   w.ents=P.map((p,i)=>({p,i,human:!!p.human,ctl:!!(p.ctl||p.human)&&(!p.remote||NETRT.explore),x:sx+(i-1.5)*40,y:sy+30,r:13,stun:0,gain:0,goal:null,wps:null,srch:null,ix:0,iy:0,act:false,moving:false,face:1,flee:0,perk:{...EXP_PERK[p.job.id]},gens:0,out:false,escaped:false,disarms:0,recorded:{},recT:{},hidden:null,lock:false,hideT:0,shoes:false,lures:2,lureCd:0,lureT:6+rand()*10,dir:[0,1],keys:0,shakes:2,locks:2,shakeCd:0,forceL:0,stolen:false,light:false,lt:2+rand()*6,blind:0,snipped:0,resc:0,sdir:[0,-1],noiseT:0,helper:rand()<0.55,stuck:0,lx:0,ly:0,fid:0,stairCd:0,mends:0,digs:0,dugAt:[],stillT:0,frozen:false,foolT:0,fooled:0,rage:p.job.id==='shear'?(p.rage||0):0,morph:0,tired:0,cuts:0,cutSet:[],traps:3,tk:0,slow:0,ptT:9+rand()*12}));
@@ -696,7 +697,7 @@ function makeExplore(P,opts={}){
     spots.forEach((p,i)=>w.objs.push({type:'chest',x:p[0],y:p[1],need:2.6,done:false,kind:'gold',val:i===0?2:1,b:B,fid:blk.fid,golden:true}));
     const gr=blk.rooms[0], g=mk('giant',gr.x+gr.w*0.62,gr.y+gr.h*0.5); g.fid=blk.fid; g.zone=blk.rooms; w.mons.push(g); w.beanB=B; }
   if(w.ev==='shoes'){ const al=w.ents.filter(e=>e.p.alive); const wr=al[ri(al.length)]; wr.shoes=true; wr.sdir=[0,-1]; w.shoesOn=wr; }
-  return w;
+  rand=savedG; return w;
 }
 const LOUD=['gen','mimic','trap','lure','crow','shoes','plank','lock','shake','chest','siren','bell'];
 function fidAt(w,x,y){ if(!w.blocks||x<XW+200) return 0; for(const b of w.blocks) if(x>b.x-40&&x<b.x+b.w+40&&y>b.y-40&&y<b.y+b.h+40) return b.fid; return 0; }
@@ -2021,25 +2022,25 @@ function groundPattern(c,th){ if(groundPat[th.id]) return groundPat[th.id]; cons
   return groundPat[th.id]=c.createPattern(cv_,'repeat'); }
 const trayEl=document.getElementById('tray'), shakeBtn=document.getElementById('shakebtn'), lockBtn=document.getElementById('lockbtn');
 const lightBtn=document.getElementById('lightbtn');
-function toggleLight(){ if(!xs||xs.w.over) return; const me=xs.me; if(xs.w.ev==='match'){ if(strikeMatch(xs.w,me)) sfx.play('click',{vol:0.7,rate:0.7}); else xToast(me.matches<=0?'성냥이 다 떨어졌다':'성냥이 타고 있다','#8a7a5a'); return; } if(xs.w.expose[me.i]){ xToast('실이 흔들려 빛을 끌 수 없다','#e7b4bc'); return; } if(me.blind>0){ xToast('시야를 갉아먹혀 빛을 켤 수 없다','#c8c8d0'); return; } me.light=!me.light; sfx.play('click',{vol:0.7}); }
+function toggleLight(){ if(!xs||xs.w.over) return; const me=xs.me; if(xs.net){ netCmd('light'); return; } if(xs.w.ev==='match'){ if(strikeMatch(xs.w,me)) sfx.play('click',{vol:0.7,rate:0.7}); else xToast(me.matches<=0?'성냥이 다 떨어졌다':'성냥이 타고 있다','#8a7a5a'); return; } if(xs.w.expose[me.i]){ xToast('실이 흔들려 빛을 끌 수 없다','#e7b4bc'); return; } if(me.blind>0){ xToast('시야를 갉아먹혀 빛을 켤 수 없다','#c8c8d0'); return; } me.light=!me.light; sfx.play('click',{vol:0.7}); }
 lightBtn.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); toggleLight(); });
 addEventListener('keydown',e=>{ if((e.key==='f'||e.key==='F')&&mode==='explore') toggleLight(); });
 const lureBtn=document.getElementById('lurebtn');
-function doLure(){ if(!xs||xs.w.over) return; const me=xs.me; if(me.hold){ if(throwNeedle(xs.w,me)) sfx.play('needle',{vol:0.7}); return; } if(me.lures<=0){ xToast('미끼가 없다','#8a7a5a'); return; } if(throwLure(xs.w,me)) sfx.play('castTech',{vol:0.5,rate:1.8}); }
+function doLure(){ if(!xs||xs.w.over) return; const me=xs.me; if(xs.net){ if(!me.hold&&me.lures<=0) xToast('미끼가 없다','#8a7a5a'); else netCmd('lure'); return; } if(me.hold){ if(throwNeedle(xs.w,me)) sfx.play('needle',{vol:0.7}); return; } if(me.lures<=0){ xToast('미끼가 없다','#8a7a5a'); return; } if(throwLure(xs.w,me)) sfx.play('castTech',{vol:0.5,rate:1.8}); }
 lureBtn.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); doLure(); });
 addEventListener('keydown',e=>{ if((e.key==='q'||e.key==='Q')&&mode==='explore') doLure(); });
-function doShakeUI(){ if(!xs||xs.w.over) return; const me=xs.me; if(me.shakes<=0){ xToast('실 흔들기는 이미 썼다','#8a7a5a'); return; } const r=doShake(xs.w,me); if(!r) xToast('실이 닿는 사람이 근처에 없다','#8a7a5a'); }
-function doLockUI(){ if(!xs||xs.w.over) return; const me=xs.me; if(me.locks<=0){ xToast('자물쇠가 없다','#8a7a5a'); return; } if(!doLock(xs.w,me)) xToast('자물쇠를 걸 물건이 곁에 없다','#8a7a5a'); }
+function doShakeUI(){ if(!xs||xs.w.over) return; const me=xs.me; if(xs.net){ if(me.shakes<=0) xToast('실 흔들기는 이미 썼다','#8a7a5a'); else netCmd('shake'); return; } if(me.shakes<=0){ xToast('실 흔들기는 이미 썼다','#8a7a5a'); return; } const r=doShake(xs.w,me); if(!r) xToast('실이 닿는 사람이 근처에 없다','#8a7a5a'); }
+function doLockUI(){ if(!xs||xs.w.over) return; const me=xs.me; if(xs.net){ if(me.locks<=0) xToast('자물쇠가 없다','#8a7a5a'); else netCmd('lock'); return; } if(me.locks<=0){ xToast('자물쇠가 없다','#8a7a5a'); return; } if(!doLock(xs.w,me)) xToast('자물쇠를 걸 물건이 곁에 없다','#8a7a5a'); }
 shakeBtn.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); doShakeUI(); });
 lockBtn.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); doLockUI(); });
 addEventListener('keydown',e=>{ if(mode!=='explore') return; if(e.key==='r'||e.key==='R') doShakeUI(); if(e.key==='g'||e.key==='G') doLockUI(); });
 const morphBtn=document.getElementById('morphbtn');
-function doMorphUI(){ if(!xs||xs.w.over) return; const me=xs.me; if(me.p.job.id!=='shear') return; if(me.rage<100){ xToast('원한이 아직 차지 않았다 ('+Math.floor(me.rage)+'%). 괴물에게 잡히거나 덫·약탈을 당하면 쌓인다','#8a7a5a'); return; } if(!doMorph(xs.w,me)) xToast('지금은 변신할 수 없다','#8a7a5a'); }
+function doMorphUI(){ if(!xs||xs.w.over) return; const me=xs.me; if(me.p.job.id!=='shear') return; if(xs.net){ if(me.rage<100) xToast('원한이 아직 차지 않았다 ('+Math.floor(me.rage)+'%)','#8a7a5a'); else netCmd('morph'); return; } if(me.rage<100){ xToast('원한이 아직 차지 않았다 ('+Math.floor(me.rage)+'%). 괴물에게 잡히거나 덫·약탈을 당하면 쌓인다','#8a7a5a'); return; } if(!doMorph(xs.w,me)) xToast('지금은 변신할 수 없다','#8a7a5a'); }
 morphBtn.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); doMorphUI(); });
 addEventListener('keydown',e=>{ if(mode==='explore'&&(e.key==='v'||e.key==='V')) doMorphUI(); });
 const trapBtn=document.getElementById('trapbtn'); let trapHold=null;
-function doTrapUI(){ if(!xs||xs.w.over) return; const me=xs.me; if(me.tk===3){ doLockUI(); return; } if(me.traps<=0){ xToast('설치할 덫이 없다','#8a7a5a'); return; } if(!placeTrap(xs.w,me)) xToast('여기에는 설치할 수 없다 (이미 덫이 있거나 움직일 수 없다)','#8a7a5a'); }
-function cycleTrap(){ if(!xs||xs.w.over) return; const me=xs.me; me.tk=(me.tk+1)%4; sfx.play('click',{vol:0.6,rate:1.3}); xToast('설치 도구: '+(me.tk===3?'자물쇠':TRAP_KINDS[me.tk].name)+TRAP_DESC[me.tk],'#d4e0a0'); }
+function doTrapUI(){ if(!xs||xs.w.over) return; const me=xs.me; if(me.tk===3){ doLockUI(); return; } if(xs.net){ if(me.traps<=0) xToast('설치할 덫이 없다','#8a7a5a'); else netCmd('trap'); return; } if(me.traps<=0){ xToast('설치할 덫이 없다','#8a7a5a'); return; } if(!placeTrap(xs.w,me)) xToast('여기에는 설치할 수 없다 (이미 덫이 있거나 움직일 수 없다)','#8a7a5a'); }
+function cycleTrap(){ if(!xs||xs.w.over) return; const me=xs.me; if(xs.net) netCmd('tkcycle'); me.tk=(me.tk+1)%4; sfx.play('click',{vol:0.6,rate:1.3}); xToast('설치 도구: '+(me.tk===3?'자물쇠':TRAP_KINDS[me.tk].name)+TRAP_DESC[me.tk],'#d4e0a0'); }
 const TRAP_DESC=[' — 밟은 사람이 8초간 느려진다',' — 밟으면 큰 소리가 나 위치가 드러나고 괴물이 몰려온다',' — 밟으면 7초간 시야가 먹물에 가려진다',' — 곁의 상자·발전기를 잠근다 (남은 사람은 3배 오래 걸리고, 건드리면 소리가 난다)'];
 trapBtn.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); trapHold={t:performance.now(),long:false}; try{ trapBtn.setPointerCapture(e.pointerId); }catch(_){} trapHold.tm=setTimeout(()=>{ if(trapHold){ trapHold.long=true; cycleTrap(); } },450); });
 ['pointerup','pointercancel'].forEach(ev_=>trapBtn.addEventListener(ev_,e=>{ if(!trapHold) return; clearTimeout(trapHold.tm); const was=trapHold; trapHold=null; if(!was.long&&ev_==='pointerup') doTrapUI(); }));
@@ -2057,7 +2058,7 @@ function runExplore(P,o={}){
     if(params.has('xp')){ const tg=w.objs.find(q=>q.candy||q.beanstalk&&q.dir==='up'||q.hoard); if(tg){ me.x=tg.x-30; me.y=tg.y+130; me.light=true; me.matchT=(w.ev==='match'?9:0); } }
     if(params.has('xcl')&&w.cloud){ me.fid=w.cloud.fid; me.x=w.cloud.x+170; me.y=w.cloud.y+210; me.light=true; }
     if(params.has('xtr')){ me.traps=3; me.tk=0; placeTrap(w,me); me.tk=1; me.x+=60; placeTrap(w,me); me.tk=2; me.x+=60; placeTrap(w,me); me.x-=60; me.light=true; }
-    xs={w,me,fx:[],shake:0,ang:-Math.PI/2,toasts:[],res,endT:0,hint:9,tick:0,stepT:0,srchT:0,ripT:0};
+    xs={w,me,fx:[],shake:0,ang:-Math.PI/2,toasts:[],res,endT:0,hint:9,tick:0,stepT:0,srchT:0,ripT:0}; if(XN&&XN.pending){ XN.pending=false; xNetHostStart(w); }
     mode='explore'; ui.innerHTML=''; hideSpellButtons(); actBtn.style.display='block'; trayEl.style.display='flex'; joy=null; actHeld=false;
     const be=BOOK_EVENTS.find(b=>b.id===w.ev); if(be) xToast(`${be.title} — ${be.rule.split('.')[0]}`,'#bba878');
     if(w.shoesOn&&w.shoesOn===me) xToast('빨간 구두가 신겨졌다! 누군가 붙잡아 줘야 멈춘다.','#ff6a7a');
@@ -2066,14 +2067,14 @@ function runExplore(P,o={}){
 }
 function xSummaryApply(w){ const gains=w.ents.map(e=>e.gain); w.ents.forEach(e=>{ e.p.gold=Math.max(0,e.p.gold+e.gain); if(e.p.job.id==='shear') e.p.rage=Math.round(Math.min(100,e.rage)*0.5); });
   return {escapeBy:w.escapeBy?w.escapeBy.i:-1,extra:w.ents.map(e=>{ const J=e.p.job.id; return J==='ent'?'시청자 '+Math.floor(e.p.viewers||0):J==='tech'?'탈출 '+(e.p.escapes||0)+'/3'+(e.escaped?' ✔':''):J==='scout'?'해제 '+e.disarms:J==='shear'?'끊기 '+e.cuts:J==='mender'?'수선 '+e.mends:J==='digger'?'발굴 '+e.digs:J==='scare'?'속임 '+e.fooled:'기록 '+Object.keys(e.recorded).length+'/4'; }),snips:w.ents.map(e=>e.snipped||0),gains,early:!!w.early,theme:w.theme.name,counts:{chest:w.objs.filter(o=>o.type==='chest'&&o.done).length,gen:w.objs.filter(o=>o.type==='gen'&&o.done).length}}; }
-function xFinish(){ const w=xs.w, res=xs.res, sum=xSummaryApply(w); xs=null; actBtn.style.display='none'; trayEl.style.display='none'; mode='title'; res(sum); }
+function xFinish(){ if(xs.net){ const res=xs.res; NET.handlers.xs=null; NET.handlers.xe=null; xs=null; actBtn.style.display='none'; trayEl.style.display='none'; mode='title'; res(null); return; } const w=xs.w, res=xs.res, sum=xSummaryApply(w); xs=null; actBtn.style.display='none'; trayEl.style.display='none'; mode='title'; res(sum); }
 function xUpdate(dt){
   const w=xs.w, me=xs.me; xs.tick+=dt;
   if(!w.over){
     let ix=(keys['d']||keys['arrowright']?1:0)-(keys['a']||keys['arrowleft']?1:0), iy=(keys['s']||keys['arrowdown']?1:0)-(keys['w']||keys['arrowup']?1:0);
     if(joy){ const dx=joy.x-joy.ox, dy=joy.y-joy.oy, d=Math.hypot(dx,dy); if(d>10){ const k=Math.min(1,d/60); ix=dx/d*k; iy=dy/d*k; } }
     me.ix=ix; me.iy=iy; me.act=actHeld||!!keys['e']||!!keys[' '];
-    stepExplore(w,dt); xs.hint=Math.max(0,xs.hint-dt);
+    if(xs.net) xNetStep(dt); else { stepExplore(w,dt); if(XN&&XN.w) xHostSync(w,dt); } xs.hint=Math.max(0,xs.hint-dt);
     if(xs.tick>1.2) showTip('move','이동','화면을 드래그하거나 WASD로 움직이세요. 어둠 속에서는 바라보는 방향의 부채꼴만 보입니다.');
     { const no=nearestObj(w,me); if(no&&(no.type==='chest'||no.type==='gen')) showTip('search','수색 · 수리','물건 곁에 서서 오른쪽 아래 [수색]/[수리] 버튼을 길게 누르세요. 움직이면 끊깁니다. 남이 열던 물건은 진행도가 남아 있어, 곁에서 가로챌 수도 있어요.'); }
     if(xs.tick>20) showTip('light','얼굴 빛','[얼굴 빛]을 켜면 시야가 넓어지고 시청자가 늘지만, 괴물과 나방이 빛을 쫓아옵니다. 다른 배우에게는 내 정체도 보여요.');
@@ -2816,7 +2817,7 @@ function bookFor(h,opts){ return h.human?bookScreen(opts):NET.ask(h.remote,'book
 async function bookEach(makeOpts,list){ list=list||humansAll(); const out=new Map(); await Promise.all(list.map(async h=>{ const o=makeOpts(h); if(!o) return; out.set(h,await bookFor(h,o)); })); return out; }
 function callFor(h,fn,a,def){ if(h.human) return Promise.resolve(OPS[fn](a)); return NET.ask(h.remote,fn,{...a,P:serAll(h)},def); }
 async function transAll(o,list){ list=list||humansAll(); await Promise.all(list.map(h=>{ const oo={...o,job:h.job.id}; if(h.human) return OPS.trans({o:oo}); if(h.remote!=null) NET.to(h.remote,{k:'rpc',id:0,fn:'trans',args:{o:oo,P:serAll(h)}}); return null; })); }
-function dropRemote(id){ const p=P.find(q=>q.remote===id); if(!p) return; p.ctl=false; p.remote=null; NET.dropPending(id,null); }
+function dropRemote(id){ const p=P.find(q=>q.remote===id); if(!p) return; p.ctl=false; p.remote=null; NET.dropPending(id,null); if(XN){ XN.remotes=XN.remotes.filter(r=>r.id!==id); if(XN.w&&XN.w.ents[p.i]) XN.w.ents[p.i].ctl=false; } }
 // 클라이언트: 호스트가 보내는 화면 요청을 순서대로 처리한다
 let clientQ=Promise.resolve();
 async function clientSession(){
@@ -2902,7 +2903,6 @@ async function assignScreen(me){
 /* ---------- 탐색 (호스트) ---------- */
 function exploreOpts(o){ return {round:round,seed:o.seed!==undefined?o.seed:(gameMap?gameMap.seed:undefined),hunt:o.hunt||null,mission:o.mission||null,mirror:o.mirror||null,T:+(params.get('et')||opts.exploreT||EXP_T),ev:o.ev||params.get('ev')||null,theme:o.theme||params.get('theme')||(gameMap?gameMap.theme:null)}; }
 function runExploreHeadless(o){ const w=makeExplore(P,exploreOpts(o)); w.ents.forEach(e=>{ e.human=false; e.ctl=false; }); while(!w.over){ stepExplore(w,1/30); w.events.length=0; } return xSummaryApply(w); }
-async function runExploreAll(X){ const loc=P.find(p=>p.human); if(loc&&loc.alive) return runExplore(P,X); return runExploreHeadless(X); }
 /* ---------- 메인 흐름 ---------- */
 async function playGame(net){
   const k=net?net.length:1, slots=shuffle(range(4)).slice(0,k);
@@ -2970,6 +2970,126 @@ async function playGame(net){
   return outs.get(me);
 }
 async function playGameNet(players){ document.title='NETHOST '+players.length; try{ await playGame(players); }finally{ NET.leave(); } }
+/* ===================== 탐색 라운드 온라인 동기화 ===================== */
+let XN=null;   // 호스트: {w,remotes:[{p,id}],acc,waits:[]}
+const STC={patrol:0,chase:1,rest:2,alarm:3}, STN=['patrol','chase','rest','alarm'], PLS=['up','down','broken'];
+const E_NUM=['x','y','fid','face','stun','blind','prick','resc','matchT','morph','tired','rage','slow','gain','gens','keys','disarms','shakes','locks','lures','shakeCd','lureCd','traps','tk','cuts','mends','digs','fooled','matches'];
+const E_BOOL=['moving','light','shoes','cover','frozen','hold','out','escaped'];
+const r1=v=>Math.round((v||0)*10)/10, r2=v=>Math.round((v||0)*100)/100;
+function xInitData(w){
+  const ser=o=>{ const d={}; for(const k of Object.keys(o)){ const v=o[k]; if(v===null||typeof v==='number'||typeof v==='string'||typeof v==='boolean') d[k]=v; } if(o.owner) d.ownerI=o.owner.i; if(o.b) d.bI=o.b.cloud?-2:w.builds.indexOf(o.b); if(o.pair) d.pairI=w.objs.indexOf(o.pair); return d; };
+  return {themeId:w.theme.id,seed:w.seedUsed,oseed:w.oseed,round:w.round,T:w.T,ev:w.ev,nBase:w.nBase,extra:w.objs.slice(w.nBase).map(ser),
+    ents:w.ents.map(e=>({x:e.x,y:e.y,mis:e.mis?{stage:e.mis.stage,A:e.mis.A,B:e.mis.B,done:false}:null})),
+    mons:w.mons.map(m=>({t:m.type.id,x:m.x,y:m.y,fid:m.fid||0,flock:!!m.flock,leader:!!m.isLeader,off:m.off||null,asleep:!!m.asleep})),
+    shoesOn:w.shoesOn?w.shoesOn.i:-1,mirrorPair:w.mirrorPair?w.mirrorPair.map(e=>e.i):null};
+}
+function objPack(w,o,i){ return [i,o.done?1:0,Math.round((o.prog||0)*100),o.lock?o.lock.i:-1,o.armed?1:0,o.lit?1:0,o.state?Math.max(0,PLS.indexOf(o.state)):0,o.occ?o.occ.i:-1,o.sprung?1:0,r1(o.x),r1(o.y),Math.round((o.ang||0)*100),o.seen?1:0,Math.round((o.flash||0)*10)]; }
+function xSnap(w,full){
+  const S={t:r2(w.t),ph:w.phase,ov:w.over?1:0,ea:w.early?1:0,gt:[w.gate.open?1:0,w.gate.forE?w.gate.forE.i:-1],wl:w.wilted?1:0,so:w.shoesOn?w.shoesOn.i:-1};
+  S.e=w.ents.map(e=>{ let b=0; E_BOOL.forEach((k,j)=>{ if(e[k]) b|=1<<j; }); const sr=e.srch;
+    return {n:E_NUM.map(k=>r1(e[k])),b,al:e.p.alive?1:0,go:e.p.gold,vw:r1(e.p.viewers||0),sn:e.p.snip||0,es:e.p.escapes||0,hd:e.hidden?w.objs.indexOf(e.hidden):-1,sr:sr?[sr.o?w.objs.indexOf(sr.o):-1,sr.o&&sr.o.x!==undefined?r1(sr.o.x):0,sr.o&&sr.o.y!==undefined?r1(sr.o.y):0,r2(sr.prog)]:0,dr:e.dir?[r2(e.dir[0]),r2(e.dir[1])]:0,rc:e.recorded?Object.keys(e.recorded):0,ms:e.mis?[e.mis.stage,e.mis.done?1:0]:0}; });
+  S.m=w.mons.map(m=>[r1(m.x),r1(m.y),m.fid||0,m.face||1,r2(m.anim),STC[m.state]||0,m.asleep?1:0,r2(m.lunge||0),(m.path&&m.path.length&&(m.state==='chase'||m.state==='alarm'))?m.path.slice(0,6).flatMap(p=>[Math.round(p[0]),Math.round(p[1])]):0]);
+  const od=[]; w.objs.forEach((o,i)=>{ if(o.type==='ptrap') return; const a=objPack(w,o,i), sig=a.join(','); if(full||o._ls!==sig){ o._ls=sig; od.push(a); } }); S.o=od;
+  S.pt=w.objs.filter(o=>o.type==='ptrap'&&o.armed).map(o=>[r1(o.x),r1(o.y),o.fid||0,o.kind,o.owner?o.owner.i:-1]);
+  S.cr=w.crows.map(c=>[Math.round(c.alarm*10),c.disarmed?1:0,Math.round(c.cd*10)]);
+  S.dc=w.decoys.filter(d=>d.delay<=0).map(d=>[r1(d.x),r1(d.y),r1(d.t),d.fid||0,d.owner?d.owner.i:-1]);
+  S.ex={}; for(const k of Object.keys(w.expose)) S.ex[k]=r1(w.expose[k]);
+  S.nz=w.noises.filter(n=>!n.sent).map(n=>{ n.sent=1; return [Math.round(n.x),Math.round(n.y),Math.round(n.r),n.kind,n.fid||0]; });
+  if(w.crumbs) S.cb=w.crumbs.slice(-160).map(c=>[Math.round(c.x),Math.round(c.y),r1(c.t),c.e.i,c.fid||0]);
+  S.pl=w.objs.filter(o=>o.type==='plank').map(o=>PLS.indexOf(o.state));
+  return S;
+}
+function evSer(w,ev){ const d={}; for(const k of Object.keys(ev)){ const v=ev[k]; if(v===null||v===undefined) continue; if(typeof v==='number'||typeof v==='string'||typeof v==='boolean') d[k]=v; else if(v.isMon) d[k]={$m:w.mons.indexOf(v)}; else if(v.p&&v.i!==undefined&&v.srch!==undefined) d[k]={$e:v.i}; else if(v.type&&typeof v.type==='string'&&v.x!==undefined){ const oi=w.objs.indexOf(v); d[k]=oi>=0?{$o:oi}:{$x:[v.x,v.y,v.fid||0,v.type]}; } else if(v.cd!==undefined&&v.alarm!==undefined) d[k]={$c:w.crows.indexOf(v)}; else if(Array.isArray(v)) d[k]=v.filter(z=>typeof z==='number'); } return d; }
+function evDe(w,d){ const ev={}; for(const k of Object.keys(d)){ const v=d[k]; if(v&&typeof v==='object'&&!Array.isArray(v)){ if(v.$e!==undefined) ev[k]=w.ents[v.$e]; else if(v.$m!==undefined) ev[k]=w.mons[v.$m]; else if(v.$o!==undefined) ev[k]=w.objs[v.$o]; else if(v.$c!==undefined) ev[k]=w.crows[v.$c]; else if(v.$x) ev[k]={x:v.$x[0],y:v.$x[1],fid:v.$x[2],type:v.$x[3]}; } else ev[k]=v; } return ev; }
+const XCMD={
+  shake:(w,e)=>{ if(e.shakes>0) doShake(w,e); }, lock:(w,e)=>{ if(e.locks>0) doLock(w,e); },
+  lure:(w,e)=>{ if(e.hold) throwNeedle(w,e); else throwLure(w,e); },
+  trap:(w,e)=>{ if(e.tk===3){ if(e.locks>0) doLock(w,e); } else placeTrap(w,e); }, tkcycle:(w,e)=>{ e.tk=(e.tk+1)%4; },
+  light:(w,e)=>{ if(w.ev==='match') strikeMatch(w,e); else if(!w.expose[e.i]&&e.blind<=0) e.light=!e.light; },
+  morph:(w,e)=>{ if(e.rage>=100) doMorph(w,e); },
+};
+// ---------- 호스트 ----------
+function xNetHostStart(w){
+  XN.w=w; XN.acc=0; XN.snapT=0; XN.full=0; XN.waits=[];
+  const init=xInitData(w);
+  for(const r of XN.remotes){ XN.waits.push(NET.ask(r.id,'xrun',{me:r.p.i,init,P:serAll(r.p)},null,600000)); }
+  NET.handlers.xi=(m,from)=>{ const r=XN.remotes.find(q=>q.id===from); if(!r||!XN.w) return; const e=XN.w.ents[r.p.i]; if(!e||!e.ctl) return; const mg=Math.hypot(m.ix,m.iy); e.ix=mg>1?m.ix/mg:m.ix; e.iy=mg>1?m.iy/mg:m.iy; e.act=!!m.act; };
+  NET.handlers.xc=(m,from)=>{ const r=XN.remotes.find(q=>q.id===from); if(!r||!XN.w||XN.w.over) return; const e=XN.w.ents[r.p.i], f=XCMD[m.c]; if(e&&e.ctl&&e.p.alive&&e.stun<=0&&f) f(XN.w,e); };
+}
+function xHostSync(w,dt){
+  if(!XN||!XN.remotes.length) return;
+  if(w.events.length){ const evs=w.events.map(ev=>evSer(w,ev)); for(const r of XN.remotes) NET.to(r.id,{k:'xe',evs},false); }
+  XN.snapT+=dt; if(XN.snapT>=1/15||w.over){ XN.snapT=0; XN.full=(XN.full+1)%22; const S=xSnap(w,XN.full===0||w.over); for(const r of XN.remotes) NET.to(r.id,{k:'xs',d:S},true); if(w.over) XN.final=true; }
+}
+function xNetHostStop(){ NET.handlers.xi=null; NET.handlers.xc=null; }
+// 호스트가 살아 있지 않을 때(관전)의 탐색: 타이머로 월드를 직접 돌린다
+function runExploreHostless(o){
+  return new Promise(async res=>{
+    const w=makeExplore(P,exploreOpts(o)); w.ents.forEach(e=>{ if(e.human){ e.human=false; } }); xNetHostStart(w);
+    let last=performance.now(), endT=0;
+    const iv=setInterval(()=>{ const now_=performance.now(); let dt=Math.min(0.1,(now_-last)/1000); last=now_; while(dt>0){ const st=Math.min(dt,1/30); stepExplore(w,st); xHostSync(w,st); w.events.length=0; dt-=st; } if(w.over){ endT+=1/30; if(endT>2.4){ clearInterval(iv); res(w); } } },33);
+  });
+}
+async function runExploreAll(X){
+  const loc=P.find(p=>p.human), rem=humansAll().filter(h=>h.remote!=null&&h.alive);
+  if(!rem.length){ if(loc&&loc.alive) return runExplore(P,X); return runExploreHeadless(X); }
+  XN={remotes:rem.map(p=>({p,id:p.remote})),pending:true,w:null,waits:[]};
+  let sum;
+  if(loc&&loc.alive) sum=await runExplore(P,X);
+  else { const w=await runExploreHostless(X); sum=xSummaryApply(w); }
+  xNetHostStop(); await Promise.all(XN.waits); XN=null; return sum;
+}
+// ---------- 클라이언트 ----------
+function netBuildWorld(a,Pm){
+  const init=a.init, sv=rand; rand=mulberry32(init.oseed); const w=genMap(init.themeId,init.seed); rand=sv;
+  if(w.objs.length!==init.nBase) console.warn('월드 불일치',w.objs.length,init.nBase);
+  w.round=init.round; w.T=init.T; w.t=0; w.phase=0; w.over=false; w.ev=init.ev; w.events=[]; w.noises=[]; w.expose={}; w.decoys=[]; w.crumbs=init.ev==='crumbs'?[]:null; w.crows.forEach(c=>{ c.cd=0; c.alarm=0; c.disarmed=false; });
+  const ED={}; E_NUM.forEach(k=>{ ED[k]=0; }); E_BOOL.forEach(k=>{ ED[k]=false; }); Object.assign(ED,{shakes:2,locks:2,lures:2,traps:3,matches:3,face:1});
+  w.ents=Pm.map((p,i)=>({...ED,p,i,human:i===a.me,ctl:false,x:init.ents[i].x,y:init.ents[i].y,tx:init.ents[i].x,ty:init.ents[i].y,r:13,fid:0,stun:0,gain:0,light:false,lcol:p.job.color,blind:0,hidden:null,shoes:false,moving:false,face:1,srch:null,dir:[0,1],recorded:{},recT:{},mis:init.ents[i].mis,perk:{},cutSet:[],ix:0,iy:0,act:false,lock:false,matches:3,flee:0}));
+  for(const d of init.extra){ const o={...d}; if(d.ownerI!==undefined) o.owner=w.ents[d.ownerI]; if(d.bI!==undefined&&d.bI>=0) o.b=w.builds[d.bI]; else if(d.bI===-2) o.b=w.cloud.b; w.objs.push(o); }
+  init.extra.forEach((d,k)=>{ const o=w.objs[init.nBase+k]; if(d.pairI!==undefined&&d.pairI>=0) o.pair=w.objs[d.pairI]; });
+  if(init.ev==='beanstalk'&&w.cloud){ const B=w.cloud.b; for(const o of w.objs) if(o.beanstalk){ if(o.dir==='up') B.up[0]=o; else B.dn[1]=o; } w.beanB=B; }
+  w.mons=init.mons.map(d=>({type:MON_TYPES[d.t],x:d.x,y:d.y,r:MON_TYPES[d.t].r,fid:d.fid,flock:d.flock,isLeader:d.leader,off:d.off,asleep:d.asleep,state:'patrol',face:1,anim:0,path:[],isMon:true,lunge:0,rest:0}));
+  w.leader=w.mons.find(m=>m.isLeader); w.shoesOn=init.shoesOn>=0?w.ents[init.shoesOn]:null; w.mirrorPair=init.mirrorPair?init.mirrorPair.map(i=>w.ents[i]):null;
+  return w;
+}
+function xApplySnap(w,S){
+  w.t=S.t; w.phase=S.ph; w.over=!!S.ov; w.early=!!S.ea; w.gate.open=!!S.gt[0]; w.gate.forE=S.gt[1]>=0?w.ents[S.gt[1]]:null; w.wilted=!!S.wl; w.shoesOn=S.so>=0?w.ents[S.so]:null;
+  S.e.forEach((d,i)=>{ const e=w.ents[i]; E_NUM.forEach((k,j)=>{ if(k==='x'||k==='y'){ e['t'+k]=d.n[j]; } else e[k]=d.n[j]; }); E_BOOL.forEach((k,j)=>{ e[k]=!!(d.b&(1<<j)); });
+    if(e.fidChanged===undefined) e.fidChanged=0; e.p.alive=!!d.al; e.p.gold=d.go; e.p.viewers=d.vw; e.p.snip=d.sn; e.p.escapes=d.es;
+    e.hidden=d.hd>=0?w.objs[d.hd]:null; e.srch=d.sr?{o:d.sr[0]>=0?w.objs[d.sr[0]]:{x:d.sr[1],y:d.sr[2],type:'pseudo'},prog:d.sr[3]}:null; if(d.dr) e.dir=d.dr; if(d.rc){ e.recorded={}; d.rc.forEach(k=>e.recorded[k]=true); } if(d.ms&&e.mis){ e.mis.stage=d.ms[0]; e.mis.done=!!d.ms[1]; }
+    e.lcol=e.p.job.color; });
+  S.m.forEach((d,i)=>{ const m=w.mons[i]; if(!m) return; m.tx=d[0]; m.ty=d[1]; if(m.fid!==d[2]){ m.x=d[0]; m.y=d[1]; } m.fid=d[2]; m.face=d[3]; m.anim=d[4]; m.state=STN[d[5]]; m.asleep=!!d[6]; m.lunge=d[7]; m.path=d[8]?d[8].reduce((a,v,k)=>{ if(k%2===0) a.push([v,d[8][k+1]]); return a; },[]):[]; });
+  for(const a of S.o){ const o=w.objs[a[0]]; if(!o) continue; o.done=!!a[1]; o.prog=a[2]/100; o.lock=a[3]>=0?w.ents[a[3]]:null; o.armed=!!a[4]; o.lit=!!a[5]; if(o.type==='plank') o.state=PLS[a[6]]; o.occ=a[7]>=0?w.ents[a[7]]:null; o.sprung=!!a[8]; if(o.type==='needle'||o.type==='steal'){ o.x=a[9]; o.y=a[10]; } if(o.type==='cam'){ o.ang=a[11]/100; o.seen=!!a[12]; o.flash=a[13]/10; }
+    if(o.type==='ldoor'&&o.done&&o.b){ o.b.open=true; const ri_=w.rects.indexOf(o.rect); if(ri_>=0) w.rects.splice(ri_,1); } }
+  w.objs=w.objs.filter(o=>o.type!=='ptrap'); S.pt.forEach(d=>w.objs.push({type:'ptrap',x:d[0],y:d[1],fid:d[2],kind:d[3],owner:d[4]>=0?w.ents[d[4]]:null,armed:true,done:false,need:1.2}));
+  S.cr.forEach((d,i)=>{ const c=w.crows[i]; if(c){ c.alarm=d[0]/10; c.disarmed=!!d[1]; c.cd=d[2]/10; } });
+  w.decoys=S.dc.map(d=>({x:d[0],y:d[1],t:d[2],delay:0,fid:d[3],owner:d[4]>=0?w.ents[d[4]]:null}));
+  w.expose={}; for(const k of Object.keys(S.ex)) w.expose[k]=S.ex[k];
+  for(const n of S.nz) w.noises.push({x:n[0],y:n[1],r:n[2],kind:n[3],fid:n[4],t:0});
+  if(S.cb&&w.crumbs) w.crumbs=S.cb.map(d=>({x:d[0],y:d[1],t:d[2],e:w.ents[d[3]],fid:d[4]}));
+  if(S.pl){ let k=0; for(const o of w.objs) if(o.type==='plank'){ const st=PLS[S.pl[k++]]; if(st) o.state=st; } }
+}
+function xNetStep(dt){
+  const xs_=xs, w=xs_.w, me=xs_.me;
+  while(xs_.snapQ.length){ const S=xs_.snapQ.shift(); xApplySnap(w,S); xs_.gotSnap=true; }
+  if(xs_.evQ.length){ for(const d of xs_.evQ.splice(0)) w.events.push(evDe(w,d)); }
+  const k=Math.min(1,dt*16);
+  for(const e of w.ents){ if(xs_.gotSnap&&(Math.abs(e.tx-e.x)>260||Math.abs(e.ty-e.y)>260)){ e.x=e.tx; e.y=e.ty; } else { e.x+=(e.tx-e.x)*k; e.y+=(e.ty-e.y)*k; } }
+  for(const m of w.mons){ if(m.tx!==undefined){ if(Math.abs(m.tx-m.x)>300||Math.abs(m.ty-m.y)>300){ m.x=m.tx; m.y=m.ty; } else { m.x+=(m.tx-m.x)*k; m.y+=(m.ty-m.y)*k; } } }
+  for(const nz of w.noises) nz.t+=dt; w.noises=w.noises.filter(n=>n.t<1.4);
+  xs_.inT=(xs_.inT||0)-dt; if(xs_.inT<=0){ xs_.inT=1/30; const mg=Math.hypot(me.ix||0,me.iy||0); NET.to(0,{k:'xi',ix:r2(me.ix||0),iy:r2(me.iy||0),act:me.act?1:0},true); }
+}
+function netCmd(c){ NET.to(0,{k:'xc',c}); }
+OPS.xrun=a=>new Promise(res=>{
+  const Pm=P, w=netBuildWorld(a,Pm), me=w.ents[a.me];
+  xs={w,me,fx:[],shake:0,ang:-Math.PI/2,toasts:[],res,endT:0,hint:9,tick:0,stepT:0,srchT:0,ripT:0,net:true,snapQ:[],evQ:[],gotSnap:false};
+  mode='explore'; ui.innerHTML=''; hideSpellButtons(); actBtn.style.display='block'; trayEl.style.display='flex'; joy=null; actHeld=false;
+  NET.handlers.xs=m=>{ if(xs&&xs.net){ xs.snapQ.push(m.d); if(xs.snapQ.length>6) xs.snapQ.splice(0,xs.snapQ.length-2); } };
+  NET.handlers.xe=m=>{ if(xs&&xs.net) xs.evQ.push(...m.evs); };
+  const be=BOOK_EVENTS.find(b=>b.id===w.ev); if(be) xToast(`${be.title} — ${be.rule.split('.')[0]}`,'#bba878');
+  if(w.mirrorPair&&w.mirrorPair.includes(me)) xToast('거울에 비쳤다 — 라운드 중간에 위치가 맞바뀐다','#cfd8dc');
+});
 (async function main(){
   P=makePlayers(0); frame();
   if(params.has('snd')){ sfx.init(); window.__pk=0; setInterval(()=>{ window.__pk=Math.max(window.__pk,sfx.level()); const q=sfx.status(); document.title='audio '+q.state+' '+q.rate+'Hz loops['+q.loops+'] err '+(window.__sfxErr||0)+' '+(window.__sfxLast||'')+' peak '+window.__pk.toFixed(3); },200); }
