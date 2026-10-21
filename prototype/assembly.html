@@ -495,7 +495,7 @@ const MON_TYPES={
   bell:{id:'bell',name:'방울 꼬마',r:12,patrol:106,chase:152,sight:250,stun:0.9,loss:0,rest:7},
   shears:{id:'shears',name:'줄 끊는 가위',r:16,patrol:72,chase:146,sight:310,stun:1.0,loss:0,rest:5,snip:1},
   giant:{id:'giant',name:'거인',r:26,patrol:50,chase:120,sight:340,stun:2.4,loss:2,rest:6},
-  guard:{id:'guard',name:'경비 인형',r:16,patrol:62,chase:146,sight:250,stun:1.6,loss:0,rest:6},
+  guard:{id:'guard',name:'경비 인형',r:16,patrol:46,chase:104,sight:250,stun:1.6,loss:0,rest:6},
   moth:{id:'moth',name:'빛을 쫓는 나방',r:9,patrol:76,chase:128,sight:0,stun:0,loss:0,rest:3,fly:true},
 };
 const EXP_PERK={ent:{spd:1.12,chest:1,gen:1,sight:1},tech:{spd:1,chest:1,gen:0.5,sight:1},scout:{spd:1,chest:0.6,gen:1,sight:1},arch:{spd:1,chest:1,gen:1,sight:0.7},shear:{spd:1,chest:1.25,gen:1.4,sight:1},mender:{spd:1.06,chest:0.6,gen:0.6,sight:1},digger:{spd:1,chest:0.7,gen:1.2,sight:1},scare:{spd:1,chest:0.7,gen:0.7,sight:1}};
@@ -588,14 +588,25 @@ function genMap(themeId,seed){
   // 위층: 지상 지도 오른쪽에 떨어뜨려 둔 별도 공간(층 블록). 충돌·시야·길찾기는 그대로, 층(fid)만 구분한다
   w.blocks=[]; w.fidB=[null]; w.fidFl=[0]; w.TW=XW; w.TH=XH;
   { let nbk=0; for(const B of w.builds){ B.floors=B.variant==='hall'?(rand()<0.6?3:2):(rand()<0.42?3:2); B.fids=[0]; nbk+=B.floors-1; } nbk+=1;
-    const COLS=3, CW=800, CH=620, rows=Math.max(1,Math.ceil(nbk/COLS)); w.TW=XW+300+COLS*CW+60; w.TH=Math.max(XH,100+rows*CH+60);
+    const COLS=3, CW=1250, CH=860, rows=Math.max(1,Math.ceil(nbk/COLS)); w.TW=XW+300+COLS*CW+60; w.TH=Math.max(XH,100+rows*CH+60);
     rect(XW,0,60,w.TH,'edge'); rect(XW+60,-60,w.TW-XW,60,'edge'); rect(w.TW,0,60,w.TH+60,'edge'); rect(-60,w.TH,w.TW+120,60,'edge'); if(w.TH>XH+60) rect(0,XH+60,XW,w.TH-XH-60,'edge');
-    let k=0; for(const B of w.builds){ for(let f=1;f<B.floors;f++,k++){ const col=k%COLS, row=Math.floor(k/COLS), ox=XW+300+col*CW+Math.floor((CW-B.w)/2), oy=100+row*CH+Math.floor((CH-B.h)/2), bw=B.w, bh=B.h;
+    const hwg=(x,y,len,gs)=>{ let cur=0; for(const g of gs.slice().sort((a,b)=>a-b)){ rect(x+cur,y-WT/2,g-cur,WT); cur=g+DG; } rect(x+cur,y-WT/2,len-cur,WT); };
+    let k=0; for(const B of w.builds){ for(let f=1;f<B.floors;f++,k++){ const col=k%COLS, row=Math.floor(k/COLS);
+        const bw=Math.round(Math.max(B.variant==='hall'?1080:980,B.w*1.7)), bh=Math.round(Math.max(B.variant==='hall'?680:640,B.h*1.5)), ox=XW+300+col*CW+Math.floor((CW-bw)/2), oy=100+row*CH+Math.floor((CH-bh)/2);
         const blk={fid:w.blocks.length+1,b:B,f,x:ox,y:oy,w:bw,h:bh,rooms:[],doors:[]}; w.blocks.push(blk); w.fidB.push(B); w.fidFl.push(f); B.fids[f]=blk.fid;
         hw(ox,oy,bw); hw(ox,oy+bh,bw); vw(ox,oy,bh); vw(ox+bw,oy,bh);
-        if(B.variant==='hall'){ blk.rooms.push({x:ox+WT,y:oy+WT,w:bw-2*WT,h:bh-2*WT}); for(const [fx,fy] of [[0.5,0.5],[0.36,0.7]]) rect(ox+bw*fx-18,oy+bh*fy-18,36,36,'prop','crates'); }
-        else if(bw>=bh){ const x=ox+bw*0.5, g=40+rand()*(bh-80-DG); vw(x,oy,bh,g); blk.doors.push({x,y:oy+g+DG/2,o:'v',inner:true}); blk.rooms.push({x:ox+WT,y:oy+WT,w:bw*0.5-WT*1.5,h:bh-2*WT},{x:x+WT/2,y:oy+WT,w:bw*0.5-WT*1.5,h:bh-2*WT}); }
-        else { const y=oy+bh*0.5, g=40+rand()*(bw-80-DG); hw(ox,y,bw,g); blk.doors.push({x:ox+g+DG/2,y,o:'h',inner:true}); blk.rooms.push({x:ox+WT,y:oy+WT,w:bw-2*WT,h:bh*0.5-WT*1.5},{x:ox+WT,y:y+WT/2,w:bw-2*WT,h:bh*0.5-WT*1.5}); }
+        if(B.variant==='hall'){ blk.rooms.push({x:ox+WT,y:oy+WT,w:bw-2*WT,h:bh-2*WT}); for(const fx of [0.28,0.5,0.72]) for(const fy of [0.3,0.7]) w.circs.push({x:ox+bw*fx,y:oy+bh*fy,r:15,kind:'pillar',seed:rand()*9}); for(const [fx,fy] of [[0.5,0.5],[0.36,0.82],[0.64,0.18]]) rect(ox+bw*fx-18,oy+bh*fy-18,36,36,'prop','crates'); blk.hallCam={x:ox+WT+26,y:oy+bh/2,base:0,len:bw}; }
+        else { const CD=150, midY=oy+Math.round(bh/2), cT=midY-CD/2, cB=midY+CD/2, topH=cT-oy, botH=oy+bh-cB;
+          // 가운데 긴 복도 + 위아래 방들. 방은 복도 쪽 문으로만 드나든다
+          blk.rooms.push({x:ox+WT,y:cT+WT/2,w:bw-2*WT,h:CD-WT}); blk.corr={x:ox,y:cT,w:bw,h:CD,mid:midY};
+          const rowR=(top)=>{ const n=bw>1060?(rand()<0.6?3:2):(rand()<0.4?3:2), gs=[], y0=top?oy:cB, hh=top?topH:botH; let px=ox;
+            for(let i=0;i<n;i++){ const xe=i===n-1?ox+bw:ox+Math.round(bw*(i+1)/n+(rand()-0.5)*bw*0.06), last=i===n-1;
+              if(!last) vw(xe,top?oy:cB,hh);
+              const rx=px+(i?WT/2:WT), rw=(last?ox+bw-WT:xe-WT/2)-rx; blk.rooms.push(top?{x:rx,y:oy+WT,w:rw,h:hh-WT*1.5}:{x:rx,y:cB+WT/2,w:rw,h:hh-WT*1.5});
+              const gx=Math.round(px-ox+Math.max(14,Math.min(xe-px-DG-14,(xe-px-DG)/2+(rand()-0.5)*(xe-px-DG)*0.5))); gs.push(gx); blk.doors.push({x:ox+gx+DG/2,y:top?cT:cB,o:'h',inner:true}); px=xe; }
+            hwg(ox,top?cT:cB,bw,gs); };
+          rowR(true); rowR(false);
+          for(const fx of [0.22,0.5,0.78]) w.decor.push({k:['mannequin','rug','mannequin'][ri(3)],x:ox+bw*fx+(rand()-0.5)*60,y:midY+(rand()-0.5)*50,a:rand()*6.28,s:0.9+rand()*0.4,in:true,fid:blk.fid}); }
       for(const r of blk.rooms) for(let i=0;i<3;i++) w.decor.push({k:['crate','barrel','mannequin','roll','rug','crate'][ri(6)],x:r.x+50+rand()*Math.max(1,r.w-100),y:r.y+50+rand()*Math.max(1,r.h-100),a:rand()*6.28,s:0.8+rand()*0.5,in:true,fid:blk.fid}); } }
     { const col=k%COLS, row=Math.floor(k/COLS), cw=640, chh=420, ox=XW+300+col*CW+Math.floor((CW-cw)/2), oy=100+row*CH+Math.floor((CH-chh)/2);
       const B={name:'거인의 성',cloud:true,x:P0[0]-90,y:P0[1]-60,w:180,h:120,floors:2,fids:[0],up:[],dn:[],variant:'cloud',rooms:[],doors:[]};
@@ -609,7 +620,7 @@ function genMap(themeId,seed){
   const floorSpot=(b,f,m=60)=>{ const rooms=f?w.blocks[b.fids[f]-1].rooms:b.rooms, fn=f?freeS:free; for(let k=0;k<50;k++){ const r=rooms[ri(rooms.length)], x=r.x+m+rand()*Math.max(1,r.w-2*m), y=r.y+m+rand()*Math.max(1,r.h-2*m); if(fn(x,y,36)){ used.push([x,y,36]); return Object.assign([x,y],{fid:f?b.fids[f]:0,b}); } } return null; };
   const roomSpot=(b,m=60)=>floorSpot(b,0,m);
   const anyFloor=(b,m=50,pu=0.6)=>floorSpot(b,rand()<pu&&b.floors>1?1+ri(b.floors-1):0,m)||floorSpot(b,0,m);
-  const stairPos=(B,f,dir)=>{ const blk=f?w.blocks[B.fids[f]-1]:null, x0=blk?blk.x:B.x, y0=blk?blk.y:B.y, left=dir==='up'?f%2===0:f%2===1; return [left?x0+68:x0+B.w-68,y0+56]; };
+  const stairPos=(B,f,dir)=>{ const blk=f?w.blocks[B.fids[f]-1]:null, x0=blk?blk.x:B.x, y0=blk?blk.y:B.y, left=dir==='up'?f%2===0:f%2===1; return [left?x0+68:x0+(blk?blk.w:B.w)-68,y0+56]; };
   for(const B of w.builds){ B.up=[]; B.dn=[]; for(let f=0;f<B.floors-1;f++){ const pu=stairPos(B,f,'up'), pd=stairPos(B,f+1,'dn');
       const u={type:'stair',dir:'up',x:pu[0],y:pu[1],need:0.45,done:false,b:B,fid:B.fids[f]}, d={type:'stair',dir:'dn',x:pd[0],y:pd[1],need:0.45,done:false,b:B,fid:B.fids[f+1]}; u.pair=d; d.pair=u; B.up[f]=u; B.dn[f+1]=d; w.objs.push(u,d); used.push([pu[0],pu[1],40],[pd[0],pd[1],40]); } }
   const outSpot=(d,near)=>{ for(let k=0;k<260;k++){ let x,y; if(near){ const a=rand()*6.283, dd=near[0]+rand()*(near[1]-near[0]); x=P0[0]+Math.cos(a)*dd; y=P0[1]+Math.sin(a)*dd; } else { x=100+rand()*(XW-200); y=100+rand()*(XH-200); } if(inBuild(x,y,40)||!farFromSpawn(x,y,d)||!free(x,y,40)) continue; used.push([x,y,40]); return [x,y]; } return null; };
@@ -635,8 +646,8 @@ function genMap(themeId,seed){
   { const cs=[outSpot(0,[320,420]),outSpot(300),outSpot(300)]; for(const p of cs){ if(p){ const c={x:p[0],y:p[1],cd:0,alarm:0,disarmed:false}; w.crows.push(c); w.objs.push({type:'crowd',x:p[0],y:p[1],need:2.5,done:false,crow:c}); } } }
   for(let k=0;k<7;k++){ const p=rand()<0.7?outSpot(240):(()=>{ const b=w.builds[ri(w.builds.length)]; return anyFloor(b,50,0.5); })(); if(p) w.objs.push({type:'trap',x:p[0],y:p[1],need:1.5,done:false,armed:true,fid:p.fid||0}); }
   // 감시 카메라: 방 모서리에서 부채꼴로 훑는다. 걸리면 사이렌 + 얼굴 빛 노출
-  { const spots=[]; for(const B of w.builds){ for(let f=0;f<B.floors;f++){ const rooms=f?w.blocks[B.fids[f]-1].rooms:B.rooms; for(const r of rooms) spots.push({B,f,r}); } }
-    for(const q of sample(spots,Math.min(spots.length,5))){ const r=q.r, cx=rand()<0.5?r.x+38:r.x+r.w-38, cy=rand()<0.5?r.y+38:r.y+r.h-38, base=Math.atan2(r.y+r.h/2-cy,r.x+r.w/2-cx); w.objs.push({type:'cam',x:cx,y:cy,need:1.6,done:false,fid:q.f?q.B.fids[q.f]:0,b:q.B,base,ang:base,sw:0.85,ph:rand()*6.28,range:340,half:0.38,cd:0,seen:false,flash:0}); } }
+  { const spots=[]; for(const blk of w.blocks){ if(blk.cloud) continue; if(blk.corr){ const left=rand()<0.5, c=blk.corr; spots.push({blk,x:left?blk.x+WT+26:blk.x+blk.w-WT-26,y:c.mid,base:left?0:Math.PI,len:c.w}); } else if(blk.hallCam) spots.push({blk,x:blk.hallCam.x,y:blk.hallCam.y,base:0,len:blk.hallCam.len}); }
+    for(const q of sample(spots,Math.min(spots.length,5))) w.objs.push({type:'cam',x:q.x,y:q.y,need:1.6,done:false,fid:q.blk.fid,b:q.blk.b,base:q.base,ang:q.base,sw:0.3,ph:rand()*6.28,range:Math.min(520,q.len*0.55),half:0.2,cd:0,seen:false,flash:0}); }
   for(const o of w.objs) if((o.type==='cam'||o.type==='trap'||o.type==='ward')&&o.b&&b_in(w,o)) o.inLocked=true;
   { const gp=outSpot(1300)||outSpot(900)||outSpot(500)||[300,300]; w.gate={x:gp[0],y:gp[1],open:false,forE:null}; }
   return w;
