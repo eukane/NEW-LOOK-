@@ -631,6 +631,7 @@ function fidAt(w,x,y){ if(!w.blocks||x<XW+200) return 0; for(const b of w.blocks
 function aimAt(w,m,x,y,nf){ const mf=m.fid||0; if(mf===nf) return [x,y,0]; if(nf>0&&mf===0){ const B=w.fidB[nf], u=B&&B.up[0]; if(u) return [u.x,u.y,260]; } return null; }
 function noise(w,x,y,r,kind){ const nf=fidAt(w,x,y); w.noises.push({x,y,r,t:0,kind,fid:nf});
   for(const m of w.mons){ const aim=aimAt(w,m,x,y,nf); if(!aim) continue; const [ax,ay,pen]=aim; const d=Math.hypot(m.x-ax,m.y-ay)+pen; if(m.asleep&&d<r){ m.asleep=false; m.rest=0.6; w.events.push({type:'wake',m}); continue; }
+    if(m.state==='chase'&&(kind==='lure'||kind==='siren')&&!m.type.fly&&m.chase&&Math.hypot(m.chase.x-m.x,m.chase.y-m.y)>110&&d<r*1.1){ m.state='patrol'; m.chase=null; m.path=[]; m.distract=3; m.lostT=0; m.alarm={x:ax+(rand()-0.5)*50,y:ay+(rand()-0.5)*50,t:7}; w.events.push({type:'distract',m}); continue; }
     if(m.asleep||m.type.fly||m.state==='chase'||m.state==='rest') continue;
     if(m.flock){ if(kind!=='step'&&kind!=='chest'&&d<r*1.2) m.alarm={x:ax+(rand()-0.5)*90,y:ay+(rand()-0.5)*90,t:8}; }
     else if(kind==='step'?d<r*0.85:(LOUD.includes(kind)&&d<r*(kind==='siren'?1.45:1.1))) m.alarm={x:ax+(rand()-0.5)*60,y:ay+(rand()-0.5)*60,t:kind==='siren'?9:6}; } }
@@ -647,7 +648,7 @@ function stepDecoys(w,dt){
   for(let i=w.decoys.length-1;i>=0;i--){ const d=w.decoys[i];
     if(d.delay>0){ d.delay-=dt; continue; }
     d.t-=dt; d.tick-=dt;
-    if(d.tick<=0){ d.tick=0.6; noise(w,d.x,d.y,560,'lure'); for(const m of w.mons){ if(m.asleep||m.type.fly||m.state==='chase'||(m.fid||0)!==(d.fid||0)) continue; if(Math.hypot(m.x-d.x,m.y-d.y)<1300) m.alarm={x:d.x+(rand()-0.5)*70,y:d.y+(rand()-0.5)*70,t:3}; } }
+    if(d.tick<=0){ d.tick=0.6; noise(w,d.x,d.y,560,'lure'); for(const m of w.mons){ if(m.asleep||m.type.fly||(m.fid||0)!==(d.fid||0)) continue; if(m.state==='chase'){ if(!(m.chase&&Math.hypot(m.chase.x-m.x,m.chase.y-m.y)>110&&Math.hypot(m.x-d.x,m.y-d.y)<560)) continue; m.state='patrol'; m.chase=null; m.path=[]; m.distract=3; w.events.push({type:'distract',m}); } if(Math.hypot(m.x-d.x,m.y-d.y)<1300) m.alarm={x:d.x+(rand()-0.5)*70,y:d.y+(rand()-0.5)*70,t:3}; } }
     if(d.t<=0) w.decoys.splice(i,1); } }
 function nearestObj(w,e,reach=56){ let best=null,bd=reach; for(const o of w.objs){ if(o.done&&o.type!=='ward') continue; if((o.fid||0)!==(e.fid||0)) continue; if(o.type==='stair'&&e.stairCd>0) continue; if(o.type==='cam'&&e.p.job.id!=='scout') continue; if(o.type==='ptrap'&&(!o.armed||o.owner===e||e.p.job.id!=='scout')) continue; if(o.type==='trap'&&(!o.armed||e.p.job.id!=='scout')) continue; if(o.type==='crowd'&&(e.p.job.id!=='scout'||o.crow.disarmed)) continue; if((o.type==='basket'||o.type==='dest')&&(o.owner!==e||o.done)) continue; if(o.type==='needle'&&(e.hold||e.prick>0&&false)) continue; if(o.type==='plank'&&o.state!=='up') continue; if(e.hidden&&o!==e.hidden) continue; if(e.shoes) continue; const d=Math.hypot(o.x-e.x,o.y-e.y); if(d<bd){ bd=d; best=o; } }
   if(!best&&!e.hidden&&!e.shoes){ for(const v of w.ents){ if(v===e||!v.p.alive||v.out||v.hidden||v.stolen||v.stun<0.5||(v.fid||0)!==(e.fid||0)) continue; if(Math.hypot(v.x-e.x,v.y-e.y)<52){ const so=v.stealObj||(v.stealObj={type:'steal',need:0.8,done:false,v}); so.x=v.x; so.y=v.y; return so; } } }
@@ -728,6 +729,7 @@ function botStep(w,e,dt,noisy){
   let threat=null,td=1e9; for(const m of w.mons){ if(m.asleep||m.state==='rest'||m.type.fly||(m.fid||0)!==(e.fid||0)) continue; const d=Math.hypot(m.x-e.x,m.y-e.y); if(d<260&&d<td&&hasLOS(w,m.x,m.y,e.x,e.y)){ td=d; threat=m; } }
   if(threat){ e.flee=0.9; e.goal=null; e.wps=null; }
   if(e.flee>0&&threat){
+    if(threat.state==='chase'&&e.lures>0&&e.lureCd<=0&&td>100&&rand()<dt*1.5){ const dx0=e.x-threat.x, dy0=e.y-threat.y, d0=Math.hypot(dx0,dy0)||1, sg=rand()<0.5?1:-1; throwLure(w,e,e.x+dx0/d0*120-dy0/d0*320*sg,e.y+dy0/d0*120+dx0/d0*320*sg); }
     const pl=w.objs.find(o=>o.type==='plank'&&o.state==='up'&&Math.hypot(o.x-e.x,o.y-e.y)<56); if(pl&&td<150){ e.goal=pl; return true; }
     const wd=w.objs.find(o=>o.type==='ward'&&!o.occ&&Math.hypot(o.x-e.x,o.y-e.y)<230&&td>110); if(wd&&e.p.skill>0.35&&!e.hidden){ e.goal=wd; e.wps=null; e.flee=0; return botGo(w,e,sp,dt); }
     { let th_=null,tdd=300; for(const q of w.thickets){ const dd=Math.hypot(q.x-e.x,q.y-e.y); if(dd<tdd&&Math.hypot(q.x-threat.x,q.y-threat.y)>dd){ tdd=dd; th_=q; } } if(th_&&e.p.skill>0.3&&!e.cover){ stepTo(w,e,th_.x,th_.y,sp*1.25,dt); e.moving=true; return false; } if(th_&&e.cover&&td>130){ e.moving=false; return false; } }
@@ -757,14 +759,15 @@ function botGo(w,e,sp,dt){
   if(arrived||Math.hypot(g.x-e.x,g.y-e.y)<34){ e.moving=false; return true; } return false;
 }
 function stepMon(w,m,dt){
-  const T=m.type; m.rest=Math.max(0,m.rest-dt); m.repath-=dt; m.anim+=dt*(m.state==='chase'?2.2:1.2);
+  const T=m.type; m.rest=Math.max(0,m.rest-dt); m.distract=Math.max(0,(m.distract||0)-dt); if(m.state==='chase') m.chaseT=(m.chaseT||0)+dt; else m.chaseT=0;
+  if(m.chaseT>11&&!T.fly){ m.chaseT=0; m.state='rest'; m.rest=3; m.chase=null; m.path=[]; m.distract=2; w.events.push({type:'tired',m}); return; } m.repath-=dt; m.anim+=dt*(m.state==='chase'?2.2:1.2);
   if(m.asleep) return;
   if(T.fly){ stepMoth(w,m,dt); return; }
   if(m.alarm){ m.alarm.t-=dt; if(m.alarm.t<=0) m.alarm=null; }
   if(m.rest>0){ m.state='rest'; return; }
   // 판자에 막힘/기절
   for(const o of w.objs) if(o.type==='plank'&&o.state==='down'&&o.fresh&&Math.hypot(o.x-m.x,o.y-m.y)<80){ o.fresh=false; m.rest=2.2; m.state='rest'; w.events.push({type:'plankhit',m,o}); return; }
-  let tgt=null,td=1e9; for(const e of w.ents){ if(!e.p.alive||e.out||e.stun>0||e.hidden||(e.fid||0)!==(m.fid||0)) continue; const d=Math.hypot(e.x-m.x,e.y-m.y); if(e.cover&&d>115) continue; const rng=T.sight*e.perk.sight*(e.shoes?1.4:1)*(e.light?1.5:0.85); if(d<rng&&d<td&&hasLOS(w,m.x,m.y,e.x,e.y)){ td=d; tgt=e; } }
+  let tgt=null,td=1e9; for(const e of w.ents){ if(!e.p.alive||e.out||e.stun>0||e.hidden||(e.fid||0)!==(m.fid||0)) continue; const d=Math.hypot(e.x-m.x,e.y-m.y); if(e.cover&&d>115) continue; if(m.distract>0&&d>90) continue; const rng=T.sight*e.perk.sight*(e.shoes?1.4:1)*(e.light?1.5:0.85); if(d<rng&&d<td&&hasLOS(w,m.x,m.y,e.x,e.y)){ td=d; tgt=e; } }
   if(tgt){ if(m.state!=='chase'){ if(tgt.human) w.events.push({type:'monster',e:tgt,m}); } m.state='chase'; m.chase=tgt; m.lostT=4; m.lastX=tgt.x; m.lastY=tgt.y; }
   else if(m.state==='chase'){ m.lostT-=dt; if(m.lostT<=0){ if(m.chase&&m.chase.p.job.id==='ent'&&!m.chase.out) addView(m.chase,1.5); m.state='patrol'; m.chase=null; m.path=[]; m.alarm={x:m.lastX,y:m.lastY,t:5}; } }
   if(m.state==='chase'){ const tx=m.chase&&m.chase.p.alive&&!m.chase.hidden?m.chase.x:m.lastX, ty=m.chase&&m.chase.p.alive&&!m.chase.hidden?m.chase.y:m.lastY;
@@ -820,7 +823,7 @@ function trigPtrap(w,o,e){ o.armed=false; o.done=true; const k=TRAP_KINDS[o.kind
   if(k==='snare'){ e.slow=8; e.stun=0.7; w.expose[e.i]=Math.max(w.expose[e.i]||0,1.5); } else if(k==='bell'){ e.stun=0.4; w.expose[e.i]=Math.max(w.expose[e.i]||0,4); noise(w,o.x,o.y,760,'siren'); } else { e.blind=Math.max(e.blind,7); e.light=false; e.stun=0.6; }
   w.events.push({type:'ptrapfire',e,o,owner:o.owner,k}); }
 function resolveObj0(w,e,o){
-  if(o.type==='stair'){ const p=o.pair; e.x=p.x; e.y=p.y+64; e.fid=p.fid; e.stairCd=1.5; e.srch=null; e.wps=null; e.gTgt=null; w.events.push({type:'stair',e,o}); noise(w,e.x,e.y,150,'step'); return; }
+  if(o.type==='stair'){ const p=o.pair; e.x=p.x; e.y=p.y+64; e.fid=p.fid; e.stairCd=1.5; e.srch=null; e.wps=null; e.gTgt=null; for(const m of w.mons) if(m.chase===e&&m.state==='chase'){ m.state='patrol'; m.chase=null; m.path=[]; m.distract=2; m.alarm={x:o.x,y:o.y,t:5}; } w.events.push({type:'stair',e,o}); noise(w,e.x,e.y,150,'step'); return; }
   if(o.type==='ptrap'){ o.done=true; o.armed=false; e.disarms++; if(e.disarms%2===0) e.gain+=1; w.events.push({type:'disarm',e,o,what:'ptrap'}); return; }
   if(o.type==='cam'){ o.done=true; e.disarms++; if(e.disarms%2===0) e.gain+=1; w.events.push({type:'disarm',e,o,what:'cam'}); return; }
   if(o.type==='ldoor'){ e.keys--; e.srch=null; for(const q of w.objs) if(q.type==='ldoor'&&q.b===o.b){ q.done=true; const i=w.rects.indexOf(q.rect); if(i>=0) w.rects.splice(i,1); } o.b.open=true; buildNav(w); navRefresh(w); w.events.push({type:'unlock',e,o}); noise(w,o.x,o.y,300,'plank'); return; }
@@ -1813,7 +1816,7 @@ function xUpdate(dt){
     { const no=nearestObj(w,me); if(no&&(no.type==='chest'||no.type==='gen')) showTip('search','수색 · 수리','물건 곁에 서서 오른쪽 아래 [수색]/[수리] 버튼을 길게 누르세요. 움직이면 끊깁니다. 남이 열던 물건은 진행도가 남아 있어, 곁에서 가로챌 수도 있어요.'); }
     if(xs.tick>20) showTip('light','얼굴 빛','[얼굴 빛]을 켜면 시야가 넓어지고 시청자가 늘지만, 괴물과 나방이 빛을 쫓아옵니다. 다른 배우에게는 내 정체도 보여요.');
     { const no2=nearestObj(w,me); if(no2&&no2.type==='stair') showTip('stairs','계단','건물에는 2~3층이 있습니다. 위층에는 상자가 더 많고 발전기도 있지만 경비 인형과 감시 카메라가 지키고 있어요. 계단 곁에서 [오르기]를 길게 누르세요. 아래층 소리는 계단으로 새어 나갑니다.'); }
-    if(xs.tick>28) showTip('traps','덫 설치','[덫]을 눌러 내 발밑에 덫을 놓으세요(최대 3개). 밟은 사람은 느려지거나, 소리가 나거나, 시야를 잃습니다. 길게 누르면 종류가 바뀝니다(T 설치 · Y 종류). 내 덫은 나와 척후병에게만 보입니다.');
+    if(xs.tick>28) showTip('shake','괴물 따돌리기','쫓기고 있다면: ① [미끼]를 멀리 던지면 쫓던 괴물도 소리에 이끌려 떠납니다 ② 계단을 오르내리면 추격이 끊깁니다 ③ 덤불·옷장에 숨기 ④ 문가 판자 쓰러뜨리기. 괴물은 11초 넘게 쫓으면 지쳐서 쉽니다.'); if(xs.tick>29) showTip('traps','덫 설치','[덫]을 눌러 내 발밑에 덫을 놓으세요(최대 3개). 밟은 사람은 느려지거나, 소리가 나거나, 시야를 잃습니다. 길게 누르면 종류가 바뀝니다(T 설치 · Y 종류). 내 덫은 나와 척후병에게만 보입니다.');
     if(xs.tick>35) showTip('tools','도구 버튼','오른쪽 버튼: 실 흔들기(상대 위치 노출) · 자물쇠(물건 잠그기) · 미끼(소리로 괴물 유인) · 얼굴 빛. 단축키 R · G · Q · F');
     if(w.mons.some(m=>!m.asleep&&!m.type.fly&&Math.hypot(m.x-me.x,m.y-me.y)<480)) showTip('monster','괴물 접근','심장 소리가 빨라지고 화면 가장자리가 붉어집니다. 화살표 방향을 피해 도망치고, 문가의 판자를 쓰러뜨리거나 옷장에 숨으세요.'); xs.shake=Math.max(0,xs.shake-dt*2); for(const f of xs.fx) f.t+=dt; xs.fx=xs.fx.filter(f=>f.t<1.2);
     if(me.moving){ xs.dustT=(xs.dustT||0)-dt; if(xs.dustT<=0){ xs.dustT=0.16; xs.fx.push({k:'dust',x:me.x,y:me.y+12,t:0,vx:(Math.random()-0.5)*20,vy:-8}); } }
@@ -1862,6 +1865,8 @@ function xUpdate(dt){
       else if(ev.type==='stair'){ if(ev.e.human){ xToast(ev.o.dir==='up'?`${(ev.e.fid?xs.w.fidFl[ev.e.fid]:0)+1}층으로 올라왔다`:`${(ev.e.fid?xs.w.fidFl[ev.e.fid]:0)+1}층으로 내려왔다`,'#d9cdb0'); sfx.play('stairs',{vol:0.6}); xs.fade=Math.max(xs.fade||0,0.9); } else if(Math.hypot(ev.o.x-me.x,ev.o.y-me.y)<420&&(ev.o.fid||0)===(me.fid||0)) sfx.play('stairs',{vol:0.25,pan:(ev.o.x-me.x)/400}); }
       else if(ev.type==='ptrapset'){ if(ev.e.human){ xToast(`${TRAP_KINDS.find(q=>q.id===ev.k).name}을(를) 놓았다 (남은 덫 ${ev.e.traps})`,'#d4e0a0'); sfx.play('click',{vol:0.7,rate:0.8}); } }
       else if(ev.type==='ptrapfire'){ if(ev.e.human){ xToast({snare:'올가미에 걸렸다! 8초간 느려진다',bell:'방울 덫이다! 소리가 울려 위치가 드러난다',ink:'먹물 덫이다! 시야가 먹물에 가려졌다'}[ev.k],'#e0506a'); sfx.play(ev.k==='bell'?'bell':ev.k==='ink'?'hideRustle':'trapSnap',{vol:0.8,arg:2.4}); vibrate(100); xs.shake=0.5; } else if(ev.owner&&ev.owner.human){ xToast(`${lab(ev.e.p)}이(가) 내 ${TRAP_KINDS.find(q=>q.id===ev.k).name}에 걸렸다!`,'#d4e0a0'); sfx.play('coin',{vol:0.5,rate:1.4}); } }
+      else if(ev.type==='distract'){ if(Math.hypot(ev.m.x-me.x,ev.m.y-me.y)<650&&(ev.m.fid||0)===(me.fid||0)) xToast(`${ev.m.type.name} — 소리에 정신이 팔렸다! 지금 도망쳐라`,'#9be37a'); }
+      else if(ev.type==='tired'){ if(Math.hypot(ev.m.x-me.x,ev.m.y-me.y)<650&&(ev.m.fid||0)===(me.fid||0)) xToast(`${ev.m.type.name} — 추격을 포기하고 숨을 고른다`,'#9be37a'); }
       else if(ev.type==='wake'){ if(Math.hypot(ev.m.x-me.x,ev.m.y-me.y)<700) xToast(`${ev.m.type.name} — 깨어났다…`,'#ff8a5a'); }
       else if(ev.type==='rescued'){ if(ev.by.human) xToast('구두를 벗겨 줬다 +1','#9be37a'); else if(ev.e.human) xToast('구두가 벗겨졌다!','#9be37a'); }
     }
