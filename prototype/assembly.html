@@ -2665,13 +2665,13 @@ async function onlineFlow(){
       <label class="sl"><span>서버 주소</span><input id="o-url" value="${NET.defaultUrl()}" style="flex:1;background:#0e0907;color:#e6dcc0;border:1px solid #5a4528;padding:6px 8px;font:inherit;font-size:.85em"></label>
       <label class="sl"><span>방 코드</span><input id="o-code" maxlength="4" placeholder="예: ABCD" style="flex:1;background:#0e0907;color:#e6dcc0;border:1px solid #5a4528;padding:6px 8px;font:inherit;text-transform:uppercase"></label>
       <p id="o-err" class="lose" style="min-height:1.4em;font-size:.9em">${err}</p>`,'left');
-    if(auto&&params.get('room')) document.getElementById('o-code').value=params.get('room');
+    if(params.get('room')||params.get('join')) document.getElementById('o-code').value=params.get('room')||params.get('join');
     const pick=auto?(auto==='host'?'create':'join'):await waitButtons([{label:'방 만들기',value:'create'},{label:'코드로 참가',value:'join'},{label:'돌아간다',value:'back',ghost:true}],'online');
     if(pick==='back') return null;
     nick=(document.getElementById('o-nick').value||'').trim()||'손님'; try{ localStorage.setItem('mt_nick',nick); }catch(_){}
     const url=document.getElementById('o-url').value.trim(), code=(document.getElementById('o-code').value||'').trim().toUpperCase();
     try{
-      NET.leave(); await NET.connect(url);
+      NET.leave(); const qs=pick==='create'?'create=1':'room='+encodeURIComponent(code); if(pick!=='create'&&code.length!==4) throw new Error('방 코드 4글자를 입력하세요'); await NET.connect(url+(url.includes('?')?'&':'?')+qs);
       if(pick==='create'){ NET.send({t:'create',nick}); const m=await netWaitSys('created'); NET.room=m.room; NET.id=0; NET.host=true; }
       else { if(code.length!==4) throw new Error('방 코드 4글자를 입력하세요'); const pr=Promise.race([netWaitSys('joined'),netWaitSys('error').then(e=>{ throw new Error(e.msg); })]); NET.send({t:'join',room:code,nick}); const m=await pr; NET.room=m.room; NET.id=m.id; NET.host=false; }
     }catch(e){ err=e.message; NET.leave(); continue; }
@@ -2683,13 +2683,14 @@ async function lobbyScreen(){
     const render=()=>{ const el=document.getElementById('lobby-list'); if(!el) return; el.innerHTML=NET.lobby.map(p=>`<div class="slip" style="animation:none;opacity:1"><i>${p.host?'방장':'참가자'}</i>${p.nick.replace(/[<>&]/g,'')}${p.id===NET.id?' (나)':''}</div>`).join(''); const b=document.getElementById('lobby-start'); if(b) b.disabled=NET.lobby.length<1; };
     setScreen(`<div class="sub">Lobby</div><h2 class="disp" style="margin:4px 0 4px;font-size:28px">방 코드 <span style="letter-spacing:.2em;color:#e0b43a">${NET.room}</span></h2>
       <p class="dim" style="font-size:.9em">${NET.host?'친구들에게 이 코드를 알려 주세요. 모두 모이면 시작을 누르세요. 빈 자리는 봇이 채웁니다.':'방장이 시작하기를 기다리는 중입니다…'}</p><div id="lobby-list"></div>
-      <div class="row" style="margin-top:12px">${NET.host?'<button class="btn" id="lobby-start">게임 시작</button>':''}<button class="btn ghost" id="lobby-leave">나가기</button></div>`,'left');
+      <div class="row" style="margin-top:12px">${NET.host?'<button class="btn" id="lobby-start">게임 시작</button>':''}${NET.host?'<button class="btn ghost" id="lobby-link">초대 링크 복사</button>':''}<button class="btn ghost" id="lobby-leave">나가기</button></div>`,'left');
     render(); const done=v=>{ NET.sys.lobby=null; NET.sys.started=null; NET.sys.closed=null; NET.onClosed=null; res(v); };
     NET.sys.lobby=()=>render();
     NET.sys.started=m=>{ done({host:NET.host,players:m.players}); };
     NET.sys.closed=m=>{ NET.leave(); done(null); };
     NET.onClosed=()=>{ NET.leave(); done(null); };
     document.getElementById('lobby-leave').onclick=()=>{ NET.leave(); done(null); };
+    const lk=document.getElementById('lobby-link'); if(lk) lk.onclick=()=>{ const u=location.origin+location.pathname+'?join='+NET.room; const ok=()=>{ lk.textContent='복사됨!'; setTimeout(()=>{ lk.textContent='초대 링크 복사'; },1500); }; try{ navigator.clipboard.writeText(u).then(ok,()=>{ prompt('링크를 복사하세요',u); }); }catch(_){ prompt('링크를 복사하세요',u); } };
     const sb=document.getElementById('lobby-start'); if(sb) sb.onclick=()=>NET.send({t:'start'});
     const need=+params.get('need')||0; if(NET.host&&need&&params.get('online')==='host'){ const iv=setInterval(()=>{ if(!document.getElementById('lobby-start')){ clearInterval(iv); return; } if(NET.lobby.length>=need){ clearInterval(iv); NET.send({t:'start'}); } },300); }
     document.title='ROOM '+NET.room+' id'+NET.id;
@@ -3235,6 +3236,7 @@ async function runInteractivePair(A0,B0){
   if(demo==='cut'){ P.forEach(p=>p.gold=8); const jb=JOBS[+(params.get('job')||0)], w=P.find(p=>p.job===jb)||P[0]; w.job=jb; w.human=true; stageActors=[]; await runCut(w); return; }
   if(demo==='book'){ P.forEach(p=>p.gold=8); P[0].human=true; await assignScreen(P[0]); return; }
   if(params.get('online')){ const r=await onlineFlow(); if(r){ await (r.host?playGameNet(r.players):clientSession()); } return; }
+  if(params.get('join')){ const r=await onlineFlow(); if(r){ await (r.host?playGameNet(r.players):clientSession()); NET.leave(); } }   // 초대 링크: 끝나면 타이틀로
   while(true){ const act=await titleScreen(); if(act&&act.online){ await (act.online.host?playGameNet(act.online.players):clientSession()); NET.leave(); continue; } if(act==='sim'||(AUTO&&act!=='start')) break; await playGame(); if(AUTO) break; }
 })();
 </script>
