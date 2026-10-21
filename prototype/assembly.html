@@ -2642,8 +2642,16 @@ const NET={ws:null,open:false,id:-1,room:'',host:false,lobby:[],sys:{},handlers:
   ask(to,fn,args,def,ms=180000){ return new Promise(res=>{ const id=++NET.rpcId; const tm=setTimeout(()=>{ NET.pending.delete(id); res(def); },ms); NET.pending.set(id,{res,tm,to}); NET.to(to,{k:'rpc',id,fn,args}); }); },
   dropPending(to,def){ for(const [id,p] of [...NET.pending]) if(p.to===to){ NET.pending.delete(id); clearTimeout(p.tm); p.res(def); } },
   reply(to,id,v){ NET.to(to,{k:'res',id,v}); },
-  leave(){ try{ NET.ws&&NET.ws.close(); }catch(_){} NET.ws=null; NET.open=false; NET.room=''; NET.id=-1; NET.host=false; NET.lobby=[]; NET.pending.clear(); NET.handlers={}; NET.sys={}; NET.onClosed=null; NET.closedMsg=null; }
+  leave(){ try{ NETKEEP.stop(); }catch(_){} try{ NET.ws&&NET.ws.close(); }catch(_){} NET.ws=null; NET.open=false; NET.room=''; NET.id=-1; NET.host=false; NET.lobby=[]; NET.pending.clear(); NET.handlers={}; NET.sys={}; NET.onClosed=null; NET.closedMsg=null; }
 };
+// 온라인 중 화면이 꺼지거나 탭이 백그라운드로 가도 게임이 멈추지 않게 한다
+const NETKEEP={wl:null,worker:null,on:false,
+  start(){ if(NETKEEP.on) return; NETKEEP.on=true;
+    const lock=async()=>{ try{ if(navigator.wakeLock&&!document.hidden) NETKEEP.wl=await navigator.wakeLock.request('screen'); }catch(_){} };
+    lock(); NETKEEP.vis=()=>{ if(!document.hidden) lock(); }; document.addEventListener('visibilitychange',NETKEEP.vis);
+    try{ const blob=new Blob(['setInterval(()=>postMessage(0),20)'],{type:'text/javascript'}); NETKEEP.worker=new Worker(URL.createObjectURL(blob));
+      NETKEEP.worker.onmessage=()=>{ if(document.hidden&&NET.open){ const ts=performance.now(); const dt=Math.min(0.1,(ts-lastTs)/1000); lastTs=ts; if(!paused) now+=dt; update(paused?0:dt); } }; }catch(_){} },
+  stop(){ NETKEEP.on=false; try{ document.removeEventListener('visibilitychange',NETKEEP.vis); }catch(_){} try{ NETKEEP.wl&&NETKEEP.wl.release(); }catch(_){} NETKEEP.wl=null; try{ NETKEEP.worker&&NETKEEP.worker.terminate(); }catch(_){} NETKEEP.worker=null; } };
 function netWaitSys(type,ms=8000){ return new Promise((res,rej)=>{ const tm=setTimeout(()=>{ delete NET.sys[type]; rej(new Error('응답이 없습니다')); },ms); const prev=NET.sys[type]; NET.sys[type]=m=>{ clearTimeout(tm); NET.sys[type]=prev; res(m); }; }); }
 async function onlineFlow(){
   // 반환: null(돌아감) | {host:true,players:[...]} | {host:false}
@@ -2667,7 +2675,7 @@ async function onlineFlow(){
       if(pick==='create'){ NET.send({t:'create',nick}); const m=await netWaitSys('created'); NET.room=m.room; NET.id=0; NET.host=true; }
       else { if(code.length!==4) throw new Error('방 코드 4글자를 입력하세요'); const pr=Promise.race([netWaitSys('joined'),netWaitSys('error').then(e=>{ throw new Error(e.msg); })]); NET.send({t:'join',room:code,nick}); const m=await pr; NET.room=m.room; NET.id=m.id; NET.host=false; }
     }catch(e){ err=e.message; NET.leave(); continue; }
-    return await lobbyScreen();
+    NETKEEP.start(); return await lobbyScreen();
   }
 }
 async function lobbyScreen(){
