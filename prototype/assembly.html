@@ -979,6 +979,8 @@ Object.assign(sfxGen,{
   shearsSnip(r){ const o=dsp.buf(0.5); dsp.add(o,dsp.env(dsp.filt(dsp.noise(dsp.buf(0.08),r),'hp',3500),t=>Math.exp(-t/0.012)),0,1); dsp.add(o,dsp.partials(0.4,4200,[[1,0.5,0.08],[1.6,0.3,0.05]],r,0.01),0,0.5); dsp.add(o,dsp.env(dsp.filt(dsp.noise(dsp.buf(0.06),r),'hp',3000),t=>Math.exp(-t/0.01)),0.12,0.8); return dsp.norm(o,0.6); },
   siren(r){ const o=dsp.buf(1.5); let ph=0; for(let i=0;i<o.length;i++){ const t=i/SR, f=640+260*Math.sin(2*Math.PI*1.35*t); ph+=f/SR; o[i]=((ph%1)*2-1)*0.55*Math.min(1,t/0.04)*Math.exp(-Math.max(0,t-1.1)/0.18); }
     const b=dsp.filt(o,'bp',1400,0.8); dsp.add(b,dsp.sweepSine(0.3,110,60,0.08,0.5),0,0.4); return dsp.norm(dsp.sat(b,1.8),0.7); },
+  chaseGrowl(r){ const o=dsp.buf(0.55); let ph=0; for(let i=0;i<o.length;i++){ const t=i/SR, f=62+30*Math.sin(t*23)+t*40; ph+=f/SR; o[i]=((ph%1)*2-1)*0.7*Math.sin(Math.PI*Math.min(1,t/0.55))*(0.7+0.3*Math.sin(t*61)); }
+    const n=dsp.env(dsp.filt(dsp.noise(dsp.buf(0.55),r),'bp',t=>700+t*1800,2.5),t=>Math.sin(Math.PI*Math.min(1,t/0.55))*0.5); dsp.add(o,n,0,0.8); dsp.add(o,dsp.sweepSine(0.2,95,45,0.07,0.5),0,0.6); return dsp.norm(dsp.sat(o,3.2),0.8); },
   camBeep(r){ const o=dsp.buf(0.5); dsp.add(o,dsp.partials(0.09,2400,[[1,1,0.04]],r,0.001),0,0.8); dsp.add(o,dsp.partials(0.09,2400,[[1,1,0.04]],r,0.001),0.14,0.8); dsp.add(o,dsp.partials(0.18,3100,[[1,1,0.1]],r,0.001),0.3,0.7); return dsp.norm(o,0.5); },
   stairs(r){ const o=dsp.buf(0.9); for(let k=0;k<4;k++){ const at=k*0.17; dsp.add(o,dsp.env(dsp.filt(dsp.noise(dsp.buf(0.12),r),'bp',380+k*60+r()*80,1.4),t=>Math.exp(-t/0.035)),at,0.9); dsp.add(o,dsp.sweepSine(0.1,150+k*14,70,0.04,0.5),at,0.5); } dsp.add(o,dsp.env(dsp.filt(dsp.noise(dsp.buf(0.5),r),'bp',t=>260+t*500,5),t=>Math.sin(Math.PI*Math.min(1,t/0.5))*0.35),0.05,0.5); return dsp.norm(o,0.55); },
   mothFlutter(r){ const n=dsp.noise(dsp.buf(0.35),r), b=dsp.filt(n,'bp',2600,1.2); for(let i=0;i<b.length;i++){ const t=i/SR; b[i]*=(0.5+0.5*Math.sin(2*Math.PI*38*t))*Math.sin(Math.PI*Math.min(1,t/0.35)); } return dsp.norm(b,0.45); },
@@ -1874,8 +1876,8 @@ function xUpdate(dt){
       else if(ev.type==='rescued'){ if(ev.by.human) xToast('구두를 벗겨 줬다 +1','#9be37a'); else if(ev.e.human) xToast('구두가 벗겨졌다!','#9be37a'); }
     }
     xs.hb=(xs.hb||0)-dt; xs.cue=(xs.cue||0)-dt; let dmin=1e9,dm=null; for(const m of w.mons){ if(m.asleep||m.type.fly) continue; const d=Math.hypot(m.x-me.x,m.y-me.y); if(d<dmin){ dmin=d; dm=m; } }
-    if(dmin<560&&xs.hb<=0){ xs.hb=0.32+0.85*dmin/560; sfx.play('heartbeat',{vol:0.15+0.5*(1-dmin/560)}); }
-    if(dm&&dmin<720&&xs.cue<=0){ xs.cue=1.3; const v=0.35*(1-dmin/720); const id=dm.type.id; const pan=(dm.x-me.x)/600; if(id==='bell') sfx.play('bell',{arg:2.2,vol:v,pan}); else if(id==='shears') sfx.play('shearsSnip',{vol:v*1.2,pan}); else sfx.play('creak',{vol:v*0.8,rate:0.8,pan}); }
+    if(dmin<560&&xs.hb<=0){ xs.hb=(dm.state==='chase'?0.22:0.32)+(dm.state==='chase'?0.45:0.85)*dmin/560; sfx.play('heartbeat',{vol:(0.15+0.5*(1-dmin/560))*(dm.state==='chase'?1.35:1),rate:dm.state==='chase'?1.25:1}); }
+    if(dm&&dmin<720&&xs.cue<=0){ const cs=dm.state==='chase'; xs.cue=cs?0.55:1.3; const v=(cs?0.6:0.35)*(1-dmin/720); const id=dm.type.id; const pan=(dm.x-me.x)/600; if(cs){ sfx.play('chaseGrowl',{vol:v*0.9,pan,rate:id==='bell'?1.7:id==='shears'?1.25:id==='guard'?0.9:1}); } if(id==='bell') sfx.play('bell',{arg:2.2,vol:v,pan}); else if(id==='shears') sfx.play('shearsSnip',{vol:v*1.2,pan}); else sfx.play('creak',{vol:v*0.8,rate:0.8,pan}); }
     for(const m of w.mons) if(m.type.fly&&!m.asleep&&Math.hypot(m.x-me.x,m.y-me.y)<420&&Math.random()<dt*2) sfx.play('flip',{vol:0.08*(1-Math.hypot(m.x-me.x,m.y-me.y)/420),rate:2});
     w.events.length=0;
     if(w.over){ xs.endT=0.001; sfx.play('gong',{vol:0.8}); actBtn.disabled=true; }
