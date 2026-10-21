@@ -256,7 +256,7 @@ function runBotGames(rules, n){
 const AW=720, AH=1280, DUR=45, HP0=5;
 const aimAng = (a,b) => Math.atan2(b.y-a.y, b.x-a.x);
 function makeDuel(A,B){
-  const mk=(p,y,dir,minY,maxY)=>({p,job:p.job,shield:(p.job.id==='arch'&&(p.dex|0)>=2?1:0),x:AW/2,y,homeY:y,dir,hp:HP0,inv:0,cd:[0,0,0],shot:0.5+rand()*0.4,r:8,speed:(p.job.id==='tech'&&PLANS.on?306:330),minY,maxY,mx:0,my:0,tx:null,ty:null,hits:0,face:'idle',ai:null,cdMul:p.job.id==='tech'&&PLANS.on?1.2:p.job.id==='ent'?1-0.02*Math.min(12,p.viewers||0):p.job.id==='arch'?((p.dex|0)>=4?0.85:1):p.job.id==='martyr'?1-0.025*Math.min(12,p.wc||0):1});
+  const mk=(p,y,dir,minY,maxY)=>({p,job:p.job,shield:(p.job.id==='arch'&&(p.dex|0)>=2?1:0),x:AW/2,y,homeY:y,dir,hp:HP0,inv:0,cd:[0,0,0],shot:0.5+rand()*0.4,r:8,speed:(p.job.id==='tech'&&PLANS.on?306:330),minY,maxY,mx:0,my:0,tx:null,ty:null,hits:0,face:'idle',ai:null,cdMul:p.job.id==='tech'&&PLANS.on?1.2:p.job.id==='ent'?1-0.02*Math.min(12,p.viewers||0):p.job.id==='arch'?((p.dex|0)>=4?0.85:1):p.job.id==='scout'?0.88:p.job.id==='martyr'?1-0.025*Math.min(12,p.wc||0):1});
   return {t:0,over:false,fxOn:false,A:mk(A,AH-230,-1,AH*0.44,AH-70),B:mk(B,250,1,70,AH*0.56),bul:[],zones:[],timers:[],banners:[],sparks:[],log:[],fx:[],parts:[],shake:0,flash:0,spd:1,onEvent:null};
 }
 function after(d,sec,fn){ d.timers.push({t:sec,fn}); }
@@ -643,7 +643,7 @@ defJob({id:'thief',name:'도둑',color:'#7a8aa8',kind:'spark',
 // 순교자: 고통을 받아 낸다 — 못이 십자로 박히고, 가시관이 조여 오고, 성흔이 빗물처럼 내린다
 defJob({id:'martyr',name:'순교자',color:'#e8c8a0',kind:'ember',
   goal:'승리 조건: 괴물에게 붙잡혀 성흔 16개를 새긴다 (30초에 한 번만 인정, 재화는 잃지 않는다). 성흔이 쌓일수록 괴물이 나에게 끌리고, 내 곁에 있는 사람도 같이 쫓긴다. 듀얼에서는 성흔만큼 공격이 빨라진다',
-  atk:(d,m,f)=>{ const a=aimAng(m,f); for(const o of [-0.12,0.12]) shoot(d,m,{ang:a+o,sp:320,r:5.5,shape:'needle',trail:3}); },
+  atk:(d,m,f)=>{ const a=aimAng(m,f); shoot(d,m,{ang:a,sp:330,r:5.5,shape:'needle',trail:3}); },
   spells:[
    {name:'속죄의 못', cd:5, lv:0, text:'못이 십자 모양으로 나뉘어 날아가 한꺼번에 박힌다', cast(d,m,f){ castFx(d,m,'dagger');
      for(let k=0;k<3;k++) after(d,k*0.4,()=>{ const a=aimAng(m,f); for(let i=0;i<4;i++) shoot(d,m,{ang:a+i*1.5708,sp:240,r:6.5,shape:'needle',trail:3,upd:(b,dt)=>{ if(b.age>0.5&&!b.tn){ b.tn=1; const w2=aimAng(b,f); setVel(b,w2+(i%2?0.12:-0.12),330); } }}); }); }},
@@ -696,7 +696,7 @@ function doSkill(w,e){ const K=XSK[e.p.job.id]; if(!K||!K.use||e.xsT>0||e.skN<=0
 function xCloudMul(w,x,y,fid,own){ let m=1; for(const f of w.xfx){ if(f.k!=='poison'||(f.fid||0)!==(fid||0)||f.own===own) continue; if(Math.hypot(f.x-x,f.y-y)<f.r) m=0.55; } return m; }
 function xSkillTick(w,e,dt){ const K=XSK[e.p.job.id]; if(!K) return; e.xsT=Math.max(0,e.xsT-dt); if(K.regen&&e.skN<K.max){ e.skR+=dt; if(e.skR>=K.regen){ e.skR=0; e.skN++; } } if(K.tick) K.tick(w,e,dt); if(K.spd) e.perk.spd*=K.spd(w,e); }
 /* (독 구름 감속은 아래 공통 계산에서) */
-Object.assign(EXP_PERK,{jester:{spd:1,chest:0.85,gen:1,sight:1},seer:{spd:1,chest:0.78,gen:1,sight:1},clock:{spd:0.98,chest:1,gen:0.72,sight:1}});
+Object.assign(EXP_PERK,{jester:{spd:1,chest:0.75,gen:0.9,sight:1},seer:{spd:1,chest:0.78,gen:1,sight:1},clock:{spd:1,chest:0.85,gen:0.62,sight:1}});
 const seerPg=w=>w.pg||w.mons.map((m,i)=>m.ptgt&&!m.asleep&&!m.type.fly?[i,Math.round(m.ptgt.x),Math.round(m.ptgt.y),m.ptgt.fid||0]:null).filter(Boolean);
 const seerMm=w=>w.mm||w.objs.map((o,i)=>o.type==='chest'&&o.kind==='mimic'&&!o.done?i:-1).filter(i=>i>=0);
 XSK.jester={ name:'짓궂은 장난', cd:6, max:2, regen:30, msg:'발목에 방울을 달았다 — 그 사람은 10초간 발소리가 크다', sfx:'bell', fail:'가까이에 장난칠 배우가 없다',
@@ -716,7 +716,7 @@ XSK.clock={ name:'정지', cd:8, max:1, regen:60, msg:'시간이 멈췄다 — �
   bot(w,e){ for(const m of w.mons){ if(m.asleep||m.type.fly||(m.fid||0)!==(e.fid||0)) continue; if(m.state==='chase'&&m.chase===e&&Math.hypot(m.x-e.x,m.y-e.y)<240) return true; } return false; },
   goal:e=>`시간 정지 ${e.skN>0?'준비됨 [F]':'충전 중 '+Math.max(0,Math.ceil(60-e.skR))+'초'} — 반경 안의 괴물과 다른 배우가 3.5초 굳는다 (곁에 있는 사람도 같이!) · 발전기 수리가 빠르다` };
 
-Object.assign(EXP_PERK,{pyro:{spd:1,chest:1,gen:1.1,sight:1},lock:{spd:1,chest:0.88,gen:0.95,sight:1},herb:{spd:1,chest:0.85,gen:1,sight:1},carver:{spd:0.98,chest:0.9,gen:0.9,sight:1}});
+Object.assign(EXP_PERK,{pyro:{spd:1.03,chest:0.8,gen:0.9,sight:1},lock:{spd:1,chest:0.88,gen:0.95,sight:1},herb:{spd:1,chest:0.85,gen:1,sight:1},carver:{spd:1,chest:0.75,gen:0.85,sight:1}});
 const xTarget=(w,e,range)=>{ const [dx,dy]=xdirOf(e); let best=null,bs=1e9; for(const q of w.ents){ if(q===e||!q.p.alive||q.out||q.hidden||(q.fid||0)!==(e.fid||0)) continue; const vx=q.x-e.x, vy=q.y-e.y, d=Math.hypot(vx,vy); if(d>range) continue; const sc=d*(1.25-0.5*Math.max(0,(vx*dx+vy*dy)/(d||1))); if(sc<bs){ bs=sc; best=q; } } return best; };
 const xdirOf=e=>{ const dx=e.dir?e.dir[0]:0, dy=e.dir?e.dir[1]:-1, d=Math.hypot(dx,dy)||1; return [dx/d,dy/d]; };
 const chasedBy=(w,e,R)=>w.mons.some(m=>!m.asleep&&!m.type.fly&&(m.fid||0)===(e.fid||0)&&m.state==='chase'&&m.chase===e&&Math.hypot(m.x-e.x,m.y-e.y)<R);
@@ -751,7 +751,7 @@ XSK.carver={ name:'요새', cd:3, max:2, regen:35, msg:'입구를 목재로 봉�
   bot(w,e){ return chasedBy(w,e,260)&&w.doors.some(d=>!d.inner&&d.b&&Math.hypot(d.x-e.x,d.y-e.y)<170); },
   goal:e=>`입구를 봉쇄해 요새를 짓는다 [F] ${e.skN}개 · 20초 · 괴물이 두드리면 소리가 나서 위치가 드러난다 · 안(공방)에서는 수색 30% 빠름` };
 
-Object.assign(EXP_PERK,{hunter:{spd:1.02,chest:0.95,gen:1.05,sight:1},magi:{spd:1,chest:0.8,gen:0.9,sight:1}});
+Object.assign(EXP_PERK,{hunter:{spd:1.03,chest:0.8,gen:0.95,sight:1},magi:{spd:1,chest:0.72,gen:0.85,sight:1}});
 XSK.hunter={ name:'덫', cd:2, max:2, regen:30, msg:'덫을 놓았다 — 걸린 괴물 곁에서 [수색]을 길게 누르면 포획한다', sfx:'hit',
   use(w,e){ if(solidAt(w,e.x,e.y,8)) return false; xfxAdd(w,{k:'trap',x:e.x,y:e.y,fid:e.fid||0,t:40,r:26,own:e.i,upd:(w2,f,dt)=>{ if(f.t>=f.t0-1.2) return; for(const q of w2.ents){ if(q.i===f.own||!q.p.alive||q.out||q.hidden||(q.fid||0)!==(f.fid||0)||q.frz>0) continue; if(q.p.job.id==='scout') continue; if(Math.hypot(q.x-f.x,q.y-f.y)<f.r){ q.frz=2; q.srch=null; q.goal=null; q.wps=null; noise(w2,f.x,f.y,300,'lure'); w2.expose[q.i]=Math.max(w2.expose[q.i]||0,2.5); f.t=Math.min(f.t,0.6); w2.events.push({type:'xtrapman',e:w2.ents[f.own],t:q}); return; } } for(let i=0;i<w2.mons.length;i++){ const m=w2.mons[i]; if(m.asleep||m.type.fly||(m.fid||0)!==(f.fid||0)||m.fz>0) continue; if(Math.hypot(m.x-f.x,m.y-f.y)<f.r+m.r*0.6){ m.fz=4.5; m.trapT=4.5; m.harvested=false; xfxAdd(w2,{k:'frz',x:m.x,y:m.y,fid:f.fid||0,t:4.5,m:i,r:m.r}); noise(w2,f.x,f.y,260,'lure'); f.t=Math.min(f.t,0.6); w2.events.push({type:'xtrap',e:w2.ents[f.own]}); break; } } }}); return true; },
   tick(w,e,dt){ let tg=null,td=80; for(const m of w.mons){ if(!(m.trapT>0)||m.harvested||(m.fid||0)!==(e.fid||0)) continue; const d=Math.hypot(m.x-e.x,m.y-e.y); if(d<td){ td=d; tg=m; } }
