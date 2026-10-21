@@ -671,7 +671,7 @@ defJob({id:'hermit',name:'은둔자',color:'#9aa89a',kind:'ink',
 
 /* ===================== EXPLORE:BEGIN (DOM 없음: 탐색 라운드 엔진 v2 — 야외 + 건물 + 괴물 + 상호작용) ===================== */
 const NETRT={explore:true,duel:true};   // 원격 사람이 실시간 단계에 참여하는지 (단계별로 켜짐)
-const XW=3000, XH=2000, GS=40, WT=24, DG=120, EXP_T=120, NAVR=22;
+const XW=3000, XH=2000, GS=40, WT=24, DG=120, EXP_T=180, NAVR=22;
 const THEMES={
   theatre:{id:'theatre',name:'버려진 극장의 뒤뜰',ground:['#34402e','#222c20'],path:'#4a3f2c',tree:'leaf',variants:['hall','plain','yard','plain','plain'],landmark:'스포트라이트 탑',bld:['대극장 본관','소품 창고','분장실 동','리허설 홀','무대 장치고']},
   cemetery:{id:'cemetery',name:'안개 낀 공동묘지',ground:['#37403f','#232b2b'],path:'#4a4a42',tree:'bare',variants:['hall','yard','plain','plain','plain'],landmark:'거대한 십자 석상',bld:['낡은 예배당','관리인의 집','납골당','종탑 별관','장의사']},
@@ -1228,7 +1228,7 @@ function stepExplore(w,dt){
     if(e.morph>0){ for(const t of w.ents){ if(t===e||!t.p.alive||t.out||t.hidden||(t.fid||0)!==(e.fid||0)||e.cutSet.includes(t)) continue; if(Math.hypot(t.x-e.x,t.y-e.y)<42) doCut(w,e,t); } }
     const o=nearestObj(w,e);
     if(wantAct&&o&&o.type==='ldoor'&&e.keys<=0){ e.srch=null; if(!e.lockMsg||w.t-e.lockMsg>2){ e.lockMsg=w.t; w.events.push({type:'locked',e,o}); } }
-    else if(wantAct&&o){ if(!e.srch||e.srch.o!==o) e.srch={o,prog:(o.type==='chest'||o.type==='gen')?(o.prog||0)*0.8:0}; const need=o.need*((o.type==='gen'||o.type==='chest')?1.25:1)*(o.type==='gen'?e.perk.gen:o.type==='chest'?e.perk.chest:1)*(e.bondOn>0?0.78:1)*((o.type==='ward'&&o.occ&&o.occ!==e)?3:1)*((o.lock&&o.lock!==e)?(o.lock.p.job.id==='lock'?(e.p.job.id==='scout'?3:6):(e.p.job.id==='scout'?2:3)):1)*(e.prick>0?1.3:1); e.srch.prog+=dt/need;
+    else if(wantAct&&o){ if(!e.srch||e.srch.o!==o) e.srch={o,prog:(o.type==='chest'||o.type==='gen')?(o.prog||0)*0.8:0}; const need=o.need*(o.type==='gen'?e.perk.gen:o.type==='chest'?e.perk.chest:1)*(e.bondOn>0?0.78:1)*((o.type==='ward'&&o.occ&&o.occ!==e)?3:1)*((o.lock&&o.lock!==e)?(o.lock.p.job.id==='lock'?(e.p.job.id==='scout'?3:6):(e.p.job.id==='scout'?2:3)):1)*(e.prick>0?1.3:1); e.srch.prog+=dt/need;
       if(o.lock&&o.lock!==e){ o.tamperT=(o.tamperT||0)-dt; if(o.tamperT<=0){ o.tamperT=1; noise(w,o.x,o.y,380,'lock'); if(!o.lockWarn||w.t-o.lockWarn>3){ o.lockWarn=w.t; w.events.push({type:'locktamper',e,o}); } } }
       if(o.type==='chest'||o.type==='gen'){ o.prog=Math.max(o.prog||0,e.srch.prog); o.srchFrame=w.t; if(!o.starter&&o.prog>0.3) o.starter=e; }
       if(o.type==='dig') noisy(e,150,'chest'); if(o.type==='gen') noisy(e,420,'gen'); else if(o.type==='chest') noisy(e,o.hoard?55:o.candy?450:130,o.candy?'gen':'chest');
@@ -3587,7 +3587,7 @@ async function titleScreen(){
 }
 async function howToScreen(){
   const step=(n,t,d)=>`<div style="display:flex;gap:.7em;margin:.55em 0"><span class="seal" style="flex:none;width:1.9em;height:1.9em;line-height:1.9em;font-size:.9em">${n}</span><div><b>${t}</b><div class="dim" style="font-size:.9em">${d}</div></div></div>`;
-  await bookScreen({left:`<h3>How to play</h3><h2>게임의 흐름</h2>${step(1,'탐색 (2분)','어두운 극장 뒤뜰을 돌아다니며 상자와 발전기를 엽니다. 괴물 네 종이 돌아다닙니다.')}${step(2,'소집','잔혹동화 책이 이야기를 펼치고, 모두가 1대1로 마주 섭니다.')}${step(3,'듀얼','탄막을 피하며 스펠 카드로 반격합니다. 이기면 실을 4개, 지면 3개 고릅니다.')}${step(4,'실 선택 · 공개','상대의 12개 실 중 급소 4개를 맞히면 끊깁니다. 4개가 모두 끊기면 탈락.')}<p class="dim" style="font-size:.9em">탐색과 소집을 반복해, 마지막까지 살아남으세요.</p>`,
+  await bookScreen({left:`<h3>How to play</h3><h2>게임의 흐름</h2>${step(1,'탐색 (3분)','어두운 극장 뒤뜰을 돌아다니며 상자와 발전기를 엽니다. 괴물 네 종이 돌아다닙니다.')}${step(2,'소집','잔혹동화 책이 이야기를 펼치고, 모두가 1대1로 마주 섭니다.')}${step(3,'듀얼','탄막을 피하며 스펠 카드로 반격합니다. 이기면 실을 4개, 지면 3개 고릅니다.')}${step(4,'실 선택 · 공개','상대의 12개 실 중 급소 4개를 맞히면 끊깁니다. 4개가 모두 끊기면 탈락.')}<p class="dim" style="font-size:.9em">탐색과 소집을 반복해, 마지막까지 살아남으세요.</p>`,
     right:`<h3>직업과 도구</h3><div style="max-height:calc(100% - 34px);overflow-y:auto;pointer-events:auto;padding-right:6px">${JOBS.map(j=>`<p style="margin:.35em 0"><span class="chip"><i style="background:${j.color}"></i>${j.name}</span><br><span class="dim" style="font-size:.88em">${j.goal}</span></p>`).join('')}</div><p style="font-size:.9em;margin-top:.6em"><b>도구</b> — 얼굴 빛(F) · 미끼(Q) · 설치(T: 덫 3종·자물쇠, 길게 눌러 종류 변경) · 실 흔들기(R)<br><span class="dim">모든 배우의 직업은 공개입니다. 비밀은 열두 개의 실 중 어느 네 개가 급소인지뿐. 메뉴의 ‘온라인’에서 친구와 함께 할 수 있습니다.</span></p>`,buttons:[{label:'돌아간다',value:1}],tag:STOP==='how'?'how':'how_'});
 }
 async function settingsScreen(){
@@ -3595,7 +3595,7 @@ async function settingsScreen(){
     ${settingsHTML()}
     <div class="setgrp"><h4>역전 기믹</h4><select id="o-cb" style="width:100%"><option value="off" ${rules.comeback==='off'?'selected':''}>없음</option><option value="extra" ${rules.comeback==='extra'?'selected':''}>A. 관객의 동정 — 급소 2개 이상 끊기면 선택 +1</option><option value="last" ${rules.comeback==='last'?'selected':''}>B. 최후의 승부수 — 급소 3개 끊기면 한 번에 5개</option></select></div>
     <div class="setgrp"><h4>탐색 라운드</h4><label class="opt" style="margin:0 0 8px"><input type="checkbox" id="o-ex" ${opts.explore?'checked':''}><div>탐색 라운드 사용<small>끄면 소집마다 재화를 자동 지급합니다.</small></div></label>
-      <select id="o-et" style="width:100%">${[[120,'2분 (기본)'],[60,'1분'],[30,'30초 (테스트)']].map(([v,l])=>`<option value="${v}" ${opts.exploreT===v?'selected':''}>${l}</option>`).join('')}</select></div>
+      <select id="o-et" style="width:100%">${[[180,'3분 (기본)'],[120,'2분'],[60,'1분'],[30,'30초 (테스트)']].map(([v,l])=>`<option value="${v}" ${opts.exploreT===v?'selected':''}>${l}</option>`).join('')}</select></div>
     <div class="setgrp"><h4>직업 특수 승리 플랜</h4><label class="opt" style="margin:0"><input type="checkbox" id="o-pl" ${PLANS.on?'checked':''}><div>기술자의 탈출 승리<small>발전기 3개를 고쳐 탈출구로 3번 탈출하면 승리. 대신 기술자는 듀얼이 약합니다.</small></div></label></div>
     <div class="setgrp"><h4>듀얼</h4><label class="opt" style="margin:0 0 6px"><input type="checkbox" id="o-wf" ${rules.winnerFirst?'checked':''}><div>승자 선공<small>승자의 공격이 먼저 적용되고, 쓰러진 쪽의 반격은 취소됩니다.</small></div></label>
       <label class="opt" style="margin:0 0 6px"><input type="checkbox" id="o-tm" ${opts.timer?'checked':''}><div>실 선택 15초 제한</div></label>
