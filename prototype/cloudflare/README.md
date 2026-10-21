@@ -24,3 +24,5 @@
 - Worker가 `/` 로 게임 페이지를, `/ws` 로 WebSocket을 처리합니다.
 - 방 1개 = Durable Object 1개. 방장 브라우저가 게임을 계산하고 서버는 중계만 합니다 (`../server.js` 와 같은 프로토콜).
 - 방은 비어 있으면 자동으로 사라집니다. 방장이 나가면 방이 닫힙니다.
+
+자동 배포: GitHub Actions(.github/workflows/deploy-cloudflare.yml)가 이 폴더나 assembly.html 변경 푸시 시 실행됩니다. 시크릿 CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID 필요.
