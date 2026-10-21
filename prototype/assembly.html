@@ -965,12 +965,20 @@ function saveSettings(){ try{ localStorage.setItem('mt_settings',JSON.stringify(
 function vibrate(p){ try{ if(SETTINGS.vib&&navigator.vibrate) navigator.vibrate(p); }catch(e){} }
 const sfx=(()=>{
   let ctx=null, master=null, sfxB=null, musB=null, wet=null, on=!MUTE; const cache={}, loops={};
+  let initErr='', an=null, anBuf=null;
+  function resampleTo(x,from,to){ if(from===to) return x; const n=Math.max(2,Math.round(x.length*to/from)), o=new Float32Array(n); for(let i=0;i<n;i++){ const p=i*from/to, i0=Math.floor(p), f=p-i0; o[i]=x[Math.min(x.length-1,i0)]*(1-f)+x[Math.min(x.length-1,i0+1)]*f; } return o; }
   function init(){ if(ctx||MUTE) return;
-    try{ ctx=new (window.AudioContext||window.webkitAudioContext)(); master=ctx.createGain(); sfxB=ctx.createGain(); musB=ctx.createGain();
+    try{ ctx=params.has('sr')?new (window.AudioContext||window.webkitAudioContext)({sampleRate:+params.get('sr')}):new (window.AudioContext||window.webkitAudioContext)(); window.__ctxRate=ctx.sampleRate; master=ctx.createGain(); sfxB=ctx.createGain(); musB=ctx.createGain();
       const comp=ctx.createDynamicsCompressor(); comp.threshold.value=-14; comp.knee.value=18; comp.ratio.value=5; comp.attack.value=0.004; comp.release.value=0.2;
-      const conv=ctx.createConvolver(), ir=dsp.impulse(1.4,sfxRng(99)), ib=ctx.createBuffer(1,ir.length,SR); ib.copyToChannel(ir,0); conv.buffer=ib;
-      wet=ctx.createGain(); wet.gain.value=0.2; wet.connect(conv); conv.connect(sfxB); sfxB.connect(master); musB.connect(master); master.connect(comp); comp.connect(ctx.destination); applyVol();
-    }catch(e){ ctx=null; } }
+      wet=ctx.createGain(); wet.gain.value=0.2;
+      try{ const conv=ctx.createConvolver(), ir=resampleTo(dsp.impulse(1.4,sfxRng(99)),SR,ctx.sampleRate), ib=ctx.createBuffer(1,ir.length,ctx.sampleRate); ib.copyToChannel(ir,0); conv.buffer=ib; wet.connect(conv); conv.connect(sfxB); }catch(e){ initErr='reverb off: '+e; wet.disconnect(); wet.gain.value=0; }
+      sfxB.connect(master); musB.connect(master); master.connect(comp); comp.connect(ctx.destination);
+      try{ an=ctx.createAnalyser(); an.fftSize=1024; anBuf=new Float32Array(an.fftSize); comp.connect(an); }catch(e){ an=null; }
+      applyVol();
+    }catch(e){ initErr=String(e); window.__initErr=initErr; ctx=null; } }
+  function level(){ if(!an) return 0; an.getFloatTimeDomainData(anBuf); let m=0; for(let i=0;i<anBuf.length;i++) m=Math.max(m,Math.abs(anBuf[i])); return m; }
+  function unlock(){ init(); if(ctx&&ctx.state!=='running'){ try{ ctx.resume(); }catch(e){} } }
+  function status(){ return {ok:!!ctx,state:ctx?ctx.state:'none',rate:ctx?ctx.sampleRate:0,err:initErr,on,loops:Object.keys(loops).join(',')}; }
   function applyVol(){ if(!ctx) return; master.gain.value=on?SETTINGS.master:0; sfxB.gain.value=SETTINGS.sfx; musB.gain.value=SETTINGS.music; }
   function buf(name,arg,v){ const key=name+'|'+(arg===undefined?'':arg)+'|'+v; if(cache[key]) return cache[key];
     const x=sfxRender(name,arg,v*977+name.length*131+Math.round((arg||1)*100)), b=ctx.createBuffer(1,x.length,SR); b.copyToChannel(x,0); return cache[key]=b; }
@@ -984,9 +992,9 @@ const sfx=(()=>{
   function loop(key,name,arg,vol=1,bus='music'){ if(!ctx||!on) return; const cur=loops[key]; if(cur&&cur.id===name+'|'+arg){ try{ cur.g.gain.linearRampToValueAtTime(vol,ctx.currentTime+0.8); }catch(e){} return; } if(cur) stopLoop(key,1.2);
     try{ if(ctx.state==='suspended') ctx.resume(); const b=buf(name,arg,1), s=ctx.createBufferSource(); s.buffer=b; s.loop=true; const g=ctx.createGain(); g.gain.value=0; s.connect(g); g.connect(bus==='music'?musB:sfxB); s.start(); g.gain.linearRampToValueAtTime(vol,ctx.currentTime+1.6); loops[key]={s,g,id:name+'|'+arg}; }catch(e){ window.__sfxErr=(window.__sfxErr||0)+1; window.__sfxLast='loop '+name+': '+e; } }
   function stopLoop(key,fade=1){ const l=loops[key]; if(!l||!ctx) return; delete loops[key]; try{ l.g.gain.cancelScheduledValues(ctx.currentTime); l.g.gain.setValueAtTime(l.g.gain.value,ctx.currentTime); l.g.gain.linearRampToValueAtTime(0,ctx.currentTime+fade); l.s.stop(ctx.currentTime+fade+0.05); }catch(e){} }
-  return {init,play,loop,stopLoop,applyVol,get on(){return on;},toggle(){on=!on; if(!on) Object.keys(loops).forEach(k=>stopLoop(k,0.2)); applyVol(); return on;}};
+  return {init,unlock,status,level,play,loop,stopLoop,applyVol,get on(){return on;},toggle(){on=!on; if(!on) Object.keys(loops).forEach(k=>stopLoop(k,0.2)); applyVol(); return on;}};
 })();
-['pointerdown','keydown'].forEach(ev_=>addEventListener(ev_,()=>sfx.init(),{passive:true}));
+['pointerdown','pointerup','touchend','click','keydown'].forEach(ev_=>addEventListener(ev_,()=>sfx.unlock(),{passive:true,capture:true}));
 let musKey='';
 function musicTick(){ if(!sfx.on) { musKey=''; return; } { const ph=(mode==='explore'&&xs)?xs.w.phase:0; if(ph>=1) sfx.loop('ten','tension',0,ph===2?0.95:0.5); else sfx.stopLoop('ten',1.5); } let k='';
   if(mode==='explore'&&xs) k='amb'+({theatre:0,cemetery:1,village:2}[xs.w.theme.id]||0); else if(mode==='duel') k='bgm2'; else if(mode==='pick'||mode==='reveal') k='bgm1'; else if(mode==='cut') k=''; else k='bgm0';
@@ -2127,9 +2135,10 @@ function draw(){
     atmosphere(g,W,H,now); }
 }
 function settingsHTML(){ const sl=(id,label,v)=>`<label class="sl"><span>${label}</span><input type="range" id="${id}" min="0" max="1" step="0.05" value="${v}"></label>`, ck=(id,label,v)=>`<label class="opt" style="margin:6px 0 0"><input type="checkbox" id="${id}" ${v?'checked':''}><div>${label}</div></label>`;
-  return `<div class="setgrp"><h4>소리 · 화면</h4>${sl('s-master','전체 음량',SETTINGS.master)}${sl('s-sfx','효과음',SETTINGS.sfx)}${sl('s-music','음악·환경음',SETTINGS.music)}${ck('s-vib','진동 (모바일)',SETTINGS.vib)}${ck('s-grain','필름 그레인 효과',SETTINGS.grain)}${ck('s-tut','처음 보는 요소에 도움말 표시',SETTINGS.tutorial)}${ck('s-cb','색약 보조 (얼굴 빛 옆에 직업 기호 표시)',SETTINGS.cb)}</div>`; }
+  return `<div class="setgrp"><h4>소리 · 화면</h4>${sl('s-master','전체 음량',SETTINGS.master)}${sl('s-sfx','효과음',SETTINGS.sfx)}${sl('s-music','음악·환경음',SETTINGS.music)}${ck('s-vib','진동 (모바일)',SETTINGS.vib)}${ck('s-grain','필름 그레인 효과',SETTINGS.grain)}${ck('s-tut','처음 보는 요소에 도움말 표시',SETTINGS.tutorial)}${ck('s-cb','색약 보조 (얼굴 빛 옆에 직업 기호 표시)',SETTINGS.cb)}<div class="row" style="margin-top:8px"><button class="btn ghost" type="button" id="s-test">소리 테스트</button><span id="s-stat" class="dim" style="font-size:12px"></span></div></div>`; }
 function bindSettings(root){ const g=id=>root.querySelector('#'+id); if(!g('s-master')) return;
   const upd=()=>{ SETTINGS.master=+g('s-master').value; SETTINGS.sfx=+g('s-sfx').value; SETTINGS.music=+g('s-music').value; SETTINGS.vib=g('s-vib').checked; SETTINGS.grain=g('s-grain').checked; SETTINGS.tutorial=g('s-tut').checked; SETTINGS.cb=g('s-cb').checked; saveSettings(); sfx.applyVol(); };
+  const tb=g('s-test'), st=g('s-stat'); const show=()=>{ const q=sfx.status(); st.textContent=q.ok?`오디오 ${q.state} · ${q.rate}Hz${q.err?' · '+q.err:''}${q.on?'':' · 음소거'}`:'오디오를 시작하지 못했습니다'+(q.err?': '+q.err:'(화면을 한 번 터치하세요)'); }; tb.onclick=()=>{ sfx.unlock(); sfx.play('gong',{vol:0.6}); sfx.play('coin',{vol:0.8,at:0.3}); setTimeout(show,150); }; show();
   root.querySelectorAll('#s-master,#s-sfx,#s-music,#s-vib,#s-grain,#s-tut,#s-cb').forEach(el=>el.addEventListener('input',upd)); }
 let paused=false; const pauseEl=document.getElementById('pause'), pauseBtn=document.getElementById('pausebtn');
 function setPause(v){ if(v===paused) return; paused=v; pauseEl.classList.toggle('on',v); if(v){ document.getElementById('pause-set').innerHTML=settingsHTML(); bindSettings(pauseEl); actHeld=false; joy=null; } }
@@ -2396,12 +2405,12 @@ async function playGame(){
 }
 (async function main(){
   P=makePlayers(0); frame();
-  if(params.has('snd')){ sfx.init(); setInterval(()=>{ document.title='sfx err '+(window.__sfxErr||0)+' '+(window.__sfxLast||'')+' ctx '+(typeof actxState==='function'?actxState():''); },400); }
+  if(params.has('snd')){ sfx.init(); window.__pk=0; setInterval(()=>{ window.__pk=Math.max(window.__pk,sfx.level()); const q=sfx.status(); document.title='audio '+q.state+' '+q.rate+'Hz loops['+q.loops+'] err '+(window.__sfxErr||0)+' '+(window.__sfxLast||'')+' peak '+window.__pk.toFixed(3); },200); }
   const demo=params.get('demo');   // 디버그: ?demo=load / ?demo=duel / ?demo=book
   if(demo==='load'){ transition(()=>new Promise(()=>{}),{text:'NOW LOADING',tip:TIPS[0],job:JOBS[2]}); return; }
   if(demo==='duel'){ P.forEach(p=>p.gold=8); P[0].job=JOBS[+(params.get('a')||0)]; P[1].job=JOBS[+(params.get('b')||1)]; stageActors=[]; startDuelScene(P[0],P[1]); duelScene.count=0; duelScene.humanCtl=false; showSpellButtons(duelScene.d.A); return; }
   if(demo==='sprites'){ ui.innerHTML='<div class="scr" style="background:#a99b78"><div style="display:flex;gap:10px;pointer-events:auto">'+JOBS.map(j=>`<img src="${spriteURL(j,1.7)}" style="height:380px">`).join('')+'</div></div>'; return; }
-  if(demo==='sfxtest'){ sfx.init(); let n=0; for(const k of Object.keys(sfxGen)){ sfx.play(k,{arg:1.1,v:0}); sfx.play(k,{arg:0.8,v:2}); n+=2; } document.title='sfx played '+n+' err '+(window.__sfxErr||0)+' '+(window.__sfxLast||''); setInterval(()=>{ document.title='sfx played '+n+' err '+(window.__sfxErr||0)+' '+(window.__sfxLast||''); },300); return; }
+  if(demo==='sfxtest'){ sfx.init(); let n=0; for(const k of Object.keys(sfxGen)){ sfx.play(k,{arg:1.1,v:0}); sfx.play(k,{arg:0.8,v:2}); n+=2; } window.__pk=0; setInterval(()=>{ window.__pk=Math.max(window.__pk,sfx.level()); const q=sfx.status(); document.title='sfx played '+n+' err '+(window.__sfxErr||0)+' rate '+q.rate+' state '+q.state+' initErr '+(q.err||'none')+' peak '+window.__pk.toFixed(3); },100); return; }
   if(demo==='bullets'){ const cc=document.createElement('canvas'); cc.style.cssText='position:fixed;inset:0;width:100%;height:100%;z-index:3;background:#120a08'; document.body.appendChild(cc); cc.width=innerWidth; cc.height=innerHeight; const x=cc.getContext('2d');
     const list=[['ent','star','#f6e3a6'],['ent','beam','#f6e3a6'],['ent','ring','#f6e3a6'],['ent','curtain','#f6e3a6'],['tech','bolt','#9be37a'],['tech','gear','#9be37a'],['tech','rivet','#9be37a'],['scout','flame','#7fe3ff'],['scout','wave','#7fe3ff'],['scout','spear','#7fe3ff'],['arch','page','#cdb6ff'],['arch','ink','#cdb6ff'],['arch','drop','#cdb6ff'],['arch','glyph','#cdb6ff']];
     const cols=5, cw_=innerWidth/cols, rh=innerHeight/Math.ceil(list.length/cols); list.forEach(([j,sh,col],i)=>{ const px=(i%cols+0.5)*cw_, py=(Math.floor(i/cols)+0.5)*rh, sp=bulletSprite(sh,col,'가'); const g2=glowSprite(col,16); x.save(); x.globalCompositeOperation='lighter'; x.globalAlpha=0.6; x.drawImage(g2.c,px-g2.s*1.3,py-g2.s*1.3,g2.s*2.6,g2.s*2.6); x.restore(); const k=Math.min(cw_,rh)/BSZ*BSS*0.9; x.drawImage(sp,px-BSZ/BSS*k/2*1.0,py-BSZ/BSS*k/2*1.0,BSZ/BSS*k,BSZ/BSS*k); x.fillStyle='#d9cdb0'; x.font='14px sans-serif'; x.textAlign='center'; x.fillText(sh,px,py+rh*0.46); }); return; }
