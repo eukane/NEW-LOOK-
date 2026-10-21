@@ -179,7 +179,7 @@ function makePlayers(humanIdx){
     gold:0, skill:0.25+rand()*0.55, alive:true, duelWins:0,
   }));
 }
-const PLANS={on:true}, HIDE={on:true};
+const PLANS={on:true}, HIDE={on:false};
 const code=p=>'인형 '+'가나다라'[p.i%4];
 const shown=p=>!HIDE.on||p.human||p.known||!p.alive||(typeof P!=='undefined'&&P.some(q=>q.human&&!q.alive));
 const lab=p=>shown(p)?p.name:code(p);
@@ -446,12 +446,12 @@ const MON_TYPES={
 const EXP_PERK={ent:{spd:1.12,chest:1,gen:1,sight:1},tech:{spd:1,chest:1,gen:0.5,sight:1},scout:{spd:1,chest:0.6,gen:1,sight:1},arch:{spd:1,chest:1,gen:1,sight:0.55}};
 const BOOK_EVENTS=[
   {id:'doors',title:'세 개의 문',tag:'이번 소집 · 개인 선택',gather:true,story:'책장 한가운데에 문이 세 개 나타났습니다. 한 문 뒤에는 보물이, 한 문 뒤에는 함정이, 마지막 문 뒤에는 낯선 길이 있습니다.',rule:'차례대로 문을 하나씩 엽니다. 먼저 연 사람의 얼굴 빛 반응을 보고 고를 수 있습니다. 문은 한 번 열리면 닫혀 버립니다.'},
-  {id:'pinocchio',title:'피노키오의 코',tag:'이번 소집 · 진술',gather:true,story:'거짓말을 하면 코가 자라는 인형이 있었습니다. 이 극장의 책은 그 인형을 닮았습니다.',rule:'각자 자신의 직업에 대해 한 줄 진술을 합니다. 책이 한 사람의 진술을 골라 진실인지 거짓인지 공개합니다. 거짓이면 그 사람의 다음 공격 선택이 1개 줄어듭니다.'},
+  {id:'pinocchio',title:'피노키오의 코',tag:'이번 소집 · 진술',gather:true,story:'거짓말을 하면 코가 자라는 인형이 있었습니다. 이 극장의 책은 그 인형을 닮았습니다.',rule:'책이 각자에게 자기 실 하나를 보여 주고 "급소다 / 아니다"라고 진술하게 합니다. 모든 진술은 공개되지만, 책은 한 사람의 진술만 검증합니다. 진실이면 재화 +1, 거짓이면 다음 공격 선택이 1개 줄어듭니다. 검증받지 않은 진술은 거짓이어도 그냥 넘어갑니다 — 상대를 속여도 됩니다.'},
   {id:'needle',title:'물레의 바늘',tag:'다음 탐색 · 두 사람',story:'낡은 물레에서 바늘 하나가 떨어졌습니다. 그 바늘에 찔린 이는 깊은 졸음에 빠집니다. 누군가 바늘을 던져 다른 이에게 넘기기 전까지는.',rule:'맵에 바늘이 나타납니다. 집어 든 사람은 바늘에 찔려 한동안 느려지고 졸립니다. 바늘은 던져서 다른 사람에게 넘길 수 있습니다.'},
   {id:'hood',title:'붉은 두건의 심부름',tag:'다음 탐색 · 개인 미션',story:'붉은 두건을 쓴 아이가 바구니를 들고 숲으로 갔습니다. 누구에게도 들키지 않고 할머니 집에 닿아야 했습니다.',rule:'책이 몇 사람에게만 비밀 심부름을 맡깁니다. 바구니를 집어 목적지에 아무에게도 들키지 않고 전달하면 재화 +3입니다. 맡은 사람만 이 페이지를 봅니다.'},
-  {id:'hunt',title:'사냥꾼과 사냥감',tag:'다음 탐색 · 꼬리잡기',story:'모두가 누군가를 쫓고, 모두가 누군가에게 쫓깁니다. 사냥꾼은 사냥감의 이름만 알고, 사냥감은 자신이 쫓기는 줄도 모릅니다.',rule:'책이 각자에게 사냥감 한 명을 알려 줍니다(4인 순환). 사냥감에게 접촉하면 재화 +2와 상대의 정체를 알게 됩니다. 나를 노리는 사람이 있다는 것만 알 수 있습니다.'},
+  {id:'hunt',title:'사냥꾼과 사냥감',tag:'다음 탐색 · 꼬리잡기',story:'모두가 누군가를 쫓고, 모두가 누군가에게 쫓깁니다. 사냥꾼은 사냥감의 이름만 알고, 사냥감은 자신이 쫓기는 줄도 모릅니다.',rule:'책이 각자에게 사냥감 한 명을 알려 줍니다(4인 순환). 사냥감에게 접촉하면 재화 +2, 상대는 재화 -1입니다. 나를 노리는 사람이 있다는 것만 알 수 있습니다.'},
   {id:'whisper',title:'속삭이는 벽',tag:'이번 소집',gather:true,story:'극장의 벽은 오래전부터 비밀을 먹고 살았습니다. 오늘 밤, 벽이 쪽지를 기다립니다. 누가 썼는지는 아무도 모른 채로.',rule:'각자 쪽지를 한 장 남깁니다. 책이 모든 쪽지를 낭독하지만 누구의 것인지는 밝히지 않습니다. 진실을 써도, 거짓을 써도 됩니다.'},
-  {id:'mirror',title:'거울 바꾸기',tag:'다음 탐색 · 두 사람',story:'깨진 손거울이 두 사람의 얼굴을 한꺼번에 비췄습니다. 거울 속에서 두 개의 빛이 서로의 자리로 건너갔습니다.',rule:'한 라운드 동안 두 배우의 얼굴 빛 색이 서로 바뀝니다. 누구인지는 당사자들만 압니다. 빛 색으로 직업을 추리하던 사람은 속게 됩니다.'},
+  {id:'mirror',title:'거울 바꾸기',tag:'다음 탐색 · 두 사람',story:'깨진 손거울이 두 사람의 얼굴을 한꺼번에 비췄습니다. 거울 속에서 두 개의 빛이 서로의 자리로 건너갔습니다.',rule:'한 라운드 중간(약 40% 지점)에 두 배우의 위치가 서로 맞바뀝니다. 누가 선택됐는지는 당사자들만 압니다. 쫓기던 사람은 갑자기 안전해지고, 안전하던 사람은 위험 한가운데로 떨어집니다.'},
   {id:'fog',title:'안개 호수',tag:'다음 탐색 전체',story:'책장에서 차가운 물안개가 번져 나왔습니다. 다음 장에서는 눈이 쓸모없어지고, 모든 소리가 두 배로 크게 들립니다.',rule:'시야가 거의 사라집니다. 대신 걷는 소리·수리하는 소리가 물결로 보입니다. 귀로 움직이세요.'},
   {id:'sleep',title:'잠든 괴물들',tag:'다음 탐색 전체',story:'괴물들은 이번 장에서 깊이 잠들어 있습니다. 하지만 아주 얕은 잠입니다.',rule:'괴물이 잠들어 있습니다. 가까이서 소리를 내면 한 마리씩 깨어납니다. 발전기 수리는 특히 시끄럽습니다.'},
   {id:'shoes',title:'빨간 구두',tag:'다음 탐색 · 두 사람',story:'책이 한 사람의 발에 빨간 구두를 신겼습니다. 춤은 멈추지 않습니다. 누군가 붙잡아 벗겨 줄 때까지는.',rule:'구두를 신은 사람은 멈출 수 없습니다. 다른 사람이 3초 동안 곁에 붙어 있으면 벗겨집니다. 벗겨 준 사람은 재화 +1.'},
@@ -613,7 +613,7 @@ function makeExplore(P,opts={}){
       e.mis={stage:0,A,B,done:false}; w.objs.push({type:'basket',x:A[0],y:A[1],need:0.8,done:false,owner:e}); w.objs.push({type:'dest',x:B[0],y:B[1],need:1.0,done:true,owner:e,building:b}); } }
   if(opts.hunt){ for(const [h,pr] of opts.hunt){ const he=w.ents.find(q=>q.i===h), pe=w.ents.find(q=>q.i===pr); if(he&&pe){ he.prey=pe; pe.hunted=true; } } }
   for(const e of w.ents){ const fx=e.p.startFx; if(fx){ if(fx==='trap'){ e.stun=4; } else if(fx==='warp'){ const o=w.ents.find(q=>q!==e&&q.p.alive); if(o){ e.x=o.x+30; e.y=o.y+20; } } e.p.startFx=null; } }
-  if(opts.mirror&&opts.mirror.length===2){ const [a,b]=opts.mirror.map(i=>w.ents.find(e=>e.i===i)); if(a&&b){ a.mcol=b.p.job.color; b.mcol=a.p.job.color; } }
+  if(opts.mirror&&opts.mirror.length===2){ const [a,b]=opts.mirror.map(i=>w.ents.find(e=>e.i===i)); if(a&&b){ w.mirrorPair=[a,b]; w.mirrorDone=false; } }
   for(const e of w.ents) e.lcol=e.mcol||e.p.job.color;
   const mk=w.mkMon=(type,x,y)=>({type:MON_TYPES[type],x,y,r:MON_TYPES[type].r,state:'patrol',path:[],rest:2,chase:null,lostT:0,face:1,anim:0,repath:0,asleep:w.ev==='sleep',alarm:null,searchT:0,isMon:true,fid:0});
   const far=(d)=>{ for(let k=0;k<200;k++){ const x=150+rand()*(XW-300), y=150+rand()*(XH-300); if(Math.hypot(x-sx,y-sy)>d&&!solidAt(w,x,y,30)) return [x,y]; } return [300,300]; };
@@ -664,6 +664,7 @@ function stepExplore(w,dt){
   { const f=w.t/w.T, ph=f<0.4?0:f<0.75?1:2; if(ph!==w.phase){ w.phase=ph; w.events.push({type:'phase',n:ph}); if(ph===1&&w.mkMon){ for(let i=0;i<2;i++){ const m=w.mkMon('moth',200+rand()*(XW-400),200+rand()*(XH-400)); m.dir=rand()*6.283; w.mons.push(m); } } if(ph===2) w.toll=2.5; }
     w.mspdNow=w.mspd*[1,1.1,1.22][w.phase];
     if(w.phase===2){ w.toll-=dt; if(w.toll<=0){ w.toll=8; const cand=w.ents.filter(e=>e.p.alive&&!e.out&&!e.hidden); if(cand.length){ const t=cand[ri(cand.length)]; w.expose[t.i]=Math.max(w.expose[t.i]||0,3.5); noise(w,t.x,t.y,420,'shake'); w.events.push({type:'toll',t}); } } } }
+  if(w.mirrorPair&&!w.mirrorDone&&w.t>=w.T*0.4){ w.mirrorDone=true; const [a,b]=w.mirrorPair; if(a.p.alive&&b.p.alive&&!a.out&&!b.out){ for(const k of ['x','y','fid']){ const t_=a[k]; a[k]=b[k]; b[k]=t_; } for(const q of [a,b]){ q.srch=null; q.goal=null; q.wps=null; q.hidden=null; q.stairCd=1; for(const m of w.mons) if(m.chase===q){ m.state='patrol'; m.chase=null; m.path=[]; m.distract=2; } } w.events.push({type:'mirror',a,b}); } }
   const noisy=(e,r,kind)=>{ e.noiseT-=dt; if(e.noiseT<=0){ e.noiseT=kind==='gen'?0.8:0.5; noise(w,e.x,e.y,r*(w.ev==='fog'?2:1)*(inSwamp(w,e.x,e.y)?0.5:1)*(e.cover?1.4:1),kind); } };
   // 판자 수명
   for(let i=w.rects.length-1;i>=0;i--){ const q=w.rects[i]; if(q.kind==='plank'){ q.life-=dt; if(q.life<=0){ w.rects.splice(i,1); for(const o of w.objs) if(o.q===q) o.state='broken'; navRefresh(w); } } }
@@ -1806,7 +1807,7 @@ function runExplore(P,o={}){
     mode='explore'; ui.innerHTML=''; hideSpellButtons(); actBtn.style.display='block'; trayEl.style.display='flex'; joy=null; actHeld=false;
     const be=BOOK_EVENTS.find(b=>b.id===w.ev); if(be) xToast(`${be.title} — ${be.rule.split('.')[0]}`,'#bba878');
     if(w.shoesOn&&w.shoesOn===me) xToast('빨간 구두가 신겨졌다! 누군가 붙잡아 줘야 멈춘다.','#ff6a7a');
-    if(me.mcol) xToast(`거울 때문에 내 얼굴 빛이 ${COLNAME[me.mcol]}으로 보인다`,me.mcol);
+    if(w.mirrorPair&&w.mirrorPair.includes(me)) xToast('거울에 비쳤다 — 라운드 중간에 위치가 맞바뀐다','#cfd8dc');
   });
 }
 function xFinish(){ const w=xs.w, gains=w.ents.map(e=>e.gain), res=xs.res; w.ents.forEach(e=>{ e.p.gold=Math.max(0,e.p.gold+e.gain); }); xs=null; actBtn.style.display='none'; trayEl.style.display='none'; mode='title'; res({escapeBy:w.escapeBy?w.escapeBy.i:-1,extra:w.ents.map(e=>{ const J=e.p.job.id; return J==='ent'?'시청자 '+Math.floor(e.p.viewers||0):J==='tech'?'탈출 '+(e.p.escapes||0)+'/3'+(e.escaped?' ✔':''):J==='scout'?'해제 '+e.disarms:'기록 '+Object.keys(e.recorded).length+'/4'; }),snips:w.ents.map(e=>e.snipped||0),gains,early:!!w.early,theme:w.theme.name,counts:{chest:w.objs.filter(o=>o.type==='chest'&&o.done).length,gen:w.objs.filter(o=>o.type==='gen'&&o.done).length}}); }
@@ -1846,7 +1847,7 @@ function xUpdate(dt){
       else if(ev.type==='needlethrow'){ if(ev.e.human) xToast('바늘이 빗나갔다','#8a7a5a'); }
       else if(ev.type==='basket'){ if(ev.e.human){ xToast('바구니를 집었다. 금빛 표시까지, 들키지 말 것','#e0b43a'); sfx.play('hideRustle',{vol:0.5}); } }
       else if(ev.type==='deliver'){ if(ev.e.human){ xToast(ev.ok?'아무도 보지 못했다! 심부름 성공 +3':'들켰다… 심부름 실패',ev.ok?'#9be37a':'#e0506a'); sfx.play(ev.ok?'coin':'lose',{vol:0.7}); } }
-      else if(ev.type==='tag'){ if(ev.e.human){ xToast(`사냥감을 붙잡았다! +2 · ${ev.p.p.name}의 정체`,'#f6d27a'); sfx.play('coin',{vol:0.8}); } else if(ev.p.human){ xToast('누군가 내게 접촉했다! 재화 -1, 정체가 드러났다','#ff6a7a'); vibrate(100); } }
+      else if(ev.type==='tag'){ if(ev.e.human){ xToast(`사냥감을 붙잡았다! +2 · ${ev.p.p.name}에게서 재화 -1`,'#f6d27a'); sfx.play('coin',{vol:0.8}); } else if(ev.p.human){ xToast('누군가 내게 접촉했다! 재화 -1','#ff6a7a'); vibrate(100); } }
       else if(ev.type==='lure'){ if(ev.e.human) xToast('미끼 방울을 던졌다! 괴물들이 소리를 쫓는다','#e3d29a'); else if(Math.hypot(ev.x-me.x,ev.y-me.y)<520) xToast('가까이서 방울 소리가 울린다! 괴물이 몰려온다','#ff8a5a'); else if(Math.hypot(ev.x-me.x,ev.y-me.y)<1100) xToast('어디선가 방울 소리가 울린다…','#bba878'); sfx.play('bell',{arg:1.8,vol:0.5}); }
       else if(ev.type==='snip'){ if(ev.e.human){ xToast('가위가 내 실 하나를 끊어 갔다! 다음 공격 선택 -1','#ff6a7a'); sfx.play('shearsSnip',{vol:0.9}); sfx.play('snap',{vol:0.8,at:0.12}); vibrate([40,30,90]); xs.shake=0.7; } else if(Math.hypot(ev.e.x-me.x,ev.e.y-me.y)<600) xToast('누군가의 실이 끊어지는 소리가 들렸다…','#bba878'); }
       else if(ev.type==='moth'){ if(ev.e.human){ xToast('나방이 시야를 갉아먹는다! 잠시 빛을 켤 수 없다','#c8c8d0'); sfx.play('mothFlutter',{vol:0.7}); } }
@@ -1870,6 +1871,7 @@ function xUpdate(dt){
       else if(ev.type==='stair'){ if(ev.e.human){ xToast(ev.o.dir==='up'?`${(ev.e.fid?xs.w.fidFl[ev.e.fid]:0)+1}층으로 올라왔다`:`${(ev.e.fid?xs.w.fidFl[ev.e.fid]:0)+1}층으로 내려왔다`,'#d9cdb0'); sfx.play('stairs',{vol:0.6}); xs.fade=Math.max(xs.fade||0,0.9); } else if(Math.hypot(ev.o.x-me.x,ev.o.y-me.y)<420&&(ev.o.fid||0)===(me.fid||0)) sfx.play('stairs',{vol:0.25,pan:(ev.o.x-me.x)/400}); }
       else if(ev.type==='ptrapset'){ if(ev.e.human){ xToast(`${TRAP_KINDS.find(q=>q.id===ev.k).name}을(를) 놓았다 (남은 덫 ${ev.e.traps})`,'#d4e0a0'); sfx.play('click',{vol:0.7,rate:0.8}); } }
       else if(ev.type==='ptrapfire'){ if(ev.e.human){ xToast({snare:'올가미에 걸렸다! 8초간 느려진다',bell:'방울 덫이다! 소리가 울려 위치가 드러난다',ink:'먹물 덫이다! 시야가 먹물에 가려졌다'}[ev.k],'#e0506a'); sfx.play(ev.k==='bell'?'bell':ev.k==='ink'?'hideRustle':'trapSnap',{vol:0.8,arg:2.4}); vibrate(100); xs.shake=0.5; } else if(ev.owner&&ev.owner.human){ xToast(`${lab(ev.e.p)}이(가) 내 ${TRAP_KINDS.find(q=>q.id===ev.k).name}에 걸렸다!`,'#d4e0a0'); sfx.play('coin',{vol:0.5,rate:1.4}); } }
+      else if(ev.type==='mirror'){ if(ev.a===me||ev.b===me){ xToast('거울이 깨졌다! 위치가 맞바뀌었다','#cfd8dc'); sfx.play('flip',{vol:0.7}); xs.fade=Math.max(xs.fade||0,0.9); xs.cam=null; } }
       else if(ev.type==='distract'){ if(Math.hypot(ev.m.x-me.x,ev.m.y-me.y)<650&&(ev.m.fid||0)===(me.fid||0)) xToast(`${ev.m.type.name} — 소리에 정신이 팔렸다! 지금 도망쳐라`,'#9be37a'); }
       else if(ev.type==='tired'){ if(Math.hypot(ev.m.x-me.x,ev.m.y-me.y)<650&&(ev.m.fid||0)===(me.fid||0)) xToast(`${ev.m.type.name} — 추격을 포기하고 숨을 고른다`,'#9be37a'); }
       else if(ev.type==='wake'){ if(Math.hypot(ev.m.x-me.x,ev.m.y-me.y)<700) xToast(`${ev.m.type.name} — 깨어났다…`,'#ff8a5a'); }
@@ -2334,13 +2336,12 @@ async function settingsScreen(){
     <div class="setgrp"><h4>역전 기믹</h4><select id="o-cb" style="width:100%"><option value="off" ${rules.comeback==='off'?'selected':''}>없음</option><option value="extra" ${rules.comeback==='extra'?'selected':''}>A. 관객의 동정 — 급소 2개 이상 끊기면 선택 +1</option><option value="last" ${rules.comeback==='last'?'selected':''}>B. 최후의 승부수 — 급소 3개 끊기면 한 번에 5개</option></select></div>
     <div class="setgrp"><h4>탐색 라운드</h4><label class="opt" style="margin:0 0 8px"><input type="checkbox" id="o-ex" ${opts.explore?'checked':''}><div>탐색 라운드 사용<small>끄면 소집마다 재화를 자동 지급합니다.</small></div></label>
       <select id="o-et" style="width:100%">${[[120,'2분 (기본)'],[60,'1분'],[30,'30초 (테스트)']].map(([v,l])=>`<option value="${v}" ${opts.exploreT===v?'selected':''}>${l}</option>`).join('')}</select></div>
-    <div class="setgrp"><h4>직업 비공개</h4><label class="opt" style="margin:0"><input type="checkbox" id="o-hj" ${HIDE.on?'checked':''}><div>다른 배우의 직업 숨기기<small>얼굴 빛 색, 듀얼, 탈락으로만 정체가 드러납니다.</small></div></label></div>
     <div class="setgrp"><h4>직업 특수 승리 플랜</h4><label class="opt" style="margin:0"><input type="checkbox" id="o-pl" ${PLANS.on?'checked':''}><div>기술자의 탈출 승리<small>발전기 3개를 고쳐 탈출구로 3번 탈출하면 승리. 대신 기술자는 듀얼이 약합니다.</small></div></label></div>
     <div class="setgrp"><h4>듀얼</h4><label class="opt" style="margin:0 0 6px"><input type="checkbox" id="o-wf" ${rules.winnerFirst?'checked':''}><div>승자 선공<small>승자의 공격이 먼저 적용되고, 쓰러진 쪽의 반격은 취소됩니다.</small></div></label>
       <label class="opt" style="margin:0 0 6px"><input type="checkbox" id="o-tm" ${opts.timer?'checked':''}><div>실 선택 15초 제한</div></label>
       <label class="opt" style="margin:0"><input type="checkbox" id="o-du" ${opts.duelMode==='auto'?'checked':''}><div>듀얼 자동 진행<small>봇이 대신 싸웁니다.</small></div></label></div>`,'left');
   bindSettings(ui); await waitButtons([{label:'저장하고 돌아가기',value:1}],'settings');
-  rules.comeback=$('#o-cb').value; rules.winnerFirst=$('#o-wf').checked; opts.timer=$('#o-tm').checked; opts.duelMode=$('#o-du').checked?'auto':'play'; opts.explore=$('#o-ex').checked; PLANS.on=$('#o-pl').checked; HIDE.on=$('#o-hj').checked; opts.exploreT=+$('#o-et').value;
+  rules.comeback=$('#o-cb').value; rules.winnerFirst=$('#o-wf').checked; opts.timer=$('#o-tm').checked; opts.duelMode=$('#o-du').checked?'auto':'play'; opts.explore=$('#o-ex').checked; PLANS.on=$('#o-pl').checked; opts.exploreT=+$('#o-et').value;
 }
 function bodySVG(vit){
   const pts=ANCHORS.map(([x,y],i)=>{ const v=vit.has(i); return `<circle cx="${x}" cy="${y+80}" r="7.4" fill="${v?'#8a1a28':'#d8c9a0'}" stroke="${v?'#3a0a12':'#5a4a30'}" stroke-width="1.4"/><text x="${x}" y="${y+83}" font-size="8" text-anchor="middle" fill="${v?'#fff':'#3a2a14'}" font-family="Gugi,serif">${i+1}</text>`; }).join('');
@@ -2363,14 +2364,14 @@ async function doorsPhase(human){
 }
 function noseSVG(lie){ return `<svg viewBox="0 0 200 110" style="display:block;margin:.3em auto;height:min(20vh,150px);width:auto"><ellipse cx="60" cy="56" rx="34" ry="40" fill="#cdb888" stroke="#2a1d10" stroke-width="3"/><circle cx="48" cy="46" r="4" fill="#2a1d10"/><circle cx="68" cy="46" r="4" fill="#2a1d10"/><path d="M44 78q16 8 32 0" stroke="#2a1d10" stroke-width="3" fill="none"/><rect x="60" y="54" width="${lie?112:22}" height="9" rx="4" fill="#a9854f" stroke="#2a1d10" stroke-width="2.4"><animate attributeName="width" from="12" to="${lie?112:22}" dur="1.4s" fill="freeze"/></rect>${lie?'<path d="M176 56q10-14 16-6M176 60q12 0 16 8" stroke="#3a6a2a" stroke-width="3" fill="none"/>':''}</svg>`; }
 async function pinocchioPhase(human){
-  const alv=alive(P), be=BOOK_EVENTS.find(b=>b.id==='pinocchio'), claims=new Map();
-  for(const p of alv){ if(p.human) continue; claims.set(p,rand()<0.45+0.3*p.skill?p.job:JOBS.filter(j=>j!==p.job)[ri(3)]); }
-  if(human.alive){ const j=await bookScreen({left:`<h3>잔혹동화 책 · ${be.tag}</h3><h2>${be.title}</h2>${noseSVG(false)}<p class="quote">${be.story}</p>`,right:`<h3>한 줄 진술</h3><p>${be.rule}</p><p>당신의 직업은 <b>${human.job.name}</b>입니다. 무엇이라고 말하시겠습니까?</p>`,buttons:JOBS.map(j=>({label:`나는 ${j.name}이다`,value:j.id,ghost:j.id!==human.job.id})),tag:STOP==='pino'?'pino':'pino_'}); claims.set(human,JOBS.find(q=>q.id===j)||human.job); }
-  const victim=alv[ri(alv.length)], cj=claims.get(victim), truth=cj.id===victim.job.id;
-  const list=`<div>${alv.map((p,i)=>`<div class="slip" style="animation-delay:${0.3+i*0.5}s"><i>${nameOf(p)}</i>“나는 ${claims.get(p).name}이다.”</div>`).join('')}</div>`;
-  let res; if(truth){ victim.known=true; res=`<div class="rew"><div class="dim">${nameOf(victim)}의 진술</div><b>진실</b><div class="dim" style="margin-top:.3em">정직한 코는 그대로였다. 정체가 드러난다 — ${victim.job.name}</div></div>`; }
-  else { victim.snip=Math.min(2,(victim.snip||0)+1); res=`<div class="rew l"><div class="dim">${nameOf(victim)}의 진술</div><b>거짓</b><div class="dim" style="margin-top:.3em">코가 자랐다! 다음 공격에서 고를 수 있는 실이 1개 줄어든다. (${victim.human?'당신입니다':'정체는 여전히 비공개'})</div></div>`; }
-  await bookScreen({left:`<h3>잔혹동화 책 · 판정</h3><h2>코가 말한다</h2>${noseSVG(!truth)}${res}`,right:`<h3>오늘의 진술</h3>${list}`,buttons:[{label:'이야기를 이어 간다',value:1}],tag:STOP==='pino2'?'pino2':'pino2_'});
+  const alv=alive(P), be=BOOK_EVENTS.find(b=>b.id==='pinocchio'), claims=new Map(), asg=new Map();
+  for(const p of alv){ const idx=ri(N); asg.set(p,idx); if(!p.human){ const real=p.vit.has(idx); claims.set(p,rand()<0.45+0.3*p.skill?real:!real); } }
+  if(human.alive){ const idx=asg.get(human), real=human.vit.has(idx); const j=await bookScreen({left:`<h3>잔혹동화 책 · ${be.tag}</h3><h2>${be.title}</h2>${noseSVG(false)}<p class="quote">${be.story}</p>`,right:`<h3>한 줄 진술</h3><p>${be.rule}</p><p>책이 보여 준 당신의 실: <b>${STRING_NAMES[idx]}</b> — 실제로는 <b>${real?'급소입니다':'급소가 아닙니다'}</b>. 무엇이라고 말하시겠습니까?</p>`,buttons:[{label:'급소다',value:1,ghost:!real},{label:'급소가 아니다',value:2,ghost:real}],tag:STOP==='pino'?'pino':'pino_'}); claims.set(human,j===1); }
+  const victim=alv[ri(alv.length)], truth=claims.get(victim)===victim.vit.has(asg.get(victim));
+  const list=`<div>${alv.map((p,i)=>`<div class="slip" style="animation-delay:${0.3+i*0.5}s"><i>${nameOf(p)}</i>“내 ${STRING_NAMES[asg.get(p)]} 실은 급소${claims.get(p)?'다':'가 아니다'}.”</div>`).join('')}</div>`;
+  let res; if(truth){ victim.gold+=1; res=`<div class="rew"><div class="dim">${nameOf(victim)}의 진술 검증</div><b>진실</b><div class="dim" style="margin-top:.3em">정직한 코는 그대로였다. 재화 +1</div></div>`; }
+  else { victim.snip=Math.min(2,(victim.snip||0)+1); res=`<div class="rew l"><div class="dim">${nameOf(victim)}의 진술 검증</div><b>거짓</b><div class="dim" style="margin-top:.3em">코가 자랐다! 다음 공격에서 고를 수 있는 실이 1개 줄어든다.</div></div>`; }
+  await bookScreen({left:`<h3>잔혹동화 책 · 판정</h3><h2>코가 말한다</h2>${noseSVG(!truth)}${res}`,right:`<h3>오늘의 진술</h3>${list}<p class="dim">검증된 사람은 한 명뿐입니다. 나머지 진술은 진실일 수도, 속임수일 수도 있습니다.</p>`,buttons:[{label:'이야기를 이어 간다',value:1}],tag:STOP==='pino2'?'pino2':'pino2_'});
 }
 async function underworldPick(human,alv){
   const cands=sample(BOOK_EVENTS.filter(b=>alv.length>=2||!['mirror','hunt','doors','pinocchio'].includes(b.id)),3);
@@ -2387,10 +2388,10 @@ async function bookEventPhase(human){
   if(ev.id==='doors'){ await doorsPhase(human); return X; }
   if(ev.id==='pinocchio'){ await pinocchioPhase(human); return X; }
   X.ev=ev.id; let extra='', secret=false, leftTag=`${ev.tag}`;
-  if(ev.id==='mirror'){ X.mirror=sample(alv,2).map(p=>p.i); const mine=X.mirror.includes(human.i), swapCol=mine?P[X.mirror.find(i=>i!==human.i)].job.color:null;
-    extra=mine?`<div class="rew"><div class="dim">당신의 얼굴 빛이 이번 장에서 이렇게 보입니다</div><b style="color:${swapCol}">${COLNAME[swapCol]}</b></div>`:'<p class="dim">두 사람이 선택되었습니다. 당신은 아닙니다. 누구인지는 책도 알려 주지 않습니다.</p>'; }
+  if(ev.id==='mirror'){ X.mirror=sample(alv,2).map(p=>p.i); const mine=X.mirror.includes(human.i);
+    extra=mine?`<div class="rew"><div class="dim">당신이 선택되었습니다</div><b>${nameOf(P[X.mirror.find(i=>i!==human.i)])}</b><div class="dim" style="margin-top:.3em">탐색 중간에 이 사람과 위치가 맞바뀝니다.</div></div>`:'<p class="dim">두 사람이 선택되었습니다. 당신은 아닙니다. 누구인지는 책도 알려 주지 않습니다.</p>'; }
   else if(ev.id==='hunt'){ const ord=shuffle(alv); X.hunt=ord.map((p,i)=>[p.i,ord[(i+1)%ord.length].i]); const pr=X.hunt.find(([h])=>h===human.i); const prey=pr?P[pr[1]]:null;
-    extra=prey?`<div class="rew"><div class="dim">당신의 사냥감</div><b>${nameOf(prey)}</b><div class="dim" style="margin-top:.3em">접촉하면 재화 +2, 그리고 정체를 알게 됩니다. 누군가 당신도 노리고 있습니다.</div></div>`:'<p class="dim">당신은 사냥감을 받지 못했습니다.</p>'; }
+    extra=prey?`<div class="rew"><div class="dim">당신의 사냥감</div><b>${nameOf(prey)}</b><div class="dim" style="margin-top:.3em">접촉하면 재화 +2, 상대는 재화 -1입니다. 누군가 당신도 노리고 있습니다.</div></div>`:'<p class="dim">당신은 사냥감을 받지 못했습니다.</p>'; }
   else if(ev.id==='hood'){ const hold=sample(alv,Math.min(alv.length,alv.length>=3?2:1)); X.mission=hold.map(p=>p.i); secret=hold.includes(human);
     extra=secret?`<div class="rew"><div class="dim">비밀 책장 — 본인만 볼 수 있습니다</div><b>당신에게 심부름이 맡겨졌다</b><div class="dim" style="margin-top:.3em">지도의 붉은 표시에서 바구니를 집어, 금빛 표시(할머니 집)까지. 가는 길에 아무에게도 들키지 마세요. 전달하는 순간 시야가 닿는 근처에 누가 있으면 실패합니다.</div></div>`:'<p class="dim">책이 몇몇에게만 비밀을 속삭였습니다. 당신은 아닙니다.</p>'; }
   await bookScreen({left:`<h3>${secret?'비밀 책장':'잔혹동화 책'} · ${leftTag}</h3><h2>${ev.title}</h2>${eventIcon(ev.id)}<p class="quote">${ev.story}</p>${narr}`,right:`<h3>다음 장의 규칙</h3><p style="font-size:1.05em">${ev.rule}</p>${extra}<p class="dim">책은 소집이 시작될 때 펼쳐지고, 효과는 다음 탐색 라운드에 적용됩니다.</p>`,buttons:[{label:'이야기를 이어 간다',value:1}],tag:STOP==='event'?'event':'event_'});
@@ -2415,7 +2416,7 @@ async function whisperScreen(){
   await pr; const mine=((document.getElementById('wn')||{}).value||'').trim()||'…';
   const notes=shuffle([mine,...alive(P).filter(p=>!p.human).map(p=>botNote(p,P))]);
   await transition(()=>{},{text:'벽이 낭독한다',tip:'쪽지들이 벽 틈에서 흘러나옵니다…',job:me.job});
-  await bookScreen({left:`<h3>잔혹동화 책 · 낭독</h3><h2>벽이 읽어 준다</h2><p class="dim">누가 썼는지는 아무도 모릅니다.</p><div>${notes.map((n,i)=>`<div class="slip" style="animation-delay:${0.5+i*0.9}s"><i>쪽지 ${i+1}</i>${n.replace(/[<>&]/g,'')}</div>`).join('')}</div>`,right:`<h3>속삭임의 규칙</h3><p>쪽지 중 일부는 거짓입니다. 직업은 비공개이니, 얼굴 빛 색과 이 쪽지를 맞춰 보며 정체를 추리하세요.</p><p class="quote">벽이 입을 다물었습니다. 하지만 누군가의 심장 소리는 아직 들립니다.</p><p style="text-align:center"><span class="seal">✦</span></p>`,buttons:[{label:'소집을 계속한다',value:1}],tag:STOP==='whisper2'?'whisper2':'whisper2_'});
+  await bookScreen({left:`<h3>잔혹동화 책 · 낭독</h3><h2>벽이 읽어 준다</h2><p class="dim">누가 썼는지는 아무도 모릅니다.</p><div>${notes.map((n,i)=>`<div class="slip" style="animation-delay:${0.5+i*0.9}s"><i>쪽지 ${i+1}</i>${n.replace(/[<>&]/g,'')}</div>`).join('')}</div>`,right:`<h3>속삭임의 규칙</h3><p>쪽지 중 일부는 거짓입니다. 쪽지와 사람들의 행동을 맞춰 보며 누가 거짓을 쓰는지 추리하세요.</p><p class="quote">벽이 입을 다물었습니다. 하지만 누군가의 심장 소리는 아직 들립니다.</p><p style="text-align:center"><span class="seal">✦</span></p>`,buttons:[{label:'소집을 계속한다',value:1}],tag:STOP==='whisper2'?'whisper2':'whisper2_'});
 }
 function eventIcon(id){
   const sv={doors:'<g stroke="#2a1d10" stroke-width="3"><path d="M10 92V38q22-26 44 0v54z" fill="#5a3a22"/><path d="M58 92V38q22-26 44 0v54z" fill="#3a2414"/><path d="M106 92V38q22-26 44 0v54z" fill="#120a06"/></g><circle cx="46" cy="66" r="3" fill="#d9b25a"/><circle cx="94" cy="66" r="3" fill="#d9b25a"/>',
