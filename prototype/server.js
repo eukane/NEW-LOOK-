@@ -5,6 +5,7 @@
  * - 방 생성/참가, 호스트 ↔ 클라이언트 메시지 중계만 합니다 (게임 계산은 호스트 브라우저가 합니다).
  */
 const http=require('http'), fs=require('fs'), path=require('path'), crypto=require('crypto');
+const LAG=+process.env.LAG||0;   // 개발용: 중계 지연(ms) 흉내
 const PORT=+process.env.PORT||8080, HTML=path.join(__dirname,'assembly.html'), MAXP=4, MAXBUF=512*1024;
 const rooms=new Map();   // code -> {code,host:Conn,conns:Map<id,Conn>,started:false}
 
@@ -37,7 +38,7 @@ class Conn{
     if(len<126){ head=Buffer.from([0x80|op,len]); } else if(len<65536){ head=Buffer.alloc(4); head[0]=0x80|op; head[1]=126; head.writeUInt16BE(len,2); } else { head=Buffer.alloc(10); head[0]=0x80|op; head[1]=127; head.writeBigUInt64BE(BigInt(len),2); }
     this.sock.write(Buffer.concat([head,payload])); return true;
   }
-  send(obj,lossy){ if(lossy&&this.sock.writableLength>MAXBUF) return false; return this.sendRaw(0x1,Buffer.from(typeof obj==='string'?obj:JSON.stringify(obj),'utf8')); }
+  send(obj,lossy){ if(lossy&&this.sock.writableLength>MAXBUF) return false; const buf=Buffer.from(typeof obj==='string'?obj:JSON.stringify(obj),'utf8'); if(LAG>0){ setTimeout(()=>this.sendRaw(0x1,buf),LAG); return true; } return this.sendRaw(0x1,buf); }
   close(){ if(this.closed) return; try{ this.sendRaw(0x8,Buffer.alloc(0)); }catch(_){} this.sock.end(); this.onClose(); }
   onText(txt){ let m; try{ m=JSON.parse(txt); }catch(_){ return; } try{ handle(this,m); }catch(e){ console.error('handle error',e); } }
   onClose(){ if(this.closed) return; this.closed=true; leave(this); }

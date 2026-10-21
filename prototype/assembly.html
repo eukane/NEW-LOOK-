@@ -2996,7 +2996,7 @@ function objPack(w,o,i){ return [i,o.done?1:0,Math.round((o.prog||0)*100),o.lock
 function xSnap(w,full){
   const S={t:r2(w.t),ph:w.phase,ov:w.over?1:0,ea:w.early?1:0,gt:[w.gate.open?1:0,w.gate.forE?w.gate.forE.i:-1],wl:w.wilted?1:0,so:w.shoesOn?w.shoesOn.i:-1};
   S.e=w.ents.map(e=>{ let b=0; E_BOOL.forEach((k,j)=>{ if(e[k]) b|=1<<j; }); const sr=e.srch;
-    return {n:E_NUM.map(k=>r1(e[k])),b,al:e.p.alive?1:0,go:e.p.gold,vw:r1(e.p.viewers||0),sn:e.p.snip||0,es:e.p.escapes||0,hd:e.hidden?w.objs.indexOf(e.hidden):-1,sr:sr?[sr.o?w.objs.indexOf(sr.o):-1,sr.o&&sr.o.x!==undefined?r1(sr.o.x):0,sr.o&&sr.o.y!==undefined?r1(sr.o.y):0,r2(sr.prog)]:0,dr:e.dir?[r2(e.dir[0]),r2(e.dir[1])]:0,rc:e.recorded?Object.keys(e.recorded):0,ms:e.mis?[e.mis.stage,e.mis.done?1:0]:0}; });
+    return {sq:e.inSeq||0,n:E_NUM.map(k=>r1(e[k])),b,al:e.p.alive?1:0,go:e.p.gold,vw:r1(e.p.viewers||0),sn:e.p.snip||0,es:e.p.escapes||0,hd:e.hidden?w.objs.indexOf(e.hidden):-1,sr:sr?[sr.o?w.objs.indexOf(sr.o):-1,sr.o&&sr.o.x!==undefined?r1(sr.o.x):0,sr.o&&sr.o.y!==undefined?r1(sr.o.y):0,r2(sr.prog)]:0,dr:e.dir?[r2(e.dir[0]),r2(e.dir[1])]:0,rc:e.recorded?Object.keys(e.recorded):0,ms:e.mis?[e.mis.stage,e.mis.done?1:0]:0}; });
   S.m=w.mons.map(m=>[r1(m.x),r1(m.y),m.fid||0,m.face||1,r2(m.anim),STC[m.state]||0,m.asleep?1:0,r2(m.lunge||0),(m.path&&m.path.length&&(m.state==='chase'||m.state==='alarm'))?m.path.slice(0,6).flatMap(p=>[Math.round(p[0]),Math.round(p[1])]):0]);
   const od=[]; w.objs.forEach((o,i)=>{ if(o.type==='ptrap') return; const a=objPack(w,o,i), sig=a.join(','); if(full||o._ls!==sig){ o._ls=sig; od.push(a); } }); S.o=od;
   S.pt=w.objs.filter(o=>o.type==='ptrap'&&o.armed).map(o=>[r1(o.x),r1(o.y),o.fid||0,o.kind,o.owner?o.owner.i:-1]);
@@ -3022,7 +3022,7 @@ function xNetHostStart(w){
   XN.w=w; XN.acc=0; XN.snapT=0; XN.full=0; XN.waits=[];
   const init=xInitData(w);
   for(const r of XN.remotes){ XN.waits.push(NET.ask(r.id,'xrun',{me:r.p.i,init,P:serAll(r.p)},null,600000)); }
-  NET.handlers.xi=(m,from)=>{ const r=XN.remotes.find(q=>q.id===from); if(!r||!XN.w) return; const e=XN.w.ents[r.p.i]; if(!e||!e.ctl) return; const mg=Math.hypot(m.ix,m.iy); e.ix=mg>1?m.ix/mg:m.ix; e.iy=mg>1?m.iy/mg:m.iy; e.act=!!m.act; };
+  NET.handlers.xi=(m,from)=>{ const r=XN.remotes.find(q=>q.id===from); if(!r||!XN.w) return; const e=XN.w.ents[r.p.i]; if(!e||!e.ctl) return; const mg=Math.hypot(m.ix,m.iy); e.ix=mg>1?m.ix/mg:m.ix; e.iy=mg>1?m.iy/mg:m.iy; e.act=!!m.act; e.inSeq=m.q|0; };
   NET.handlers.xc=(m,from)=>{ const r=XN.remotes.find(q=>q.id===from); if(!r||!XN.w||XN.w.over) return; const e=XN.w.ents[r.p.i], f=XCMD[m.c]; if(e&&e.ctl&&e.p.alive&&e.stun<=0&&f) f(XN.w,e); };
 }
 function xHostSync(w,dt){
@@ -3064,7 +3064,7 @@ function netBuildWorld(a,Pm){
 }
 function xApplySnap(w,S){
   w.t=S.t; w.phase=S.ph; w.over=!!S.ov; w.early=!!S.ea; w.gate.open=!!S.gt[0]; w.gate.forE=S.gt[1]>=0?w.ents[S.gt[1]]:null; w.wilted=!!S.wl; w.shoesOn=S.so>=0?w.ents[S.so]:null;
-  S.e.forEach((d,i)=>{ const e=w.ents[i]; E_NUM.forEach((k,j)=>{ if(k==='x'||k==='y'){ e['t'+k]=d.n[j]; } else e[k]=d.n[j]; }); E_BOOL.forEach((k,j)=>{ e[k]=!!(d.b&(1<<j)); });
+  S.e.forEach((d,i)=>{ const e=w.ents[i]; if(e.human){ xs.ack=d.sq; xs.srvAt=performance.now(); } E_NUM.forEach((k,j)=>{ if(k==='x'||k==='y'){ e['t'+k]=d.n[j]; } else e[k]=d.n[j]; }); E_BOOL.forEach((k,j)=>{ e[k]=!!(d.b&(1<<j)); });
     if(e.fidChanged===undefined) e.fidChanged=0; e.p.alive=!!d.al; e.p.gold=d.go; e.p.viewers=d.vw; e.p.snip=d.sn; e.p.escapes=d.es;
     e.hidden=d.hd>=0?w.objs[d.hd]:null; e.srch=d.sr?{o:d.sr[0]>=0?w.objs[d.sr[0]]:{x:d.sr[1],y:d.sr[2],type:'pseudo'},prog:d.sr[3]}:null; if(d.dr) e.dir=d.dr; if(d.rc){ e.recorded={}; d.rc.forEach(k=>e.recorded[k]=true); } if(d.ms&&e.mis){ e.mis.stage=d.ms[0]; e.mis.done=!!d.ms[1]; }
     e.lcol=e.p.job.color; });
@@ -3079,15 +3079,21 @@ function xApplySnap(w,S){
   if(S.cb&&w.crumbs) w.crumbs=S.cb.map(d=>({x:d[0],y:d[1],t:d[2],e:w.ents[d[3]],fid:d[4]}));
   if(S.pl){ let k=0; for(const o of w.objs) if(o.type==='plank'){ const st=PLS[S.pl[k++]]; if(st) o.state=st; } }
 }
+function xPredSpeed(w,e){ const J=e.p.job.id; return 150*EXP_PERK[J].spd*(J==='ent'?1+0.025*(e.p.viewers||0):1)*(e.prick>0?0.62:1)*(onPath(w,e.x,e.y)?1.14:1)*(inSwamp(w,e.x,e.y)?0.6:1)*(inThicket(w,e.x,e.y)?0.82:1)*(e.slow>0?0.5:1)*(e.morph>0?1.4:1)*(e.tired>0?0.6:1); }
+function xPredMove(w,e,ix,iy,dt){ if(!e.p.alive||e.out||e.stun>0||e.hidden||e.shoes) return; const mg=Math.hypot(ix,iy); if(mg<=0.08) return; const sp=xPredSpeed(w,e); e.x+=ix/Math.max(1,mg)*sp*dt; e.y+=iy/Math.max(1,mg)*sp*dt; pushOut(e,w); }
 function xNetStep(dt){
   const xs_=xs, w=xs_.w, me=xs_.me;
-  while(xs_.snapQ.length){ const S=xs_.snapQ.shift(); xApplySnap(w,S); xs_.gotSnap=true; }
+  while(xs_.snapQ.length){ const S=xs_.snapQ.shift(); xApplySnap(w,S); xs_.gotSnap=true; xs_.newSnap=true; }
   if(xs_.evQ.length){ for(const d of xs_.evQ.splice(0)) w.events.push(evDe(w,d)); }
-  const k=Math.min(1,dt*16);
-  for(const e of w.ents){ if(xs_.gotSnap&&(Math.abs(e.tx-e.x)>260||Math.abs(e.ty-e.y)>260)){ e.x=e.tx; e.y=e.ty; } else { e.x+=(e.tx-e.x)*k; e.y+=(e.ty-e.y)*k; } }
+  const k=Math.min(1,dt*16), pred=!params.has('nopred');
+  xs_.hist=xs_.hist||[];
+  for(const e of w.ents){ if(pred&&e===me&&xs_.gotSnap){ continue; } if(xs_.gotSnap&&(Math.abs(e.tx-e.x)>260||Math.abs(e.ty-e.y)>260)){ e.x=e.tx; e.y=e.ty; } else { e.x+=(e.tx-e.x)*k; e.y+=(e.ty-e.y)*k; } }
+  if(pred&&xs_.gotSnap){
+    if(xs_.newSnap){ xs_.newSnap=false; const sx=me.x, sy=me.y; me.x=me.tx; me.y=me.ty; for(const h of xs_.hist){ if(h.q<=xs_.ack) continue; let rem=h.t; while(rem>0){ const st=Math.min(rem,1/30); xPredMove(w,me,h.ix,h.iy,st); rem-=st; } } const rx=me.x, ry=me.y; me.x=sx; me.y=sy; const ex=rx-sx, ey=ry-sy; if(Math.hypot(ex,ey)>160){ me.x=rx; me.y=ry; } else { me.x+=ex*0.35; me.y+=ey*0.35; } xs_.hist=xs_.hist.filter(h=>h.q>xs_.ack); }
+    const cur=xs_.hist[xs_.hist.length-1]; if(cur){ cur.t+=dt; xPredMove(w,me,cur.ix,cur.iy,dt); } }
   for(const m of w.mons){ if(m.tx!==undefined){ if(Math.abs(m.tx-m.x)>300||Math.abs(m.ty-m.y)>300){ m.x=m.tx; m.y=m.ty; } else { m.x+=(m.tx-m.x)*k; m.y+=(m.ty-m.y)*k; } } }
   for(const nz of w.noises) nz.t+=dt; w.noises=w.noises.filter(n=>n.t<1.4);
-  xs_.inT=(xs_.inT||0)-dt; if(xs_.inT<=0){ xs_.inT=1/30; const mg=Math.hypot(me.ix||0,me.iy||0); NET.to(0,{k:'xi',ix:r2(me.ix||0),iy:r2(me.iy||0),act:me.act?1:0},true); }
+  xs_.inT=(xs_.inT||0)-dt; if(xs_.inT<=0){ xs_.inT=1/30; xs_.q=(xs_.q||0)+1; const ix=r2(me.ix||0), iy=r2(me.iy||0); xs_.hist.push({q:xs_.q,ix,iy,t:0}); if(xs_.hist.length>150) xs_.hist.splice(0,xs_.hist.length-150); NET.to(0,{k:'xi',ix,iy,act:me.act?1:0,q:xs_.q},true); }
 }
 function netCmd(c){ NET.to(0,{k:'xc',c}); }
 OPS.xrun=a=>new Promise(res=>{
