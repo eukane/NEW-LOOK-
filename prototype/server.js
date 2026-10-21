@@ -45,21 +45,29 @@ class Conn{
 }
 
 /* ---------- 방 ---------- */
+const token=()=>crypto.randomBytes(12).toString('hex');
 const genCode=()=>{ const A='ABCDEFGHJKLMNPQRSTUVWXYZ'; for(let k=0;k<50;k++){ let c=''; for(let i=0;i<4;i++) c+=A[crypto.randomInt(A.length)]; if(!rooms.has(c)) return c; } return null; };
 const lobbyOf=r=>({t:'lobby',room:r.code,started:r.started,players:[...r.conns.values()].sort((a,b)=>a.id-b.id).map(c=>({id:c.id,nick:c.nick,host:c===r.host}))});
 const bcastLobby=r=>{ const m=lobbyOf(r); for(const c of r.conns.values()) c.send(m); };
 function handle(c,m){
   if(m.t==='create'){
     if(c.room) return; const code=genCode(); if(!code){ c.send({t:'error',msg:'방을 만들 수 없습니다'}); return; }
-    const r={code,host:c,conns:new Map(),started:false}; rooms.set(code,r); c.room=r; c.id=0; c.nick=String(m.nick||'방장').slice(0,12); r.conns.set(0,c);
-    c.send({t:'created',room:code,id:0}); bcastLobby(r); return; }
+    const r={code,host:c,conns:new Map(),seats:new Map(),started:false}; rooms.set(code,r); c.room=r; c.id=0; c.nick=String(m.nick||'방장').slice(0,12); r.conns.set(0,c); const tk=token(); r.seats.set(0,{token:tk,nick:c.nick,conn:c});
+    c.send({t:'created',room:code,id:0,token:tk}); bcastLobby(r); return; }
   if(m.t==='join'){
     if(c.room) return; const r=rooms.get(String(m.room||'').toUpperCase());
     if(!r){ c.send({t:'error',msg:'그런 방이 없습니다'}); return; }
     if(r.started){ c.send({t:'error',msg:'이미 시작된 방입니다'}); return; }
     if(r.conns.size>=MAXP){ c.send({t:'error',msg:'방이 가득 찼습니다'}); return; }
-    let id=1; while(r.conns.has(id)) id++; c.room=r; c.id=id; c.nick=String(m.nick||('손님'+id)).slice(0,12); r.conns.set(id,c);
-    c.send({t:'joined',room:r.code,id}); bcastLobby(r); return; }
+    let id=1; while(r.seats.has(id)) id++; c.room=r; c.id=id; c.nick=String(m.nick||('손님'+id)).slice(0,12); r.conns.set(id,c); const tk=token(); r.seats.set(id,{token:tk,nick:c.nick,conn:c});
+    c.send({t:'joined',room:r.code,id,token:tk}); bcastLobby(r); return; }
+  if(m.t==='rejoin'){   // 끊겼다가 같은 토큰으로 자리 복귀 (시작된 방, 방장 제외)
+    if(c.room) return; const r=rooms.get(String(m.room||'').toUpperCase()); let seat=null,sid=-1;
+    if(r) for(const [i,st] of r.seats) if(i!==0&&st.token===m.token){ seat=st; sid=i; }
+    if(!r||!seat||!r.started||!r.host){ c.send({t:'error',msg:'다시 들어갈 수 없습니다 (방이 닫혔거나 자리가 없습니다)'}); return; }
+    const old=seat.conn; if(old&&old!==c){ old.replaced=true; r.conns.delete(sid); try{ old.sock.end(); }catch(_){} }
+    c.room=r; c.id=sid; c.nick=seat.nick; seat.conn=c; r.conns.set(sid,c);
+    c.send({t:'joined',room:r.code,id:sid,rejoin:true,token:seat.token}); if(old&&old!==c) r.host.send({t:'left',id:sid}); r.host.send({t:'back',id:sid}); return; }
   const r=c.room; if(!r) return;
   if(m.t==='start'){ if(c!==r.host||r.started) return; r.started=true; bcastLobby(r); for(const o of r.conns.values()) o.send({t:'started',players:lobbyOf(r).players}); return; }
   if(m.t==='to'){   // {t:'to',to:id|'host'|'all',m:{...},lossy?}
@@ -71,7 +79,9 @@ function handle(c,m){
   if(m.t==='ping'){ c.send({t:'pong',n:m.n}); return; }
 }
 function leave(c){
-  const r=c.room; if(!r) return; c.room=null; r.conns.delete(c.id);
+  const r=c.room; if(!r) return; c.room=null; if(c.replaced) return;
+  if(r.conns.get(c.id)===c) r.conns.delete(c.id);
+  if(c!==r.host){ const st=r.seats.get(c.id); if(r.started){ if(st&&st.conn===c) st.conn=null; } else r.seats.delete(c.id); }
   if(c===r.host){ for(const o of r.conns.values()){ o.send({t:'closed',reason:'호스트가 나갔습니다'}); o.room=null; o.sock.end(); } r.conns.clear(); rooms.delete(r.code); return; }
   if(r.host) r.host.send({t:'left',id:c.id}); if(!r.started) bcastLobby(r);
   if(!r.conns.size) rooms.delete(r.code);

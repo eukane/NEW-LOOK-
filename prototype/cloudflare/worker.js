@@ -35,7 +35,7 @@ export default {
 };
 
 export class Room{
-  constructor(state, env){ this.conns=new Map(); this.host=null; this.code=''; this.started=false; this.claimedAt=0; }
+  constructor(state, env){ this.conns=new Map(); this.seats=new Map(); this.host=null; this.code=''; this.started=false; this.claimedAt=0; }
   async fetch(req){
     const u=new URL(req.url);
     if(u.pathname==='/claim'){   // 방 코드 선점 (비어 있거나 만료됐을 때만)
@@ -45,7 +45,7 @@ export class Room{
     const pair=new WebSocketPair(), cli=pair[0], srv=pair[1]; srv.accept();
     const c={ws:srv,id:-1,nick:'',room:true};
     srv.addEventListener('message',e=>{ let m; try{ m=JSON.parse(typeof e.data==='string'?e.data:new TextDecoder().decode(e.data)); }catch(_){ return; } try{ this.handle(c,m,u); }catch(err){ console.error(err); } });
-    const gone=()=>this.leave(c); srv.addEventListener('close',gone); srv.addEventListener('error',gone);
+    const gone=()=>this.leave(c); srv.addEventListener('close',ev=>{ gone(); try{ srv.close(ev.code>=1000&&ev.code<=4999&&ev.code!==1005&&ev.code!==1006?ev.code:1000,ev.reason||'bye'); }catch(_){} }); srv.addEventListener('error',gone);
     return new Response(null,{status:101,webSocket:cli});
   }
   send(c,o){ try{ c.ws.send(typeof o==='string'?o:JSON.stringify(o)); }catch(_){} }
@@ -54,15 +54,22 @@ export class Room{
   handle(c,m,u){
     if(m.t==='create'){
       if(c.id>=0||this.host||!u.searchParams.get('create')) return;
-      this.code=u.searchParams.get('code'); this.host=c; c.id=0; c.nick=String(m.nick||'방장').slice(0,12); this.conns.set(0,c);
-      this.send(c,{t:'created',room:this.code,id:0}); this.bcastLobby(); return; }
+      this.code=u.searchParams.get('code'); this.host=c; c.id=0; c.nick=String(m.nick||'방장').slice(0,12); this.conns.set(0,c); const tk=crypto.randomUUID(); this.seats.set(0,{token:tk,nick:c.nick,conn:c});
+      this.send(c,{t:'created',room:this.code,id:0,token:tk}); this.bcastLobby(); return; }
     if(m.t==='join'){
       if(c.id>=0) return;
       if(!this.host){ this.send(c,{t:'error',msg:'그런 방이 없습니다'}); return; }
       if(this.started){ this.send(c,{t:'error',msg:'이미 시작된 방입니다'}); return; }
       if(this.conns.size>=MAXP){ this.send(c,{t:'error',msg:'방이 가득 찼습니다'}); return; }
-      let id=1; while(this.conns.has(id)) id++; c.id=id; c.nick=String(m.nick||('손님'+id)).slice(0,12); this.conns.set(id,c);
-      this.send(c,{t:'joined',room:this.code,id}); this.bcastLobby(); return; }
+      let id=1; while(this.seats.has(id)) id++; c.id=id; c.nick=String(m.nick||('손님'+id)).slice(0,12); this.conns.set(id,c); const tk=crypto.randomUUID(); this.seats.set(id,{token:tk,nick:c.nick,conn:c});
+      this.send(c,{t:'joined',room:this.code,id,token:tk}); this.bcastLobby(); return; }
+    if(m.t==='rejoin'){   // 끊겼다가 같은 토큰으로 자리 복귀 (시작된 방, 방장 제외)
+      if(c.id>=0) return; let seat=null,sid=-1;
+      for(const [i,st] of this.seats) if(i!==0&&st.token===m.token){ seat=st; sid=i; }
+      if(!seat||!this.started||!this.host){ this.send(c,{t:'error',msg:'다시 들어갈 수 없습니다 (방이 닫혔거나 자리가 없습니다)'}); return; }
+      const old=seat.conn; if(old&&old!==c){ old.left=true; this.conns.delete(sid); try{ old.ws.close(1000,'replaced'); }catch(_){} }
+      c.id=sid; c.nick=seat.nick; seat.conn=c; this.conns.set(sid,c);
+      this.send(c,{t:'joined',room:this.code,id:sid,rejoin:true,token:seat.token}); if(old&&old!==c) this.send(this.host,{t:'left',id:sid}); this.send(this.host,{t:'back',id:sid}); return; }
     if(c.id<0) return;
     if(m.t==='start'){ if(c!==this.host||this.started) return; this.started=true; this.bcastLobby(); const pl=this.lobby().players; for(const o of this.conns.values()) this.send(o,{t:'started',players:pl}); return; }
     if(m.t==='to'){
@@ -76,8 +83,9 @@ export class Room{
   leave(c){
     if(c.left) return; c.left=true;
     if(c.id<0){ return; }
-    this.conns.delete(c.id);
-    if(c===this.host){ for(const o of this.conns.values()){ this.send(o,{t:'closed',reason:'호스트가 나갔습니다'}); o.left=true; try{ o.ws.close(1000,'host left'); }catch(_){} } this.conns.clear(); this.host=null; this.claimedAt=0; return; }
+    if(this.conns.get(c.id)===c) this.conns.delete(c.id);
+    if(c!==this.host){ const st=this.seats.get(c.id); if(this.started){ if(st&&st.conn===c) st.conn=null; } else this.seats.delete(c.id); }
+    if(c===this.host){ for(const o of this.conns.values()){ this.send(o,{t:'closed',reason:'호스트가 나갔습니다'}); o.left=true; try{ o.ws.close(1000,'host left'); }catch(_){} } this.conns.clear(); this.seats.clear(); this.host=null; this.claimedAt=0; return; }
     if(this.host) this.send(this.host,{t:'left',id:c.id});
     if(!this.started) this.bcastLobby();
   }

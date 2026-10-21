@@ -2628,12 +2628,23 @@ function simReport(){
   <p class="dim">4명이 동률이면 기대 승리율은 25%입니다.</p>`;
 }
 /* ===================== 온라인 (Net) ===================== */
-const NET={ws:null,open:false,id:-1,room:'',host:false,lobby:[],sys:{},handlers:{},rpcId:0,pending:new Map(),closedMsg:null,
+const NET={ws:null,open:false,id:-1,room:'',host:false,token:'',base:'',started:false,retrying:false,lobby:[],sys:{},handlers:{},rpcId:0,pending:new Map(),closedMsg:null,
   defaultUrl(){ const q=params.get('server'); if(q) return q; if(location.protocol==='http:'||location.protocol==='https:') return (location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws'; return 'ws://localhost:8080/ws'; },
-  connect(url){ return new Promise((res,rej)=>{ let done=false; let ws; try{ ws=new WebSocket(url); }catch(e){ rej(new Error('주소가 올바르지 않습니다')); return; } NET.ws=ws;
+  connect(url){ NET.base=url.split('?')[0]; return new Promise((res,rej)=>{ let done=false; let ws; try{ ws=new WebSocket(url); }catch(e){ rej(new Error('주소가 올바르지 않습니다')); return; } NET.ws=ws;
     ws.onopen=()=>{ NET.open=true; done=true; res(); }; ws.onerror=()=>{ if(!done) rej(new Error('서버에 연결할 수 없습니다 ('+url+')')); };
-    ws.onclose=()=>{ NET.open=false; if(NET.room){ NET.closedMsg=NET.closedMsg||'서버와의 연결이 끊겼습니다'; NET.onClosed&&NET.onClosed(NET.closedMsg); } };
+    ws.onclose=()=>{ if(NET.ws!==ws||NET.retrying) return; NET.open=false; if(NET.room&&!NET.host&&NET.token&&NET.started&&!NET.closedMsg){ NET.retry(); return; } if(NET.room){ NET.closedMsg=NET.closedMsg||'서버와의 연결이 끊겼습니다'; NET.onClosed&&NET.onClosed(NET.closedMsg); } };
     ws.onmessage=e=>{ let m; try{ m=JSON.parse(e.data); }catch(_){ return; } NET.onRaw(m); }; }); },
+  // 재접속: 시작된 방에서 끊기면 같은 토큰으로 자리를 되찾는다 (호스트는 해당 안 됨)
+  save(){ try{ localStorage.setItem('mt_sess',JSON.stringify({url:NET.base,room:NET.room,token:NET.token,t:Date.now()})); }catch(_){} },
+  loadSave(){ try{ const s=JSON.parse(localStorage.getItem('mt_sess')||'null'); return s&&s.token&&Date.now()-s.t<20*60000?s:null; }catch(_){ return null; } },
+  clearSave(){ try{ localStorage.removeItem('mt_sess'); }catch(_){} },
+  banner(msg){ let b=document.getElementById('net-banner'); if(!msg){ if(b) b.remove(); return; } if(!b){ b=document.createElement('div'); b.id='net-banner'; b.style.cssText='position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:99;background:#2a0f0c;border:1px solid #8a3a2a;color:#f1d9b0;padding:7px 16px;font-size:.9em;letter-spacing:.04em;pointer-events:none'; document.body.appendChild(b); } b.textContent=msg; },
+  async rejoinWait(){ const A=netWaitSys('joined',6000), B=netWaitSys('error',6000); A.catch(()=>{}); B.catch(()=>{}); return await Promise.race([A,B.then(e=>{ const x=new Error(e.msg); x.fatal=true; throw x; })]); },
+  async retry(){ if(NET.retrying) return; NET.retrying=true; NET.banner('연결이 끊겼습니다 — 다시 연결하는 중…');
+    for(let k=0;k<12&&NET.room;k++){ await new Promise(r=>setTimeout(r,2500)); if(!NET.room) break;
+      try{ await NET.connect(NET.base+'?room='+encodeURIComponent(NET.room)); NET.send({t:'rejoin',room:NET.room,token:NET.token}); const m=await NET.rejoinWait(); NET.id=m.id; NET.retrying=false; NET.banner(''); return; }
+      catch(e){ try{ NET.ws&&NET.ws.close(); }catch(_){} if(e.fatal) break; } }
+    NET.retrying=false; NET.banner(''); if(NET.room){ NET.closedMsg=NET.closedMsg||'서버와의 연결이 끊겼습니다'; NET.onClosed&&NET.onClosed(NET.closedMsg); } },
   send(o){ if(NET.ws&&NET.ws.readyState===1) NET.ws.send(JSON.stringify(o)); },
   to(to,m,lossy){ NET.send({t:'to',to,m,lossy:!!lossy}); },
   onRaw(m){ if(m.t==='msg'){ const k=m.m&&m.m.k; if(k==='res'){ const p=NET.pending.get(m.m.id); if(p){ NET.pending.delete(m.m.id); clearTimeout(p.tm); p.res(m.m.v); } return; } const h=NET.handlers[k]; if(h) h(m.m,m.from); }
@@ -2642,7 +2653,7 @@ const NET={ws:null,open:false,id:-1,room:'',host:false,lobby:[],sys:{},handlers:
   ask(to,fn,args,def,ms=180000){ return new Promise(res=>{ const id=++NET.rpcId; const tm=setTimeout(()=>{ NET.pending.delete(id); res(def); },ms); NET.pending.set(id,{res,tm,to}); NET.to(to,{k:'rpc',id,fn,args}); }); },
   dropPending(to,def){ for(const [id,p] of [...NET.pending]) if(p.to===to){ NET.pending.delete(id); clearTimeout(p.tm); p.res(def); } },
   reply(to,id,v){ NET.to(to,{k:'res',id,v}); },
-  leave(){ try{ NETKEEP.stop(); }catch(_){} try{ NET.ws&&NET.ws.close(); }catch(_){} NET.ws=null; NET.open=false; NET.room=''; NET.id=-1; NET.host=false; NET.lobby=[]; NET.pending.clear(); NET.handlers={}; NET.sys={}; NET.onClosed=null; NET.closedMsg=null; }
+  leave(){ try{ NETKEEP.stop(); }catch(_){} NET.retrying=false; NET.banner(''); NET.clearSave(); NET.token=''; NET.started=false; const w=NET.ws; NET.ws=null; NET.room=''; try{ w&&w.close(); }catch(_){} NET.open=false; NET.id=-1; NET.host=false; NET.lobby=[]; NET.pending.clear(); NET.handlers={}; NET.sys={}; NET.onClosed=null; NET.closedMsg=null; }
 };
 // 온라인 중 화면이 꺼지거나 탭이 백그라운드로 가도 게임이 멈추지 않게 한다
 const NETKEEP={wl:null,worker:null,on:false,
@@ -2672,11 +2683,16 @@ async function onlineFlow(){
     const url=document.getElementById('o-url').value.trim(), code=(document.getElementById('o-code').value||'').trim().toUpperCase();
     try{
       NET.leave(); const qs=pick==='create'?'create=1':'room='+encodeURIComponent(code); if(pick!=='create'&&code.length!==4) throw new Error('방 코드 4글자를 입력하세요'); await NET.connect(url+(url.includes('?')?'&':'?')+qs);
-      if(pick==='create'){ NET.send({t:'create',nick}); const m=await netWaitSys('created'); NET.room=m.room; NET.id=0; NET.host=true; }
-      else { if(code.length!==4) throw new Error('방 코드 4글자를 입력하세요'); const pr=Promise.race([netWaitSys('joined'),netWaitSys('error').then(e=>{ throw new Error(e.msg); })]); NET.send({t:'join',room:code,nick}); const m=await pr; NET.room=m.room; NET.id=m.id; NET.host=false; }
+      if(pick==='create'){ NET.send({t:'create',nick}); const m=await netWaitSys('created'); NET.room=m.room; NET.id=0; NET.host=true; NET.token=m.token||''; }
+      else { if(code.length!==4) throw new Error('방 코드 4글자를 입력하세요'); const pr=Promise.race([netWaitSys('joined'),netWaitSys('error').then(e=>{ throw new Error(e.msg); })]); NET.send({t:'join',room:code,nick}); const m=await pr; NET.room=m.room; NET.id=m.id; NET.host=false; NET.token=m.token||''; }
     }catch(e){ err=e.message; NET.leave(); continue; }
     NETKEEP.start(); return await lobbyScreen();
   }
+}
+async function rejoinFlow(){
+  const sv=NET.loadSave(); if(!sv) return null;
+  try{ NET.leave(); await NET.connect(sv.url+'?room='+encodeURIComponent(sv.room)); NET.room=sv.room; NET.token=sv.token; NET.started=true; NET.host=false; NET.send({t:'rejoin',room:sv.room,token:sv.token}); const m=await NET.rejoinWait(); NET.id=m.id; NET.save(); NETKEEP.start(); return {host:false,players:[]}; }
+  catch(e){ NET.leave(); setScreen(`<p class="lose" style="text-align:center;margin:1.2em 0">${e.message||'다시 들어갈 수 없습니다'}</p>`); await waitButtons([{label:'돌아간다',value:1}],'rjerr'); return null; }
 }
 async function lobbyScreen(){
   return new Promise(res=>{
@@ -2686,7 +2702,7 @@ async function lobbyScreen(){
       <div class="row" style="margin-top:12px">${NET.host?'<button class="btn" id="lobby-start">게임 시작</button>':''}${NET.host?'<button class="btn ghost" id="lobby-link">초대 링크 복사</button>':''}<button class="btn ghost" id="lobby-leave">나가기</button></div>`,'left');
     render(); const done=v=>{ NET.sys.lobby=null; NET.sys.started=null; NET.sys.closed=null; NET.onClosed=null; res(v); };
     NET.sys.lobby=()=>render();
-    NET.sys.started=m=>{ done({host:NET.host,players:m.players}); };
+    NET.sys.started=m=>{ NET.started=true; if(!NET.host) NET.save(); done({host:NET.host,players:m.players}); };
     NET.sys.closed=m=>{ NET.leave(); done(null); };
     NET.onClosed=()=>{ NET.leave(); done(null); };
     document.getElementById('lobby-leave').onclick=()=>{ NET.leave(); done(null); };
@@ -2704,10 +2720,11 @@ async function titleScreen(){
       <div class="jobs">${JOBS.map(j=>`<span class="chip"><i style="background:${j.color}"></i>${j.name}</span>`).join('')}</div>
       <div id="menu-btns"></div></div>`,'left');
     const mb=$('#menu-btns'); mb.innerHTML=''; ui.querySelector('.row')?.remove();
-    const act = await new Promise(res=>{ [['막을 올린다','start',0],['온라인 (친구와)','online',0],['게임 방법','how',1],['규칙 · 소리 설정','set',1],['봇 800판 시뮬레이션','sim',1],['전체 화면','fs',1]].forEach(([l,v,g_])=>{ const b=document.createElement('button'); b.className='btn'+(g_?' ghost':''); b.textContent=l; b.onclick=()=>res(v); mb.appendChild(b); }); if(AUTO&&!(STOP&&STOP==='title')) setTimeout(()=>res('start'),0); });
+    const act = await new Promise(res=>{ [['막을 올린다','start',0],['온라인 (친구와)','online',0],...(NET.loadSave()?[['진행 중이던 온라인 방에 다시 들어가기','rejoin',0]]:[]),['게임 방법','how',1],['규칙 · 소리 설정','set',1],['봇 800판 시뮬레이션','sim',1],['전체 화면','fs',1]].forEach(([l,v,g_])=>{ const b=document.createElement('button'); b.className='btn'+(g_?' ghost':''); b.textContent=l; b.onclick=()=>res(v); mb.appendChild(b); }); if(AUTO&&!(STOP&&STOP==='title')) setTimeout(()=>res('start'),0); });
     if(act==='fs'){ try{ await document.documentElement.requestFullscreen(); }catch(e){} continue; }
     if(act==='sim'){ setScreen(simReport()); await waitButtons([{label:'돌아가기',value:1}],'sim'); if(AUTO) return 'sim'; continue; }
     if(act==='online'){ const r=await onlineFlow(); if(r) return {online:r}; continue; }
+    if(act==='rejoin'){ const r=await rejoinFlow(); if(r) return {online:r}; continue; }
     if(act==='set'){ await settingsScreen(); continue; }
     if(act==='how'){ await howToScreen(); continue; }
     return 'start';
@@ -2834,7 +2851,12 @@ function bookFor(h,opts){ return h.human?bookScreen(opts):NET.ask(h.remote,'book
 async function bookEach(makeOpts,list){ list=list||humansAll(); const out=new Map(); await Promise.all(list.map(async h=>{ const o=makeOpts(h); if(!o) return; out.set(h,await bookFor(h,o)); })); return out; }
 function callFor(h,fn,a,def){ if(h.human) return Promise.resolve(OPS[fn](a)); return NET.ask(h.remote,fn,{...a,P:serAll(h)},def); }
 async function transAll(o,list){ list=list||humansAll(); await Promise.all(list.map(h=>{ const oo={...o,job:h.job.id}; if(h.human) return OPS.trans({o:oo}); if(h.remote!=null) NET.to(h.remote,{k:'rpc',id:0,fn:'trans',args:{o:oo,P:serAll(h)}}); return null; })); }
-function dropRemote(id){ const p=P.find(q=>q.remote===id); if(!p) return; p.ctl=false; p.remote=null; NET.dropPending(id,null); if(XN){ XN.remotes=XN.remotes.filter(r=>r.id!==id); if(XN.w&&XN.w.ents[p.i]) XN.w.ents[p.i].ctl=false; } }
+const REJOIN=new Set();
+function tryRejoin(){   // 끊겼다 돌아온 사람은 탐험/듀얼 중이 아닐 때(장면 사이) 다시 조작권을 받는다
+  if(!REJOIN.size||XN||ndAll().length) return;
+  for(const id of [...REJOIN]){ REJOIN.delete(id); const p=P.find(q=>q.lastRemote===id&&q.remote==null); if(p){ p.remote=id; p.ctl=true; NET.to(id,{k:'hello'}); } }
+}
+function dropRemote(id){ const p=P.find(q=>q.remote===id); if(!p) return; p.lastRemote=id; p.ctl=false; p.remote=null; NET.dropPending(id,null); if(XN){ XN.remotes=XN.remotes.filter(r=>r.id!==id); if(XN.w&&XN.w.ents[p.i]) XN.w.ents[p.i].ctl=false; } }
 // 클라이언트: 호스트가 보내는 화면 요청을 순서대로 처리한다
 let clientQ=Promise.resolve();
 async function clientSession(){
@@ -2843,6 +2865,7 @@ async function clientSession(){
     const end=msg=>{ NET.handlers={}; NET.sys.closed=null; NET.onClosed=null; if(msg){ clientQ=clientQ.then(()=>{ setScreen(`<p class="dim" style="text-align:center;margin:1.2em 0">${msg}</p>`); return waitButtons([{label:'돌아간다',value:1}],'netend'); }); } clientQ.then(()=>{ NET.leave(); res(); }); };
     NET.handlers.rpc=m=>{ clientQ=clientQ.then(async()=>{ try{ if(m.args&&m.args.P) mirrorP(m.args.P); const v=await OPS[m.fn](m.args||{}); if(m.id) NET.reply(0,m.id,v===undefined?null:v); }catch(e){ console.error('rpc',m.fn,e); if(m.id) NET.reply(0,m.id,null); } if(m.fn!=='trans'&&m.fn!=='book') clientWait(); }); };
     NET.handlers.end=m=>end(m.msg||'');
+    NET.handlers.hello=()=>{ clientQ=clientQ.then(()=>clientWait('다시 연결되었습니다 — 다음 장면부터 합류합니다…')); };
     NET.sys.closed=m=>end('호스트가 나갔습니다');
     NET.onClosed=()=>end('서버와의 연결이 끊겼습니다');
   });
@@ -2924,7 +2947,7 @@ function runExploreHeadless(o){ const w=makeExplore(P,exploreOpts(o)); w.ents.fo
 async function playGame(net){
   const k=net?net.length:1, slots=shuffle(range(4)).slice(0,k);
   P=makePlayers(net?-1:ri(4)); round=0; escapeWin=null; gameMap={theme:sample(Object.keys(THEMES),1)[0],seed:Math.floor(Math.random()*1e9)};
-  if(net){ net.forEach((np,n)=>{ const p=P[slots[n]]; p.ctl=true; p.nick=np.nick; if(np.id===NET.id) p.human=true; else p.remote=np.id; }); NET.sys.left=m=>dropRemote(m.id); } else P.forEach(p=>{ p.ctl=!!p.human; });
+  if(net){ net.forEach((np,n)=>{ const p=P[slots[n]]; p.ctl=true; p.nick=np.nick; if(np.id===NET.id) p.human=true; else p.remote=np.id; }); NET.sys.left=m=>dropRemote(m.id); NET.sys.back=m=>{ REJOIN.add(m.id); }; REJOIN.clear(); clearInterval(window.__rjIv); window.__rjIv=setInterval(tryRejoin,500); } else P.forEach(p=>{ p.ctl=!!p.human; });
   const me=P.find(p=>p.human);
   await transAll({text:'배역 배정',tip:'막이 오릅니다…'});
   await Promise.all(humansAll().map(h=>callFor(h,'assign',{me:h.i},null)));
@@ -2976,7 +2999,7 @@ async function playGame(net){
   if(win) await Promise.all(humansAll().map(h=>callFor(h,'cut',{win:win.i},null)));
   const stand=`<table><tr><th>배우</th><th>재화</th><th>듀얼 승</th><th>결과</th></tr>${[...P].sort((a,b)=>(b.alive-a.alive)||(b.duelWins-a.duelWins)).map(p=>`<tr><td>${nameOf(p)}</td><td>${p.gold}</td><td>${p.duelWins}</td><td>${p===win?'<b class="win">승리</b>':p.alive?'생존':'<span class="lose">탈락</span>'}</td></tr>`).join('')}</table>`;
   const outs=await bookEach(h=>({left:`<h3>Finale</h3><h2>${win?`${win.name} 승리`:'무승부'}</h2>${win?`<img class="hero" alt="" src="${sprTok(win.job,1.7)}">`:''}`,right:`<h3>마지막 장</h3><p class="quote">${win?(escapeWin?(win===h?'발전기의 불빛이 문을 비췄고, 당신은 세 번 극장을 빠져나갔습니다.':'발전기 소리가 멎었을 때, 누군가는 이미 극장 밖에 있었습니다.'):(win===h?'당신의 줄만이 끝까지 팽팽했습니다.':'끝까지 서 있던 것은 당신이 아니었습니다.')):'마지막 두 줄이 동시에 끊어졌습니다.'}</p><p class="dim">${round}번의 소집 끝에 막이 내립니다.</p>${stand}`,buttons:[{label:'다시 하기',value:'again'}],tag:STOP==='end'?'end':'end_'}));
-  if(net){ for(const h of humansAll()) if(!h.human&&h.remote!=null) NET.to(h.remote,{k:'end',msg:''}); NET.sys.left=null; }
+  if(net){ for(const h of humansAll()) if(!h.human&&h.remote!=null) NET.to(h.remote,{k:'end',msg:''}); NET.sys.left=null; NET.sys.back=null; clearInterval(window.__rjIv); }
   return outs.get(me);
 }
 async function playGameNet(players){ document.title='NETHOST '+players.length; try{ await playGame(players); }finally{ NET.leave(); } }
