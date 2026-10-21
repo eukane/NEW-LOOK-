@@ -145,7 +145,7 @@ th,td{border-bottom:1px solid #6b5c3e66;padding:5px 7px;text-align:left}th{font-
 <div id="ui"></div>
 <div id="spells"></div>
 <button id="actbtn" disabled>수색</button>
-<div id="tray"><button id="shakebtn" class="tb">실<br>흔들기</button><button id="lockbtn" class="tb">자물쇠<br>×1</button><button id="lurebtn" class="tb">미끼<br>×2</button><button id="morphbtn" class="tb" style="display:none">원한<br>0%</button><button id="trapbtn" class="tb">덫<br>×3</button><button id="lightbtn" class="tb">얼굴 빛<br>OFF</button></div>
+<div id="tray"><button id="shakebtn" class="tb">실<br>흔들기</button><button id="lockbtn" class="tb" style="display:none">자물쇠<br>×1</button><button id="lurebtn" class="tb">미끼<br>×2</button><button id="morphbtn" class="tb" style="display:none">원한<br>0%</button><button id="trapbtn" class="tb">덫<br>×3</button><button id="lightbtn" class="tb">얼굴 빛<br>OFF</button></div>
 <button id="mute" title="소리 (M)">♪</button>
 <button id="pausebtn" title="일시정지 (Esc)">Ⅱ</button>
 <div id="pause"><div class="panel"><div class="sub">Paused</div><h2 class="disp" style="margin:4px 0 6px;font-size:26px">일시정지</h2><div id="pause-set"></div><div class="row" style="justify-content:center"><button class="btn" id="pz-resume">계속하기</button><button class="btn ghost" id="pz-quit">처음 화면으로</button></div></div></div>
@@ -159,7 +159,7 @@ const JOBS = [
   {id:'ent',  name:'엔터테이너', color:'#f6e3a6', goal:'빛을 켜고 위기를 넘겨 시청자를 쌓는다. 시청자가 많을수록 빠르고 듀얼에서 강해진다'},
   {id:'tech', name:'기술자',     color:'#9be37a', goal:'발전기 3개를 직접 고쳐 탈출구를 연다. 3번 탈출하면 승리 (대신 듀얼이 약하다)'},
   {id:'scout',name:'수색자',     color:'#7fe3ff', goal:'함정·허수아비·미믹을 찾아 해제한다 (해제마다 재화 +1)'},
-  {id:'arch', name:'기록자',     color:'#cdb6ff', goal:'괴물 4종을 멀리서 관찰해 기록한다 (재화 +1, 이동 경로가 보인다)'},
+  {id:'arch', name:'기록자',     color:'#cdb6ff', goal:'괴물 4종을 멀리서 관찰해 기록한다 (2종마다 재화 +1, 기록한 괴물은 나를 잘 못 본다, 4종 완성 시 +1과 수색 20% 단축)'},
   {id:'shear',name:'가위손',     color:'#ff8a5c', goal:'당하면 원한이 쌓인다. 가득 차면 괴물로 변해 닿는 사람의 실을 끊고 재화를 빼앗는다 (대신 수색·수리가 서툴다)'},
 ];
 const STRING_NAMES = ['머리','가슴','좌 어깨','우 어깨','좌 팔꿈치','우 팔꿈치','좌 손목','우 손목','좌 무릎','우 무릎','좌 발목','우 발목'];
@@ -249,7 +249,7 @@ function runBotGames(rules, n){
 const AW=720, AH=1280, DUR=45, HP0=5;
 const aimAng = (a,b) => Math.atan2(b.y-a.y, b.x-a.x);
 function makeDuel(A,B){
-  const mk=(p,y,dir,minY,maxY)=>({p,job:p.job,x:AW/2,y,homeY:y,dir,hp:HP0,inv:0,cd:[0,0,0],shot:0.5+rand()*0.4,r:8,speed:(p.job.id==='tech'&&PLANS.on?306:330),minY,maxY,mx:0,my:0,tx:null,ty:null,hits:0,face:'idle',ai:null,cdMul:p.job.id==='tech'&&PLANS.on?1.2:p.job.id==='ent'?1-0.02*Math.min(12,p.viewers||0):1});
+  const mk=(p,y,dir,minY,maxY)=>({p,job:p.job,x:AW/2,y,homeY:y,dir,hp:HP0,inv:0,cd:[0,0,0],shot:0.5+rand()*0.4,r:8,speed:(p.job.id==='tech'&&PLANS.on?306:330),minY,maxY,mx:0,my:0,tx:null,ty:null,hits:0,face:'idle',ai:null,cdMul:p.job.id==='tech'&&PLANS.on?1.2:p.job.id==='ent'?1-0.02*Math.min(12,p.viewers||0):p.job.id==='arch'?0.9:1});
   return {t:0,over:false,fxOn:false,A:mk(A,AH-230,-1,AH*0.44,AH-70),B:mk(B,250,1,70,AH*0.56),bul:[],zones:[],timers:[],banners:[],sparks:[],log:[],fx:[],parts:[],shake:0,flash:0,spd:1,onEvent:null};
 }
 function after(d,sec,fn){ d.timers.push({t:sec,fn}); }
@@ -460,7 +460,7 @@ const MON_TYPES={
   guard:{id:'guard',name:'경비 인형',r:16,patrol:62,chase:146,sight:250,stun:1.6,loss:0,rest:6},
   moth:{id:'moth',name:'빛을 쫓는 나방',r:9,patrol:76,chase:128,sight:0,stun:0,loss:0,rest:3,fly:true},
 };
-const EXP_PERK={ent:{spd:1.12,chest:1,gen:1,sight:1},tech:{spd:1,chest:1,gen:0.5,sight:1},scout:{spd:1,chest:0.6,gen:1,sight:1},arch:{spd:1,chest:1,gen:1,sight:0.55},shear:{spd:1,chest:1.25,gen:1.4,sight:1}};
+const EXP_PERK={ent:{spd:1.12,chest:1,gen:1,sight:1},tech:{spd:1,chest:1,gen:0.5,sight:1},scout:{spd:1,chest:0.6,gen:1,sight:1},arch:{spd:1,chest:1,gen:1,sight:0.7},shear:{spd:1,chest:1.25,gen:1.4,sight:1}};
 const BOOK_EVENTS=[
   {id:'doors',title:'세 개의 문',tag:'이번 소집 · 개인 선택',gather:true,story:'책장 한가운데에 문이 세 개 나타났습니다. 한 문 뒤에는 보물이, 한 문 뒤에는 함정이, 마지막 문 뒤에는 낯선 길이 있습니다.',rule:'차례대로 문을 하나씩 엽니다. 먼저 연 사람의 얼굴 빛 반응을 보고 고를 수 있습니다. 문은 한 번 열리면 닫혀 버립니다.'},
   {id:'pinocchio',title:'피노키오의 코',tag:'이번 소집 · 진술',gather:true,story:'거짓말을 하면 코가 자라는 인형이 있었습니다. 이 극장의 책은 그 인형을 닮았습니다.',rule:'책이 각자에게 자기 실 하나를 보여 주고 "급소다 / 아니다"라고 진술하게 합니다. 모든 진술은 공개되지만, 책은 한 사람의 진술만 검증합니다. 진실이면 재화 +1, 거짓이면 다음 공격 선택이 1개 줄어듭니다. 검증받지 않은 진술은 거짓이어도 그냥 넘어갑니다 — 상대를 속여도 됩니다.'},
@@ -692,7 +692,7 @@ function stepExplore(w,dt){
     if(e.p.job.id==='shear'){ if(e.morph>0){ e.morph-=dt; if(e.morph<=0){ e.morph=0; e.tired=8; delete w.expose[e.i]; e.light=false; w.events.push({type:'unmorph',e}); } } else if(e.tired>0) e.tired-=dt; else addRage(w,e,0.45*dt); } e.stairCd=Math.max(0,e.stairCd-dt); e.cover=inThicket(w,e.x,e.y);
     if(e.hold&&e.stun>0.2){ const nd=w.objs.find(q=>q.type==='needle'); if(nd){ nd.x=e.x; nd.y=e.y; nd.done=false; } e.hold=false; }
     if(e.p.job.id==='ent'){ let cr=false; for(const m of w.mons){ if(m.asleep||m.type.fly) continue; const d=Math.hypot(m.x-e.x,m.y-e.y); if(d<420&&(m.state==='chase'||d<300)&&hasLOS(w,m.x,m.y,e.x,e.y)){ cr=true; break; } } addView(e,dt*(cr?(e.light?0.55:0.15):(e.light?0.08:0))); }
-    if(e.p.job.id==='arch'&&e.stun<=0){ for(const m of w.mons){ if(m.asleep&&!m.type.fly) { } const id=m.type.id; if(e.recorded[id]||(m.fid||0)!==(e.fid||0)) continue; const d=Math.hypot(m.x-e.x,m.y-e.y); if(d>110&&d<440&&hasLOS(w,m.x,m.y,e.x,e.y)){ e.recT[id]=(e.recT[id]||0)+dt; if(e.recT[id]>=3){ e.recorded[id]=true; if(Object.keys(e.recorded).length%2===0) e.gain+=1; w.events.push({type:'record',e,m}); } } } }
+    if(e.p.job.id==='arch'&&e.stun<=0){ for(const m of w.mons){ if(m.asleep&&!m.type.fly) { } const id=m.type.id; if(e.recorded[id]||(m.fid||0)!==(e.fid||0)) continue; const d=Math.hypot(m.x-e.x,m.y-e.y); if(d>110&&d<440&&hasLOS(w,m.x,m.y,e.x,e.y)){ e.recT[id]=(e.recT[id]||0)+dt; if(e.recT[id]>=3){ e.recorded[id]=true; { const rn=Object.keys(e.recorded).length; if(rn%2===0) e.gain+=1; if(rn>=4){ e.gain+=1; e.perk.chest=0.8; } } w.events.push({type:'record',e,m}); } } } }
     e.stun=Math.max(0,e.stun-dt); e.flee=Math.max(0,e.flee-dt); e.lureCd=Math.max(0,e.lureCd-dt); e.shakeCd=Math.max(0,e.shakeCd-dt); e.moving=false; let wantAct=false;
     if(w.expose[e.i]&&e.blind<=0) e.light=true;
     if(!e.human&&e.p.alive&&!e.out){ e.skT=(e.skT===undefined?15+rand()*20:e.skT)-dt; if(e.skT<=0){ e.skT=18+rand()*22; if(e.shakes>0&&e.p.skill>0.45&&rand()<0.7){ let tg=null,tb=-1; for(const o of w.ents){ if(o===e||!o.p.alive||o.out) continue; const sc=o.p.gold+o.gain+(o.human?3:0); if(sc>tb&&Math.hypot(o.x-e.x,o.y-e.y)<1100){ tb=sc; tg=o; } } if(tg) doShake(w,e); } }
@@ -796,13 +796,13 @@ function stepMon(w,m,dt){
   if(m.rest>0){ m.state='rest'; return; }
   // 판자에 막힘/기절
   for(const o of w.objs) if(o.type==='plank'&&o.state==='down'&&o.fresh&&Math.hypot(o.x-m.x,o.y-m.y)<80){ o.fresh=false; m.rest=2.2; m.state='rest'; w.events.push({type:'plankhit',m,o}); return; }
-  let tgt=null,td=1e9; for(const e of w.ents){ if(!e.p.alive||e.out||e.stun>0||e.hidden||e.morph>0||(e.fid||0)!==(m.fid||0)) continue; const d=Math.hypot(e.x-m.x,e.y-m.y); if(e.cover&&d>115) continue; if(m.distract>0&&d>90) continue; const rng=T.sight*e.perk.sight*(e.shoes?1.4:1)*(e.light?1.5:0.85); if(d<rng&&d<td&&hasLOS(w,m.x,m.y,e.x,e.y)){ td=d; tgt=e; } }
+  let tgt=null,td=1e9; for(const e of w.ents){ if(!e.p.alive||e.out||e.stun>0||e.hidden||e.morph>0||(e.fid||0)!==(m.fid||0)) continue; const d=Math.hypot(e.x-m.x,e.y-m.y); if(e.cover&&d>115) continue; if(m.distract>0&&d>90) continue; const rng=T.sight*e.perk.sight*(e.shoes?1.4:1)*(e.light?1.5:0.85)*(e.recorded&&e.recorded[T.id]?0.7:1); if(d<rng&&d<td&&hasLOS(w,m.x,m.y,e.x,e.y)){ td=d; tgt=e; } }
   if(tgt){ if(m.state!=='chase'){ if(tgt.human) w.events.push({type:'monster',e:tgt,m}); } m.state='chase'; m.chase=tgt; m.lostT=4; m.lastX=tgt.x; m.lastY=tgt.y; }
   else if(m.state==='chase'){ m.lostT-=dt; if(m.lostT<=0){ if(m.chase&&m.chase.p.job.id==='ent'&&!m.chase.out) addView(m.chase,1.5); m.state='patrol'; m.chase=null; m.path=[]; m.alarm={x:m.lastX,y:m.lastY,t:5}; } }
   if(m.state==='chase'){ const tx=m.chase&&m.chase.p.alive&&!m.chase.hidden?m.chase.x:m.lastX, ty=m.chase&&m.chase.p.alive&&!m.chase.hidden?m.chase.y:m.lastY;
     if(m.repath<=0||!m.path.length){ m.path=Math.hypot(tx-m.x,ty-m.y)<170&&clearLine(w,[m.x,m.y],[tx,ty],m.r)?[[tx,ty]]:findPath(w,m.x,m.y,tx,ty); m.repath=0.35; }
     m.lungeCd=Math.max(0,(m.lungeCd||0)-dt); m.lunge=Math.max(0,(m.lunge||0)-dt); if(T.id==='puppet'&&m.lungeCd<=0&&Math.hypot(tx-m.x,ty-m.y)<240&&m.chase&&!m.chase.hidden){ m.lunge=0.6; m.lungeCd=4.5; }
-    const [px,py]=m.path[0]||[tx,ty]; if(stepTo(w,m,px,py,T.chase*w.mspdNow*(m.lunge>0?1.4:1)*(Object.keys(w.expose).length?1.12:1),dt)<12) m.path.shift();
+    const [px,py]=m.path[0]||[tx,ty]; if(stepTo(w,m,px,py,T.chase*w.mspdNow*(m.chase&&m.chase.recorded&&m.chase.recorded[T.id]?0.92:1)*(m.lunge>0?1.4:1)*(Object.keys(w.expose).length?1.12:1),dt)<12) m.path.shift();
     const c=m.chase; if(c&&c.p.alive&&!c.hidden&&Math.hypot(c.x-m.x,c.y-m.y)<m.r+c.r+6){ c.stun=T.stun; c.srch=null; addView(c,-2); addRage(w,c,32); const lost=T.loss&&(c.p.gold+c.gain>0)?1:0; c.gain-=lost; c.goal=null; c.wps=null; c.shoes=false; if(T.snip&&(c.p.snip||0)<2){ c.p.snip=(c.p.snip||0)+1; c.snipped++; w.events.push({type:'snip',e:c,m}); } else w.events.push({type:'caught',e:c,m,lost}); m.rest=T.rest; m.state='rest'; m.chase=null; m.path=[]; } }
   else { m.state=m.alarm?'alarm':'patrol';
     if(m.alarm){ if(m.repath<=0||!m.path.length){ m.path=findPath(w,m.x,m.y,m.alarm.x,m.alarm.y); m.repath=1; } }
@@ -1853,9 +1853,9 @@ function doMorphUI(){ if(!xs||xs.w.over) return; const me=xs.me; if(me.p.job.id!
 morphBtn.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); doMorphUI(); });
 addEventListener('keydown',e=>{ if(mode==='explore'&&(e.key==='v'||e.key==='V')) doMorphUI(); });
 const trapBtn=document.getElementById('trapbtn'); let trapHold=null;
-function doTrapUI(){ if(!xs||xs.w.over) return; const me=xs.me; if(me.traps<=0){ xToast('설치할 덫이 없다','#8a7a5a'); return; } if(!placeTrap(xs.w,me)) xToast('여기에는 설치할 수 없다 (이미 덫이 있거나 움직일 수 없다)','#8a7a5a'); }
-function cycleTrap(){ if(!xs||xs.w.over) return; const me=xs.me; me.tk=(me.tk+1)%3; sfx.play('click',{vol:0.6,rate:1.3}); xToast('덫 종류: '+TRAP_KINDS[me.tk].name+TRAP_DESC[me.tk],'#d4e0a0'); }
-const TRAP_DESC=[' — 밟은 사람이 8초간 느려진다',' — 밟으면 큰 소리가 나 위치가 드러나고 괴물이 몰려온다',' — 밟으면 7초간 시야가 먹물에 가려진다'];
+function doTrapUI(){ if(!xs||xs.w.over) return; const me=xs.me; if(me.tk===3){ doLockUI(); return; } if(me.traps<=0){ xToast('설치할 덫이 없다','#8a7a5a'); return; } if(!placeTrap(xs.w,me)) xToast('여기에는 설치할 수 없다 (이미 덫이 있거나 움직일 수 없다)','#8a7a5a'); }
+function cycleTrap(){ if(!xs||xs.w.over) return; const me=xs.me; me.tk=(me.tk+1)%4; sfx.play('click',{vol:0.6,rate:1.3}); xToast('설치 도구: '+(me.tk===3?'자물쇠':TRAP_KINDS[me.tk].name)+TRAP_DESC[me.tk],'#d4e0a0'); }
+const TRAP_DESC=[' — 밟은 사람이 8초간 느려진다',' — 밟으면 큰 소리가 나 위치가 드러나고 괴물이 몰려온다',' — 밟으면 7초간 시야가 먹물에 가려진다',' — 곁의 상자·발전기를 잠근다 (남은 사람은 3배 오래 걸리고, 건드리면 소리가 난다)'];
 trapBtn.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); trapHold={t:performance.now(),long:false}; try{ trapBtn.setPointerCapture(e.pointerId); }catch(_){} trapHold.tm=setTimeout(()=>{ if(trapHold){ trapHold.long=true; cycleTrap(); } },450); });
 ['pointerup','pointercancel'].forEach(ev_=>trapBtn.addEventListener(ev_,e=>{ if(!trapHold) return; clearTimeout(trapHold.tm); const was=trapHold; trapHold=null; if(!was.long&&ev_==='pointerup') doTrapUI(); }));
 addEventListener('keydown',e=>{ if(mode!=='explore') return; if(e.key==='t'||e.key==='T') doTrapUI(); if(e.key==='y'||e.key==='Y') cycleTrap(); });
@@ -1890,7 +1890,7 @@ function xUpdate(dt){
     if(xs.tick>20) showTip('light','얼굴 빛','[얼굴 빛]을 켜면 시야가 넓어지고 시청자가 늘지만, 괴물과 나방이 빛을 쫓아옵니다. 다른 배우에게는 내 정체도 보여요.');
     { const no2=nearestObj(w,me); if(no2&&no2.type==='stair') showTip('stairs','계단','건물에는 2~3층이 있습니다. 위층에는 상자가 더 많고 발전기도 있지만 경비 인형과 감시 카메라가 지키고 있어요. 계단 곁에서 [오르기]를 길게 누르세요. 아래층 소리는 계단으로 새어 나갑니다.'); }
     if(xs.tick>28) showTip('shake','괴물 따돌리기','쫓기고 있다면: ① [미끼]를 멀리 던지면 쫓던 괴물도 소리에 이끌려 떠납니다 ② 계단을 오르내리면 추격이 끊깁니다 ③ 덤불·옷장에 숨기 ④ 문가 판자 쓰러뜨리기. 괴물은 11초 넘게 쫓으면 지쳐서 쉽니다.'); if(xs.tick>29) showTip('traps','덫 설치','[덫]을 눌러 내 발밑에 덫을 놓으세요(최대 3개). 밟은 사람은 느려지거나, 소리가 나거나, 시야를 잃습니다. 길게 누르면 종류가 바뀝니다(T 설치 · Y 종류). 내 덫은 나와 척후병에게만 보입니다.');
-    if(xs.tick>35) showTip('tools','도구 버튼','오른쪽 버튼: 실 흔들기(상대 위치 노출) · 자물쇠(물건 잠그기) · 미끼(소리로 괴물 유인) · 얼굴 빛. 단축키 R · G · Q · F');
+    if(xs.tick>35) showTip('tools','도구 버튼','오른쪽 버튼: 실 흔들기(상대 위치 노출) · 미끼(소리로 괴물 유인) · 설치(덫 3종 + 자물쇠, 길게 눌러 종류 변경) · 얼굴 빛. 단축키 R · Q · T/Y · F');
     if(w.mons.some(m=>!m.asleep&&!m.type.fly&&Math.hypot(m.x-me.x,m.y-me.y)<480)) showTip('monster','괴물 접근','심장 소리가 빨라지고 화면 가장자리가 붉어집니다. 화살표 방향을 피해 도망치고, 문가의 판자를 쓰러뜨리거나 옷장에 숨으세요.'); xs.shake=Math.max(0,xs.shake-dt*2); for(const f of xs.fx) f.t+=dt; xs.fx=xs.fx.filter(f=>f.t<1.2);
     if(me.moving){ xs.dustT=(xs.dustT||0)-dt; if(xs.dustT<=0){ xs.dustT=0.16; xs.fx.push({k:'dust',x:me.x,y:me.y+12,t:0,vx:(Math.random()-0.5)*20,vy:-8}); } }
     if(me.moving&&!me.shoes){ xs.stepT-=dt; if(xs.stepT<=0){ xs.stepT=0.36; const inb=me.fid>0||w.builds.some(b=>me.x>b.x&&me.x<b.x+b.w&&me.y>b.y&&me.y<b.y+b.h); sfx.play(inb?'step':'stepGrass',{vol:inb?0.14:0.2}); } }
@@ -1960,7 +1960,7 @@ function xUpdate(dt){
   shakeBtn.disabled=me.shakes<=0||me.shakeCd>0||w.over; shakeBtn.innerHTML='실 흔들기<br>'+(me.shakeCd>0?Math.ceil(me.shakeCd)+'s':'×'+me.shakes); lockBtn.disabled=me.locks<=0||w.over; lockBtn.innerHTML='자물쇠<br>×'+me.locks;
   lureBtn.disabled=(!me.hold&&(me.lures<=0||me.lureCd>0))||w.over; lureBtn.innerHTML=me.hold?'바늘<br>던지기':'미끼<br>×'+me.lures;
   morphBtn.style.display=me.p.job.id==='shear'?'':'none'; if(me.p.job.id==='shear'){ morphBtn.classList.toggle('rdy',me.rage>=100&&me.morph<=0&&me.tired<=0); morphBtn.disabled=w.over||me.morph>0||me.tired>0||me.stun>0; morphBtn.innerHTML=me.morph>0?'변신<br>'+Math.ceil(me.morph)+'s':me.tired>0?'지침<br>'+Math.ceil(me.tired)+'s':me.rage>=100?'변신!<br>[V]':'원한<br>'+Math.floor(me.rage)+'%'; }
-  trapBtn.disabled=me.traps<=0||w.over||me.stun>0; trapBtn.innerHTML=TRAP_KINDS[me.tk%3].name.replace(' ','<br>')+(TRAP_KINDS[me.tk%3].name.includes(' ')?'':'<br>')+'×'+me.traps;
+  if(me.tk===3){ trapBtn.disabled=me.locks<=0||w.over||me.stun>0; trapBtn.innerHTML='자물쇠<br>×'+me.locks; } else { trapBtn.disabled=me.traps<=0||w.over||me.stun>0; trapBtn.innerHTML=TRAP_KINDS[me.tk%3].name.replace(' ','<br>')+(TRAP_KINDS[me.tk%3].name.includes(' ')?'':'<br>')+'×'+me.traps; }
   lightBtn.classList.toggle('on',me.light); lightBtn.disabled=me.blind>0; lightBtn.innerHTML=me.blind>0?'실명<br>'+Math.ceil(me.blind)+'s':'얼굴 빛<br>'+(me.light?'ON':'OFF');
   actBtn.textContent=!o?'수색':o.type==='steal'?'훔치기':o.type==='needle'?'바늘':o.type==='basket'?'바구니':o.type==='dest'?'전달':o.type==='gen'?'수리':o.type==='plank'?'판자':o.type==='ward'?(me.hidden?'나오기':'숨기'):o.type==='stair'?(o.dir==='up'?'오르기':'내려가기'):(o.type==='cam'||o.type==='ptrap'||o.type==='trap'||o.type==='crowd')?'해제':'수색';
   for(const t of xs.toasts) t.t+=dt; xs.toasts=xs.toasts.filter(t=>t.t<2.6).slice(-3);
@@ -2061,7 +2061,7 @@ function xHud(c,t,cx,cy,z){
   c.textAlign='center'; c.font=`400 26px ${FD}`; c.fillStyle=left<15?`rgba(255,${120+Math.round(60*Math.sin(t*8))},110,1)`:'#e6dcc0'; c.fillText(`${mm}:${String(ss).padStart(2,'0')}`,W/2-rsv/2+8,27);
   const gens=w.objs.filter(o=>o.type==='gen'), ch=w.objs.filter(o=>o.type==='chest'); c.textAlign='right'; c.font=`400 12px ${FD}`; c.fillStyle='#bba878';
   c.fillText(`발전기 ${gens.filter(o=>o.done).length}/${gens.length}`,W-16-rsv,20); c.fillText(`상자 ${ch.filter(o=>o.done).length}/${ch.length}`,W-16-rsv,37);
-  { const J=me.p.job.id, rc=Object.keys(me.recorded).length; const goal=J==='shear'?`원한 ${'█'.repeat(Math.floor(me.rage/10))}${'░'.repeat(10-Math.floor(me.rage/10))} ${Math.floor(me.rage)}%${me.morph>0?' · 변신 '+Math.ceil(me.morph)+'s':me.tired>0?' · 지침':''} · 끊기 ${me.cuts}`:J==='ent'?`시청자 ${Math.floor(me.p.viewers||0)}/12 · ${(me.p.viewers||0)>=8?'듀얼 Lv+1 발동':'8↑ 듀얼 Lv+1'}`:J==='tech'?(w.gate.open&&w.gate.forE===me?(me.out?'탈출 성공!':'탈출구가 열렸다! 표시된 문으로'):`발전기 ${me.gens}/3 → 탈출구 · 탈출 ${me.p.escapes||0}/3`):J==='scout'?`해제 ${me.disarms}개 (함정 · 허수아비 · 미믹)`:`기록 ${rc}/4 (괴물을 멀리서 3초 관찰)`;
+  { const J=me.p.job.id, rc=Object.keys(me.recorded).length; const goal=J==='shear'?`원한 ${'█'.repeat(Math.floor(me.rage/10))}${'░'.repeat(10-Math.floor(me.rage/10))} ${Math.floor(me.rage)}%${me.morph>0?' · 변신 '+Math.ceil(me.morph)+'s':me.tired>0?' · 지침':''} · 끊기 ${me.cuts}`:J==='ent'?`시청자 ${Math.floor(me.p.viewers||0)}/12 · ${(me.p.viewers||0)>=8?'듀얼 Lv+1 발동':'8↑ 듀얼 Lv+1'}`:J==='tech'?(w.gate.open&&w.gate.forE===me?(me.out?'탈출 성공!':'탈출구가 열렸다! 표시된 문으로'):`발전기 ${me.gens}/3 → 탈출구 · 탈출 ${me.p.escapes||0}/3`):J==='scout'?`해제 ${me.disarms}개 (함정 · 허수아비 · 미믹)`:`기록 ${rc}/4 (괴물을 멀리서 3초 관찰) · 기록한 괴물은 나를 덜 본다`;
     c.font=`400 12px ${FD}`; const gw=c.measureText(goal).width+26; c.fillStyle='rgba(8,4,3,.82)'; c.fillRect(W/2-rsv/2+8-gw/2,70,gw,22); c.strokeStyle=me.p.job.color; c.lineWidth=1; c.strokeRect(W/2-rsv/2+8-gw/2+.5,70.5,gw-1,21); c.fillStyle=me.p.job.color; c.textAlign='center'; c.fillText(goal,W/2-rsv/2+8,81); }
   { const ex=[]; if(me.prey&&!me.tagged) ex.push('사냥감: '+lab(me.prey.p)); if(me.hunted) ex.push('누군가 나를 노린다'); if(me.mis&&!me.mis.done) ex.push(me.mis.stage===0?'심부름: 바구니(붉은 표시)를 집어라':'심부름: 금빛 표시(할머니 집)로'); if(me.keys>0) ex.push('열쇠 ×'+me.keys); if(me.prick>0) ex.push('졸음 '+Math.ceil(me.prick)+'s'); if(inSwamp(w,me.x,me.y)) ex.push('늪 — 느려지지만 발소리가 줄어든다'); else if(me.cover) ex.push('덤불 속 — 괴물이 멀리서는 못 본다'); if(me.hold) ex.push('바늘을 들고 있다');
     if(ex.length){ const txt=ex.join(' · '); c.font=`400 12px ${FD}`; const gw=Math.min(W-20,c.measureText(txt).width+26); c.fillStyle='rgba(8,4,3,.82)'; c.fillRect(W/2-rsv/2+8-gw/2,96,gw,22); c.strokeStyle='#8a7c5c'; c.lineWidth=1; c.strokeRect(W/2-rsv/2+8-gw/2+.5,96.5,gw-1,21); c.fillStyle='#e3d29a'; c.textAlign='center'; c.fillText(txt,W/2-rsv/2+8,107,gw-14); } }
