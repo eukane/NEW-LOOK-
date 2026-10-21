@@ -180,7 +180,7 @@ const range = n => [...Array(n).keys()];
 function makePlayers(humanIdx){
   const jobs = shuffle(JOBS);
   return range(4).map(i=>({
-    i, job:jobs[i], human:i===humanIdx, name:jobs[i].name,
+    i, job:jobs[i], human:Array.isArray(humanIdx)?humanIdx.includes(i):i===humanIdx, name:jobs[i].name,
     vit:new Set(sample(range(N),VITALS)),   // 급소 4개: 랜덤 배정, 본인에게만 보임
     cut:new Set(),                           // 끊긴 급소: 모두에게 공개
     gold:0, skill:0.25+rand()*0.55, alive:true, duelWins:0,
@@ -482,6 +482,7 @@ function runDuelHeadless(A,B,skillA,skillB){
 /* ===================== CORE:END ===================== */
 
 /* ===================== EXPLORE:BEGIN (DOM 없음: 탐색 라운드 엔진 v2 — 야외 + 건물 + 괴물 + 상호작용) ===================== */
+const NETRT={explore:false,duel:false};   // 원격 사람이 실시간 단계에 참여하는지 (단계별로 켜짐)
 const XW=3000, XH=2000, GS=40, WT=24, DG=120, EXP_T=120, NAVR=22;
 const THEMES={
   theatre:{id:'theatre',name:'버려진 극장의 뒤뜰',ground:['#34402e','#222c20'],path:'#4a3f2c',tree:'leaf',variants:['hall','plain','yard','plain','plain'],landmark:'스포트라이트 탑',bld:['대극장 본관','소품 창고','분장실 동','리허설 홀','무대 장치고']},
@@ -667,7 +668,7 @@ function makeExplore(P,opts={}){
   const themeId=opts.theme||sample(Object.keys(THEMES),1)[0], w=genMap(themeId,opts.seed); buildNav(w); w.round=opts.round||1; w.mspd=1+0.04*Math.min(5,w.round-1); w.mspdNow=w.mspd;
   Object.assign(w,{phase:0,toll:3,expose:{},exTick:0,T:opts.T||EXP_T,t:0,events:[],over:false,noises:[],ev:opts.ev||null,planksT:0});
   const [sx,sy]=w.spawn;
-  w.ents=P.map((p,i)=>({p,i,human:!!p.human,x:sx+(i-1.5)*40,y:sy+30,r:13,stun:0,gain:0,goal:null,wps:null,srch:null,ix:0,iy:0,act:false,moving:false,face:1,flee:0,perk:{...EXP_PERK[p.job.id]},gens:0,out:false,escaped:false,disarms:0,recorded:{},recT:{},hidden:null,lock:false,hideT:0,shoes:false,lures:2,lureCd:0,lureT:6+rand()*10,dir:[0,1],keys:0,shakes:2,locks:2,shakeCd:0,forceL:0,stolen:false,light:false,lt:2+rand()*6,blind:0,snipped:0,resc:0,sdir:[0,-1],noiseT:0,helper:rand()<0.55,stuck:0,lx:0,ly:0,fid:0,stairCd:0,mends:0,digs:0,dugAt:[],stillT:0,frozen:false,foolT:0,fooled:0,rage:p.job.id==='shear'?(p.rage||0):0,morph:0,tired:0,cuts:0,cutSet:[],traps:3,tk:0,slow:0,ptT:9+rand()*12}));
+  w.ents=P.map((p,i)=>({p,i,human:!!p.human,ctl:!!(p.ctl||p.human)&&(!p.remote||NETRT.explore),x:sx+(i-1.5)*40,y:sy+30,r:13,stun:0,gain:0,goal:null,wps:null,srch:null,ix:0,iy:0,act:false,moving:false,face:1,flee:0,perk:{...EXP_PERK[p.job.id]},gens:0,out:false,escaped:false,disarms:0,recorded:{},recT:{},hidden:null,lock:false,hideT:0,shoes:false,lures:2,lureCd:0,lureT:6+rand()*10,dir:[0,1],keys:0,shakes:2,locks:2,shakeCd:0,forceL:0,stolen:false,light:false,lt:2+rand()*6,blind:0,snipped:0,resc:0,sdir:[0,-1],noiseT:0,helper:rand()<0.55,stuck:0,lx:0,ly:0,fid:0,stairCd:0,mends:0,digs:0,dugAt:[],stillT:0,frozen:false,foolT:0,fooled:0,rage:p.job.id==='shear'?(p.rage||0):0,morph:0,tired:0,cuts:0,cutSet:[],traps:3,tk:0,slow:0,ptT:9+rand()*12}));
   w.ents.forEach(e=>{ e.p.viewers=(e.p.viewers||0)*0.8; });
   if(w.ev==='needle'){ const p_=(()=>{ for(let k=0;k<80;k++){ const x=300+rand()*(XW-600), y=300+rand()*(XH-700); if(!solidAt(w,x,y,40)&&Math.hypot(x-sx,y-sy)>500) return [x,y]; } return [XW/2,XH/2]; })(); w.objs.push({type:'needle',x:p_[0],y:p_[1],need:0.35,done:false}); }
   if(opts.mission){ for(const idx of opts.mission){ const e=w.ents.find(q=>q.i===idx); if(!e) continue; const far=(d)=>{ for(let k=0;k<120;k++){ const x=200+rand()*(XW-400), y=200+rand()*(XH-400); if(!solidAt(w,x,y,40)&&Math.hypot(x-sx,y-sy)>d) return [x,y]; } return [XW/2,300]; }; const A=far(500), b=w.builds[ri(w.builds.length)], B=[b.x+b.w/2,b.y+b.h/2];
@@ -752,20 +753,20 @@ function stepExplore(w,dt){
     if(w.ev==='match'&&e.matchT>0) e.matchT-=dt;
     if(w.ev==='crumbs'&&e.moving){ e.crT=(e.crT||0)-dt; if(e.crT<=0){ e.crT=0.3; w.crumbs.push({x:e.x,y:e.y+10,t:0,e,fid:e.fid||0}); } }
     if(w.expose[e.i]&&e.blind<=0) e.light=true;
-    if(!e.human&&e.p.alive&&!e.out){ e.skT=(e.skT===undefined?15+rand()*20:e.skT)-dt; if(e.skT<=0){ e.skT=18+rand()*22; if(e.shakes>0&&e.p.skill>0.45&&rand()<0.7){ let tg=null,tb=-1; for(const o of w.ents){ if(o===e||!o.p.alive||o.out) continue; const sc=o.p.gold+o.gain+(o.human?3:0); if(sc>tb&&Math.hypot(o.x-e.x,o.y-e.y)<1100){ tb=sc; tg=o; } } if(tg) doShake(w,e); } }
+    if(!e.ctl&&e.p.alive&&!e.out){ e.skT=(e.skT===undefined?15+rand()*20:e.skT)-dt; if(e.skT<=0){ e.skT=18+rand()*22; if(e.shakes>0&&e.p.skill>0.45&&rand()<0.7){ let tg=null,tb=-1; for(const o of w.ents){ if(o===e||!o.p.alive||o.out) continue; const sc=o.p.gold+o.gain+(o.ctl?3:0); if(sc>tb&&Math.hypot(o.x-e.x,o.y-e.y)<1100){ tb=sc; tg=o; } } if(tg) doShake(w,e); } }
       if(e.locks>0&&rand()<dt*0.25) doLock(w,e); }
-    if(!e.human&&e.traps>0&&e.p.skill>0.3&&!e.hidden&&e.stun<=0){ e.ptT-=dt; if(e.ptT<=0){ e.ptT=17+rand()*15; let near=false; for(const q of w.ents){ if(q!==e&&q.p.alive&&!q.out&&(q.fid||0)===(e.fid||0)&&Math.hypot(q.x-e.x,q.y-e.y)<900){ near=true; break; } } if(near&&rand()<0.8){ e.tk=ri(3); placeTrap(w,e); } } }
-    if(!e.human&&e.lures>0&&e.p.skill>0.4){ e.lureT-=dt; if(e.lureT<=0){ e.lureT=12+rand()*14; let tgt=null,td=900; for(const o of w.ents){ if(o===e||!o.p.alive||o.hidden) continue; const d=Math.hypot(o.x-e.x,o.y-e.y); if(d<td&&d>160){ td=d; tgt=o; } } if(tgt&&rand()<0.7) throwLure(w,e,tgt.x+(rand()-0.5)*120,tgt.y+(rand()-0.5)*120); } }
-    if(w.ev==='match'&&!e.human&&e.matches>0&&e.matchT<=0){ e.mt2=(e.mt2===undefined?3+rand()*8:e.mt2)-dt; if(e.mt2<=0){ e.mt2=13+rand()*10; strikeMatch(w,e); } }
-    if(e.blind>0){ e.blind-=dt; e.light=false; } else if(w.ev==='match'){ e.light=e.matchT>0; } else if(!e.human){ e.lt-=dt; if(e.lt<=0){ e.lt=5+rand()*7; e.light=rand()<0.2; } }
-    if(e.hidden){ e.hideT+=dt; const mg=Math.hypot(e.ix,e.iy); if(e.human&&mg>0.4&&e.hideT>0.4){ e.x=e.hidden.x; e.y=e.hidden.y+34; e.hidden=null; } }
+    if(!e.ctl&&e.traps>0&&e.p.skill>0.3&&!e.hidden&&e.stun<=0){ e.ptT-=dt; if(e.ptT<=0){ e.ptT=17+rand()*15; let near=false; for(const q of w.ents){ if(q!==e&&q.p.alive&&!q.out&&(q.fid||0)===(e.fid||0)&&Math.hypot(q.x-e.x,q.y-e.y)<900){ near=true; break; } } if(near&&rand()<0.8){ e.tk=ri(3); placeTrap(w,e); } } }
+    if(!e.ctl&&e.lures>0&&e.p.skill>0.4){ e.lureT-=dt; if(e.lureT<=0){ e.lureT=12+rand()*14; let tgt=null,td=900; for(const o of w.ents){ if(o===e||!o.p.alive||o.hidden) continue; const d=Math.hypot(o.x-e.x,o.y-e.y); if(d<td&&d>160){ td=d; tgt=o; } } if(tgt&&rand()<0.7) throwLure(w,e,tgt.x+(rand()-0.5)*120,tgt.y+(rand()-0.5)*120); } }
+    if(w.ev==='match'&&!e.ctl&&e.matches>0&&e.matchT<=0){ e.mt2=(e.mt2===undefined?3+rand()*8:e.mt2)-dt; if(e.mt2<=0){ e.mt2=13+rand()*10; strikeMatch(w,e); } }
+    if(e.blind>0){ e.blind-=dt; e.light=false; } else if(w.ev==='match'){ e.light=e.matchT>0; } else if(!e.ctl){ e.lt-=dt; if(e.lt<=0){ e.lt=5+rand()*7; e.light=rand()<0.2; } }
+    if(e.hidden){ e.hideT+=dt; const mg=Math.hypot(e.ix,e.iy); if(e.ctl&&mg>0.4&&e.hideT>0.4){ e.x=e.hidden.x; e.y=e.hidden.y+34; e.hidden=null; } }
     if(e.stun<=0){
       if(e.shoes){ const sp=150*e.perk.spd*1.28; let dx=e.sdir[0], dy=e.sdir[1];
-        if(e.human){ const mg=Math.hypot(e.ix,e.iy); if(mg>0.2){ dx=e.ix/mg; dy=e.iy/mg; e.sdir=[dx,dy]; } }
+        if(e.ctl){ const mg=Math.hypot(e.ix,e.iy); if(mg>0.2){ dx=e.ix/mg; dy=e.iy/mg; e.sdir=[dx,dy]; } }
         else { e.stuck-=dt; if(e.stuck<=0){ e.stuck=1+rand()*1.6; const a=rand()*6.283; e.sdir=[Math.cos(a),Math.sin(a)]; } dx=e.sdir[0]; dy=e.sdir[1]; }
-        const ox=e.x, oy=e.y; e.x+=dx*sp*dt; e.y+=dy*sp*dt; pushOut(e,w); e.moving=true; if(Math.abs(dx)>0.1) e.face=dx>0?1:-1; if(Math.hypot(e.x-ox,e.y-oy)<sp*dt*0.4&&!e.human){ e.stuck=0; } noisy(e,300,'shoes'); }
-      else if(e.hidden){ if(e.human){ wantAct=e.act&&!e.lock&&e.hideT>0.5; if(!e.act) e.lock=false; } else wantAct=e.hideT>2.5&&!w.mons.some(m=>!m.asleep&&Math.hypot(m.x-e.x,m.y-e.y)<280); }
-      else if(e.human){ const mg=Math.hypot(e.ix,e.iy); if(mg>0.08){ const sp=150*e.perk.spd; e.x+=e.ix/Math.max(1,mg)*sp*dt; e.y+=e.iy/Math.max(1,mg)*sp*dt; pushOut(e,w); e.moving=true; e.dir=[e.ix/Math.max(0.01,mg),e.iy/Math.max(0.01,mg)]; if(Math.abs(e.ix)>0.1) e.face=e.ix>0?1:-1; noisy(e,190,'step'); } wantAct=e.act&&!e.moving; if(!e.act) e.lock=false; if(e.lock) wantAct=false; }
+        const ox=e.x, oy=e.y; e.x+=dx*sp*dt; e.y+=dy*sp*dt; pushOut(e,w); e.moving=true; if(Math.abs(dx)>0.1) e.face=dx>0?1:-1; if(Math.hypot(e.x-ox,e.y-oy)<sp*dt*0.4&&!e.ctl){ e.stuck=0; } noisy(e,300,'shoes'); }
+      else if(e.hidden){ if(e.ctl){ wantAct=e.act&&!e.lock&&e.hideT>0.5; if(!e.act) e.lock=false; } else wantAct=e.hideT>2.5&&!w.mons.some(m=>!m.asleep&&Math.hypot(m.x-e.x,m.y-e.y)<280); }
+      else if(e.ctl){ const mg=Math.hypot(e.ix,e.iy); if(mg>0.08){ const sp=150*e.perk.spd; e.x+=e.ix/Math.max(1,mg)*sp*dt; e.y+=e.iy/Math.max(1,mg)*sp*dt; pushOut(e,w); e.moving=true; e.dir=[e.ix/Math.max(0.01,mg),e.iy/Math.max(0.01,mg)]; if(Math.abs(e.ix)>0.1) e.face=e.ix>0?1:-1; noisy(e,190,'step'); } wantAct=e.act&&!e.moving; if(!e.act) e.lock=false; if(e.lock) wantAct=false; }
       else wantAct=botStep(w,e,dt,noisy);
     }
     if(e.p.job.id==='scare'){ if(e.moving||e.srch||e.hidden||e.stun>0) e.stillT=0; else e.stillT+=dt; e.frozen=e.stillT>=1.2;
@@ -796,7 +797,7 @@ function stepExplore(w,dt){
   w.exTick-=dt; if(w.exTick<=0&&Object.keys(w.expose).length){ w.exTick=1; for(const k of Object.keys(w.expose)){ const t=w.ents[+k]; if(t.morph>0) continue; for(const m of w.mons){ if(m.asleep||m.type.fly||m.state==='chase') continue; const aim=aimAt(w,m,t.x,t.y,t.fid||0); if(aim) m.alarm={x:aim[0],y:aim[1],t:2.5}; } } }
   for(const e of w.ents) if(e.stun<=0.1) e.stolen=false;
   for(const e of w.ents){ if(!e.prey||e.tagged||!e.p.alive||e.out) continue; const p=e.prey; if(p.p.alive&&!p.out&&!p.hidden&&Math.hypot(p.x-e.x,p.y-e.y)<36&&hasLOS(w,p.x,p.y,e.x,e.y)){ e.tagged=true; e.gain+=2; if(p.p.gold+p.gain>0) p.gain-=1; w.events.push({type:'tag',e,p}); } }
-  for(const e of w.ents){ if(e.hold&&!e.human&&e.p.alive){ e.holdT=(e.holdT||0)+dt; if(e.holdT>1.3){ let tg=null,td=700; for(const o of w.ents){ if(o===e||!o.p.alive||o.out||o.hidden) continue; const d=Math.hypot(o.x-e.x,o.y-e.y); if(d<td){ td=d; tg=o; } } if(tg) throwNeedle(w,e,tg.x,tg.y); else if(e.holdT>6) throwNeedle(w,e,e.x+rand()*200-100,e.y+rand()*200-100); } } }
+  for(const e of w.ents){ if(e.hold&&!e.ctl&&e.p.alive){ e.holdT=(e.holdT||0)+dt; if(e.holdT>1.3){ let tg=null,td=700; for(const o of w.ents){ if(o===e||!o.p.alive||o.out||o.hidden) continue; const d=Math.hypot(o.x-e.x,o.y-e.y); if(d<td){ td=d; tg=o; } } if(tg) throwNeedle(w,e,tg.x,tg.y); else if(e.holdT>6) throwNeedle(w,e,e.x+rand()*200-100,e.y+rand()*200-100); } } }
   // 허수아비
   for(const c of w.crows){ c.cd=Math.max(0,c.cd-dt); c.alarm=Math.max(0,c.alarm-dt); if(c.disarmed) continue;
     if(c.cd<=0){ for(const e of w.ents){ if(!e.p.alive||e.hidden||e.out) continue; if(Math.hypot(e.x-c.x,e.y-c.y)<230&&hasLOS(w,c.x,c.y,e.x,e.y)){ c.cd=9; c.alarm=2.2; noise(w,c.x,c.y,520,'crow'); for(const m of w.mons) if(!m.asleep&&m.state!=='chase'&&!(m.fid||0)&&!m.zone) m.alarm={x:c.x,y:c.y,t:10}; w.events.push({type:'alarm',e,c}); break; } } } }
@@ -805,7 +806,7 @@ function stepExplore(w,dt){
   for(const m of w.mons) stepMon(w,m,dt);
   stepDecoys(w,dt);
   if(w.t>=w.T) w.over=true;
-  { const g=w.gate; if(g.open&&g.forE&&!g.forE.out&&g.forE.p.alive&&Math.hypot(g.forE.x-g.x,g.forE.y-g.y)<48){ const e=g.forE; e.out=true; e.escaped=true; e.p.escapes=(e.p.escapes||0)+1; e.gain+=2; e.srch=null; w.events.push({type:'escape',e}); if(e.human){ w.over=true; w.early=true; w.escapeBy=e; } } }
+  { const g=w.gate; if(g.open&&g.forE&&!g.forE.out&&g.forE.p.alive&&Math.hypot(g.forE.x-g.x,g.forE.y-g.y)<48){ const e=g.forE; e.out=true; e.escaped=true; e.p.escapes=(e.p.escapes||0)+1; e.gain+=2; e.srch=null; w.events.push({type:'escape',e}); if(e.ctl){ w.over=true; w.early=true; w.escapeBy=e; } } }
   if(w.over&&!w.endDone){ w.endDone=true; settleRound(w); }
   if(w.objs.every(o=>o.done||o.type==='ward'||o.type==='plank'||o.type==='trap'||o.type==='crowd'||o.type==='ldoor'||o.type==='stair'||o.type==='cam'||o.type==='ptrap'||o.inLocked)) w.over=true, w.early=true;
 }
@@ -862,7 +863,7 @@ function stepMon(w,m,dt){
   // 판자에 막힘/기절
   for(const o of w.objs) if(o.type==='plank'&&o.state==='down'&&o.fresh&&Math.hypot(o.x-m.x,o.y-m.y)<80){ o.fresh=false; m.rest=2.2; m.state='rest'; w.events.push({type:'plankhit',m,o}); return; }
   let tgt=null,td=1e9; for(const e of w.ents){ if(!e.p.alive||e.out||e.stun>0||e.hidden||e.morph>0||(e.fid||0)!==(m.fid||0)) continue; const d=Math.hypot(e.x-m.x,e.y-m.y); if(e.cover&&d>115) continue; if(e.frozen&&d>70) continue; if(m.distract>0&&d>90) continue; const rng=T.sight*e.perk.sight*(e.shoes?1.4:1)*(e.light?1.5:0.85)*(e.recorded&&e.recorded[T.id]?0.7:1); if(d<rng&&d<td&&hasLOS(w,m.x,m.y,e.x,e.y)){ td=d; tgt=e; } }
-  if(tgt){ if(m.state!=='chase'){ if(tgt.human) w.events.push({type:'monster',e:tgt,m}); } m.state='chase'; m.chase=tgt; m.dodged=false; m.lostT=4; m.lastX=tgt.x; m.lastY=tgt.y; }
+  if(tgt){ if(m.state!=='chase'){ if(tgt.ctl) w.events.push({type:'monster',e:tgt,m}); } m.state='chase'; m.chase=tgt; m.dodged=false; m.lostT=4; m.lastX=tgt.x; m.lastY=tgt.y; }
   else if(m.state==='chase'){ if(m.chase&&m.chase.frozen&&!m.dodged&&m.chase.fooled<5){ m.dodged=true; m.chase.fooled++; m.chase.gain+=1; w.events.push({type:'fooled',e:m.chase}); } m.lostT-=dt; if(m.lostT<=0){ if(m.chase&&m.chase.p.job.id==='ent'&&!m.chase.out) addView(m.chase,1.5); m.state='patrol'; m.chase=null; m.path=[]; m.alarm={x:m.lastX,y:m.lastY,t:5}; } }
   if(m.state==='chase'){ const tx=m.chase&&m.chase.p.alive&&!m.chase.hidden?m.chase.x:m.lastX, ty=m.chase&&m.chase.p.alive&&!m.chase.hidden?m.chase.y:m.lastY;
     if(m.repath<=0||!m.path.length){ m.path=Math.hypot(tx-m.x,ty-m.y)<170&&clearLine(w,[m.x,m.y],[tx,ty],m.r)?[[tx,ty]]:findPath(w,m.x,m.y,tx,ty); m.repath=0.35; }
@@ -928,7 +929,7 @@ function trigPtrap(w,o,e){ addRage(w,e,28); addView(e,-1.5); o.armed=false; o.do
 function resolveObj0(w,e,o){
   if(o.type==='mend'){ const v=o.v; e.srch=null; if(v.stun>0.2){ v.stun=0; v.p.snip=Math.max(0,(v.p.snip||0)-1); v.srch=null; } e.mends++; if(e.mends<=4) e.gain+=1; w.events.push({type:'mend',e,v}); return; }
   if(o.type==='selfmend'){ e.srch=null; e.p.snip=Math.max(0,(e.p.snip||0)-1); w.events.push({type:'selfmend',e}); return; }
-  if(o.type==='dig'){ e.srch=null; e.digs++; e.dugAt.push([e.x,e.y]); if(!e.human) e.dgT=14+rand()*14; let p=0.6; for(const c of w.circs) if(c.kind==='stone'&&Math.hypot(c.x-e.x,c.y-e.y)<80){ p=0.85; break; } const r=rand();
+  if(o.type==='dig'){ e.srch=null; e.digs++; e.dugAt.push([e.x,e.y]); if(!e.ctl) e.dgT=14+rand()*14; let p=0.6; for(const c of w.circs) if(c.kind==='stone'&&Math.hypot(c.x-e.x,c.y-e.y)<80){ p=0.85; break; } const r=rand();
     if(r<p){ e.gain+=1; w.events.push({type:'dig',e,ok:true,x:e.x,y:e.y}); } else if(r<p+0.25){ noise(w,e.x,e.y,420,'chest'); w.events.push({type:'dig',e,ok:false,bones:true,x:e.x,y:e.y}); } else w.events.push({type:'dig',e,ok:false,x:e.x,y:e.y}); return; }
   if(o.type==='stair'){ const p=o.pair; e.x=p.x; e.y=p.y+64; e.fid=p.fid; e.stairCd=1.5; e.srch=null; e.wps=null; e.gTgt=null; for(const m of w.mons) if(m.chase===e&&m.state==='chase'){ m.state='patrol'; m.chase=null; m.path=[]; m.distract=2; m.alarm={x:o.x,y:o.y,t:5}; } w.events.push({type:'stair',e,o}); noise(w,e.x,e.y,150,'step'); return; }
   if(o.type==='ptrap'){ o.done=true; o.armed=false; e.disarms++; if(e.disarms%2===0) e.gain+=1; w.events.push({type:'disarm',e,o,what:'ptrap'}); return; }
@@ -945,7 +946,7 @@ function resolveObj0(w,e,o){
   else if(o.type==='plank'){ o.state='down'; o.done=false; o.fresh=true; const len=o.len; const q=o.o==='h'?{x:o.x-len/2,y:o.y-8,w:len,h:16,kind:'plank',life:6}:{x:o.x-8,y:o.y-len/2,w:16,h:len,kind:'plank',life:6}; w.rects.push(q); navRefresh(w); o.q=q; o.t=0;
     for(const m of w.mons) if(!m.asleep&&Math.hypot(m.x-o.x,m.y-o.y)<80){ m.rest=2.2; m.state='rest'; w.events.push({type:'plankhit',m,o,e}); o.fresh=false; } w.events.push({type:'plank',e,o}); noise(w,o.x,o.y,260,'plank');
   }
-  else if(o.type==='ward'){ if(e.hidden===o){ e.hidden=null; e.x=o.x; e.y=o.y+34; o.occ=null; e.goal=null; e.wps=null; } else if(!o.occ){ e.hidden=o; o.occ=e; e.x=o.x; e.y=o.y; e.hideT=0; e.goal=e.human?null:o; w.events.push({type:'hide',e,o}); } }
+  else if(o.type==='ward'){ if(e.hidden===o){ e.hidden=null; e.x=o.x; e.y=o.y+34; o.occ=null; e.goal=null; e.wps=null; } else if(!o.occ){ e.hidden=o; o.occ=e; e.x=o.x; e.y=o.y; e.hideT=0; e.goal=e.ctl?null:o; w.events.push({type:'hide',e,o}); } }
 }
 /* ===================== EXPLORE:END ===================== */
 
@@ -1769,6 +1770,7 @@ function drawBook(c,t){
 }
 function bookSettleT(sc){ return BOOK_T.open+sc.flips*BOOK_T.flip+BOOK_T.dur*0.6; }
 function bookScreen({left,right,buttons,flips=5,tag}){
+  left=expandHTML(left); right=expandHTML(right);
   return new Promise(res=>{
     const R=bookRect(), fast=FAST||params.has('bt');
     bookScene={t:fast?99:0,flips,R,settled:false}; mode='book'; ui.innerHTML='';
@@ -2045,7 +2047,7 @@ addEventListener('keydown',e=>{ if(mode!=='explore') return; if(e.key==='t'||e.k
 function xToast(text,col='#d9cdb0'){ if(xs&&xs.toasts.some(q=>q.text===text&&q.t<2)) return; if(xs) xs.toasts.push({text,col,t:0}); }
 function runExplore(P,o={}){
   return new Promise(res=>{
-    const w=makeExplore(P,{round:round,seed:o.seed!==undefined?o.seed:(gameMap?gameMap.seed:undefined),hunt:o.hunt||null,mission:o.mission||null,mirror:o.mirror||null,T:+(params.get('et')||opts.exploreT||EXP_T),ev:o.ev||params.get('ev')||null,theme:o.theme||params.get('theme')||(gameMap?gameMap.theme:null)}); const me=w.ents.find(e=>e.human)||w.ents[0]; if(params.has('xbot')) me.human=false; if(params.has('xt')){ const k=params.get('xt'); let tx,ty; if(k==='swamp'&&w.swamps[0]){ tx=w.swamps[0].x-w.swamps[0].r-60; ty=w.swamps[0].y; } else if(k==='thicket'&&w.thickets[0]){ tx=w.thickets[0].x-w.thickets[0].r-70; ty=w.thickets[0].y+20; } else if(k==='door'&&w.lockedB[0]){ const d=w.lockedB[0].doors.find(q=>q.locked); tx=d.x+(d.o==='v'?(d.x>w.lockedB[0].x+10?90:-90):0); ty=d.y+(d.o==='h'?(d.y>w.lockedB[0].y+10?90:-90):0); me.keys=1; } if(tx!==undefined){ me.x=tx; me.y=ty; me.light=true; } }
+    const w=makeExplore(P,exploreOpts(o)); const me=w.ents.find(e=>e.human)||w.ents[0]; if(params.has('xbot')){ me.human=false; me.ctl=false; } if(params.has('xt')){ const k=params.get('xt'); let tx,ty; if(k==='swamp'&&w.swamps[0]){ tx=w.swamps[0].x-w.swamps[0].r-60; ty=w.swamps[0].y; } else if(k==='thicket'&&w.thickets[0]){ tx=w.thickets[0].x-w.thickets[0].r-70; ty=w.thickets[0].y+20; } else if(k==='door'&&w.lockedB[0]){ const d=w.lockedB[0].doors.find(q=>q.locked); tx=d.x+(d.o==='v'?(d.x>w.lockedB[0].x+10?90:-90):0); ty=d.y+(d.o==='h'?(d.y>w.lockedB[0].y+10?90:-90):0); me.keys=1; } if(tx!==undefined){ me.x=tx; me.y=ty; me.light=true; } }
     if(params.has('xgen')){ const g=w.objs.find(q=>q.type==='gen'), ch=w.objs.find(q=>q.type==='chest'); me.x=g.x-100; me.y=g.y+70; me.light=true; g.prog=0.5; if(ch){ ch.x=g.x+110; ch.y=g.y+60; } }
     if(params.has('xr')){ w.mons.forEach(m=>{ me.recorded[m.type.id]=true; }); w.mons.filter(m=>!m.type.fly).forEach((m,i)=>{ m.x=me.x+200+i*60; m.y=me.y-100+i*50; }); } if(params.has('xg')){ w.gate.x=me.x+150; w.gate.y=me.y-80; w.gate.open=true; w.gate.forE=me; me.gens=3; w.objs.filter(q=>q.type==='trap').slice(0,3).forEach((q,i)=>{ q.x=me.x-160+i*50; q.y=me.y+60; }); } if(params.has('xd')){ me.light=true; throwLure(w,me,me.x+160,me.y-40); w.mons.filter(m=>m.flock).forEach((m,i)=>{ m.rest=0; m.x=me.x+520+i*24; m.y=me.y+(i-1.5)*34; m.isLeader=i===0; }); } if(params.has('xl')){ me.light=true; w.mons.forEach(m=>{ if(m.type.fly){ m.x=me.x+140; m.y=me.y-60; } if(m.type.id==='shears'){ m.x=me.x-300; m.y=me.y+80; } }); } if(params.has('inb')){ const b=w.builds[0]; me.x=b.x+b.w*0.3; me.y=b.y+b.h*0.5; w.objs.filter(q=>q.type==='gen').slice(0,2).forEach(q=>{ q.lit=true; }); }
     if(params.has('xf')){ const v=+params.get('xf')||0, B=w.builds.find(b=>!b.locked)||w.builds[0]; if(v===0){ const u=B.up[0]; me.x=u.x+10; me.y=u.y+90; } else { const blk=w.blocks[B.fids[Math.min(v,B.floors-1)]-1]; me.fid=blk.fid; me.x=blk.x+blk.w/2; me.y=blk.y+blk.h/2+30; } me.light=true; }
@@ -2062,7 +2064,9 @@ function runExplore(P,o={}){
     if(w.mirrorPair&&w.mirrorPair.includes(me)) xToast('거울에 비쳤다 — 라운드 중간에 위치가 맞바뀐다','#cfd8dc');
   });
 }
-function xFinish(){ const w=xs.w, gains=w.ents.map(e=>e.gain), res=xs.res; w.ents.forEach(e=>{ e.p.gold=Math.max(0,e.p.gold+e.gain); if(e.p.job.id==='shear') e.p.rage=Math.round(Math.min(100,e.rage)*0.5); }); xs=null; actBtn.style.display='none'; trayEl.style.display='none'; mode='title'; res({escapeBy:w.escapeBy?w.escapeBy.i:-1,extra:w.ents.map(e=>{ const J=e.p.job.id; return J==='ent'?'시청자 '+Math.floor(e.p.viewers||0):J==='tech'?'탈출 '+(e.p.escapes||0)+'/3'+(e.escaped?' ✔':''):J==='scout'?'해제 '+e.disarms:J==='shear'?'끊기 '+e.cuts:J==='mender'?'수선 '+e.mends:J==='digger'?'발굴 '+e.digs:J==='scare'?'속임 '+e.fooled:'기록 '+Object.keys(e.recorded).length+'/4'; }),snips:w.ents.map(e=>e.snipped||0),gains,early:!!w.early,theme:w.theme.name,counts:{chest:w.objs.filter(o=>o.type==='chest'&&o.done).length,gen:w.objs.filter(o=>o.type==='gen'&&o.done).length}}); }
+function xSummaryApply(w){ const gains=w.ents.map(e=>e.gain); w.ents.forEach(e=>{ e.p.gold=Math.max(0,e.p.gold+e.gain); if(e.p.job.id==='shear') e.p.rage=Math.round(Math.min(100,e.rage)*0.5); });
+  return {escapeBy:w.escapeBy?w.escapeBy.i:-1,extra:w.ents.map(e=>{ const J=e.p.job.id; return J==='ent'?'시청자 '+Math.floor(e.p.viewers||0):J==='tech'?'탈출 '+(e.p.escapes||0)+'/3'+(e.escaped?' ✔':''):J==='scout'?'해제 '+e.disarms:J==='shear'?'끊기 '+e.cuts:J==='mender'?'수선 '+e.mends:J==='digger'?'발굴 '+e.digs:J==='scare'?'속임 '+e.fooled:'기록 '+Object.keys(e.recorded).length+'/4'; }),snips:w.ents.map(e=>e.snipped||0),gains,early:!!w.early,theme:w.theme.name,counts:{chest:w.objs.filter(o=>o.type==='chest'&&o.done).length,gen:w.objs.filter(o=>o.type==='gen'&&o.done).length}}; }
+function xFinish(){ const w=xs.w, res=xs.res, sum=xSummaryApply(w); xs=null; actBtn.style.display='none'; trayEl.style.display='none'; mode='title'; res(sum); }
 function xUpdate(dt){
   const w=xs.w, me=xs.me; xs.tick+=dt;
   if(!w.over){
@@ -2509,11 +2513,11 @@ async function transition(prepare, o={}){
 const $ = s => document.querySelector(s);
 const ui = $('#ui');
 let gameMap=null, nextX={}, nextMirror=null, escapeWin=null, nextEv=null, P=[], round=0, rules={...RULES0}, opts={timer:true, duelMode:'play', explore:true, exploreT:EXP_T};
-const nameOf = p => shown(p)?`<span class="chip"><i style="background:${p.job.color}"></i>${p.name}${p.human?'(나)':''}</span>`:`<span class="chip"><i style="background:#6a6a6a"></i>${code(p)}</span>`;
+const nameOf = p => `<span class="chip"><i style="background:${p.job.color}"></i>${p.name}{{me${p.i}}}</span>`;
 let mode='title', now=0, lastTs=performance.now();
 let stageActors=[];
 
-function setScreen(html, cls=''){ ui.innerHTML = `<div class="scr ${cls}"><div class="panel">${html}</div></div>`; }
+function setScreen(html, cls=''){ ui.innerHTML = `<div class="scr ${cls}"><div class="panel">${expandHTML(html)}</div></div>`; }
 function clearScreen(){ ui.innerHTML=''; }
 function waitButtons(buttons, tag){
   return new Promise(res=>{
@@ -2615,6 +2619,66 @@ function simReport(){
   ${rows.map(r=>`<tr><td>${names[r.cb]}</td><td>${r.avgRounds.toFixed(2)}</td><td>${(r.draws*100).toFixed(1)}%</td><td>${(r.leaderRate*100).toFixed(1)}%</td></tr>`).join('')}</table>
   <p class="dim">4명이 동률이면 기대 승리율은 25%입니다.</p>`;
 }
+/* ===================== 온라인 (Net) ===================== */
+const NET={ws:null,open:false,id:-1,room:'',host:false,lobby:[],sys:{},handlers:{},rpcId:0,pending:new Map(),closedMsg:null,
+  defaultUrl(){ const q=params.get('server'); if(q) return q; if(location.protocol==='http:'||location.protocol==='https:') return (location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws'; return 'ws://localhost:8080/ws'; },
+  connect(url){ return new Promise((res,rej)=>{ let done=false; let ws; try{ ws=new WebSocket(url); }catch(e){ rej(new Error('주소가 올바르지 않습니다')); return; } NET.ws=ws;
+    ws.onopen=()=>{ NET.open=true; done=true; res(); }; ws.onerror=()=>{ if(!done) rej(new Error('서버에 연결할 수 없습니다 ('+url+')')); };
+    ws.onclose=()=>{ NET.open=false; if(NET.room){ NET.closedMsg=NET.closedMsg||'서버와의 연결이 끊겼습니다'; NET.onClosed&&NET.onClosed(NET.closedMsg); } };
+    ws.onmessage=e=>{ let m; try{ m=JSON.parse(e.data); }catch(_){ return; } NET.onRaw(m); }; }); },
+  send(o){ if(NET.ws&&NET.ws.readyState===1) NET.ws.send(JSON.stringify(o)); },
+  to(to,m,lossy){ NET.send({t:'to',to,m,lossy:!!lossy}); },
+  onRaw(m){ if(m.t==='msg'){ const k=m.m&&m.m.k; if(k==='res'){ const p=NET.pending.get(m.m.id); if(p){ NET.pending.delete(m.m.id); clearTimeout(p.tm); p.res(m.m.v); } return; } const h=NET.handlers[k]; if(h) h(m.m,m.from); }
+    else { if(m.t==='lobby'){ NET.lobby=m.players; } if(m.t==='closed') NET.closedMsg=m.reason; const h=NET.sys[m.t]; if(h) h(m); } },
+  // 호스트 → 클라이언트 요청 (응답을 기다림). 끊기거나 시간이 지나면 def 로 해결
+  ask(to,fn,args,def,ms=180000){ return new Promise(res=>{ const id=++NET.rpcId; const tm=setTimeout(()=>{ NET.pending.delete(id); res(def); },ms); NET.pending.set(id,{res,tm,to}); NET.to(to,{k:'rpc',id,fn,args}); }); },
+  dropPending(to,def){ for(const [id,p] of [...NET.pending]) if(p.to===to){ NET.pending.delete(id); clearTimeout(p.tm); p.res(def); } },
+  reply(to,id,v){ NET.to(to,{k:'res',id,v}); },
+  leave(){ try{ NET.ws&&NET.ws.close(); }catch(_){} NET.ws=null; NET.open=false; NET.room=''; NET.id=-1; NET.host=false; NET.lobby=[]; NET.pending.clear(); NET.handlers={}; NET.sys={}; NET.onClosed=null; NET.closedMsg=null; }
+};
+function netWaitSys(type,ms=8000){ return new Promise((res,rej)=>{ const tm=setTimeout(()=>{ delete NET.sys[type]; rej(new Error('응답이 없습니다')); },ms); const prev=NET.sys[type]; NET.sys[type]=m=>{ clearTimeout(tm); NET.sys[type]=prev; res(m); }; }); }
+async function onlineFlow(){
+  // 반환: null(돌아감) | {host:true,players:[...]} | {host:false}
+  let nick=''; try{ nick=localStorage.getItem('mt_nick')||''; }catch(_){}
+  const auto=params.get('online'); if(auto&&!nick) nick=params.get('nick')||'';
+  let err='';
+  for(;;){
+    setScreen(`<div class="sub">Online</div><h2 class="disp" style="margin:4px 0 8px;font-size:28px">온라인 — 친구와 함께</h2>
+      <p class="dim" style="font-size:.9em">한 명이 방을 만들고 방 코드를 알려 주면, 친구들이 코드를 입력해 들어옵니다. 빈 자리는 봇이 채웁니다(최대 4인).</p>
+      <label class="sl"><span>닉네임</span><input id="o-nick" maxlength="12" value="${nick.replace(/"/g,'')}" style="flex:1;background:#0e0907;color:#e6dcc0;border:1px solid #5a4528;padding:6px 8px;font:inherit"></label>
+      <label class="sl"><span>서버 주소</span><input id="o-url" value="${NET.defaultUrl()}" style="flex:1;background:#0e0907;color:#e6dcc0;border:1px solid #5a4528;padding:6px 8px;font:inherit;font-size:.85em"></label>
+      <label class="sl"><span>방 코드</span><input id="o-code" maxlength="4" placeholder="예: ABCD" style="flex:1;background:#0e0907;color:#e6dcc0;border:1px solid #5a4528;padding:6px 8px;font:inherit;text-transform:uppercase"></label>
+      <p id="o-err" class="lose" style="min-height:1.4em;font-size:.9em">${err}</p>`,'left');
+    if(auto&&params.get('room')) document.getElementById('o-code').value=params.get('room');
+    const pick=auto?(auto==='host'?'create':'join'):await waitButtons([{label:'방 만들기',value:'create'},{label:'코드로 참가',value:'join'},{label:'돌아간다',value:'back',ghost:true}],'online');
+    if(pick==='back') return null;
+    nick=(document.getElementById('o-nick').value||'').trim()||'손님'; try{ localStorage.setItem('mt_nick',nick); }catch(_){}
+    const url=document.getElementById('o-url').value.trim(), code=(document.getElementById('o-code').value||'').trim().toUpperCase();
+    try{
+      NET.leave(); await NET.connect(url);
+      if(pick==='create'){ NET.send({t:'create',nick}); const m=await netWaitSys('created'); NET.room=m.room; NET.id=0; NET.host=true; }
+      else { if(code.length!==4) throw new Error('방 코드 4글자를 입력하세요'); const pr=Promise.race([netWaitSys('joined'),netWaitSys('error').then(e=>{ throw new Error(e.msg); })]); NET.send({t:'join',room:code,nick}); const m=await pr; NET.room=m.room; NET.id=m.id; NET.host=false; }
+    }catch(e){ err=e.message; NET.leave(); continue; }
+    return await lobbyScreen();
+  }
+}
+async function lobbyScreen(){
+  return new Promise(res=>{
+    const render=()=>{ const el=document.getElementById('lobby-list'); if(!el) return; el.innerHTML=NET.lobby.map(p=>`<div class="slip" style="animation:none;opacity:1"><i>${p.host?'방장':'참가자'}</i>${p.nick.replace(/[<>&]/g,'')}${p.id===NET.id?' (나)':''}</div>`).join(''); const b=document.getElementById('lobby-start'); if(b) b.disabled=NET.lobby.length<1; };
+    setScreen(`<div class="sub">Lobby</div><h2 class="disp" style="margin:4px 0 4px;font-size:28px">방 코드 <span style="letter-spacing:.2em;color:#e0b43a">${NET.room}</span></h2>
+      <p class="dim" style="font-size:.9em">${NET.host?'친구들에게 이 코드를 알려 주세요. 모두 모이면 시작을 누르세요. 빈 자리는 봇이 채웁니다.':'방장이 시작하기를 기다리는 중입니다…'}</p><div id="lobby-list"></div>
+      <div class="row" style="margin-top:12px">${NET.host?'<button class="btn" id="lobby-start">게임 시작</button>':''}<button class="btn ghost" id="lobby-leave">나가기</button></div>`,'left');
+    render(); const done=v=>{ NET.sys.lobby=null; NET.sys.started=null; NET.sys.closed=null; NET.onClosed=null; res(v); };
+    NET.sys.lobby=()=>render();
+    NET.sys.started=m=>{ done({host:NET.host,players:m.players}); };
+    NET.sys.closed=m=>{ NET.leave(); done(null); };
+    NET.onClosed=()=>{ NET.leave(); done(null); };
+    document.getElementById('lobby-leave').onclick=()=>{ NET.leave(); done(null); };
+    const sb=document.getElementById('lobby-start'); if(sb) sb.onclick=()=>NET.send({t:'start'});
+    const need=+params.get('need')||0; if(NET.host&&need&&params.get('online')==='host'){ const iv=setInterval(()=>{ if(!document.getElementById('lobby-start')){ clearInterval(iv); return; } if(NET.lobby.length>=need){ clearInterval(iv); NET.send({t:'start'}); } },300); }
+    document.title='ROOM '+NET.room+' id'+NET.id;
+  });
+}
 async function titleScreen(){
   mode='title'; stageActors=JOBS.slice();
   while(true){
@@ -2623,9 +2687,10 @@ async function titleScreen(){
       <div class="jobs">${JOBS.map(j=>`<span class="chip"><i style="background:${j.color}"></i>${j.name}</span>`).join('')}</div>
       <div id="menu-btns"></div></div>`,'left');
     const mb=$('#menu-btns'); mb.innerHTML=''; ui.querySelector('.row')?.remove();
-    const act = await new Promise(res=>{ [['막을 올린다','start',0],['게임 방법','how',1],['규칙 · 소리 설정','set',1],['봇 800판 시뮬레이션','sim',1],['전체 화면','fs',1]].forEach(([l,v,g_])=>{ const b=document.createElement('button'); b.className='btn'+(g_?' ghost':''); b.textContent=l; b.onclick=()=>res(v); mb.appendChild(b); }); if(AUTO&&!(STOP&&STOP==='title')) setTimeout(()=>res('start'),0); });
+    const act = await new Promise(res=>{ [['막을 올린다','start',0],['온라인 (친구와)','online',0],['게임 방법','how',1],['규칙 · 소리 설정','set',1],['봇 800판 시뮬레이션','sim',1],['전체 화면','fs',1]].forEach(([l,v,g_])=>{ const b=document.createElement('button'); b.className='btn'+(g_?' ghost':''); b.textContent=l; b.onclick=()=>res(v); mb.appendChild(b); }); if(AUTO&&!(STOP&&STOP==='title')) setTimeout(()=>res('start'),0); });
     if(act==='fs'){ try{ await document.documentElement.requestFullscreen(); }catch(e){} continue; }
     if(act==='sim'){ setScreen(simReport()); await waitButtons([{label:'돌아가기',value:1}],'sim'); if(AUTO) return 'sim'; continue; }
+    if(act==='online'){ const r=await onlineFlow(); if(r) return {online:r}; continue; }
     if(act==='set'){ await settingsScreen(); continue; }
     if(act==='how'){ await howToScreen(); continue; }
     return 'start';
@@ -2656,53 +2721,7 @@ function bodySVG(vit){
 const DOOR_NAMES=['첫째 문','둘째 문','셋째 문'];
 function doorsSVG(open){ return `<svg viewBox="0 0 240 110" style="display:block;margin:.4em auto;height:min(20vh,150px);width:auto">${[0,1,2].map(i=>`<g transform="translate(${20+i*72},8)"><path d="M0 94V28q24-30 48 0v66z" fill="${open[i]?'#120a06':'#5a3a22'}" stroke="#2a1d10" stroke-width="3"/>${open[i]?'<path d="M6 94V30q18-22 36 0v64z" fill="#000" opacity=".6"/>':'<circle cx="38" cy="58" r="3.4" fill="#d9b25a"/><path d="M8 40q16-16 32 0M8 64h32" stroke="#2a1d10" stroke-width="1.5" fill="none" opacity=".6"/>'}<text x="24" y="108" text-anchor="middle" font-size="10" fill="#3a2a14" font-family="Gugi,serif">${i+1}</text></g>`).join('')}</svg>`; }
 function applyDoor(p,f){ if(f==='reward') p.gold+=2; else if(f==='trap'){ p.gold=Math.max(0,p.gold-1); p.startFx='trap'; } else p.startFx='warp'; }
-async function doorsPhase(human){
-  const ord=shuffle(alive(P)), fates=shuffle(['reward','trap','warp']), open=[null,null,null], log=[], react={reward:'눈빛이 환하게 번쩍였다',trap:'눈빛이 꺼질 듯 흔들렸다',warp:'눈빛이 사라졌다가 멀리서 깜빡였다'};
-  const logHTML=()=>log.length?`<div>${log.map(l=>l.none?`<div class="slip" style="animation-delay:.2s"><i>${nameOf(l.p)}</i>열 수 있는 문이 남아 있지 않았다.</div>`:`<div class="slip" style="animation-delay:.2s"><i>${DOOR_NAMES[l.d]}</i>${nameOf(l.p)} — ${react[l.f]}</div>`).join('')}</div>`:'<p class="dim">아직 아무도 문을 열지 않았습니다.</p>';
-  const be=BOOK_EVENTS.find(b=>b.id==='doors'); let humanResult=null;
-  for(const p of ord){ const free=[0,1,2].filter(d=>!open[d]);
-    if(!free.length){ log.push({p,none:true}); if(p.human) humanResult={none:true}; continue; }
-    let d; if(p.human){ d=await bookScreen({left:`<h3>잔혹동화 책 · ${be.tag}</h3><h2>${be.title}</h2>${doorsSVG(open.map(o=>!!o))}<p class="quote">${be.story}</p>`,right:`<h3>당신의 차례</h3><p>${be.rule}</p>${logHTML()}`,buttons:free.map(i=>({label:DOOR_NAMES[i]+' 열기',value:i})),tag:STOP==='doors'?'doors':'doors_'}); }
-    else d=free[ri(free.length)];
-    open[d]=p; const f=fates[d]; applyDoor(p,f); log.push({p,d,f}); if(p.human) humanResult={d,f}; }
-  const fx={reward:'문 뒤에 금화가 가득했다! 재화 +2',trap:'문 뒤는 함정이었다. 재화 -1, 다음 탐색을 기절한 채 시작한다',warp:'낯선 길이었다. 다음 탐색을 다른 사람 곁에서 시작한다'};
-  await bookScreen({left:`<h3>잔혹동화 책 · 문이 모두 열렸다</h3><h2>세 개의 문</h2>${doorsSVG(open.map(o=>!!o))}${humanResult&&!humanResult.none?`<div class="rew${humanResult.f==='trap'?' l':''}"><div class="dim">${DOOR_NAMES[humanResult.d]}</div><b style="font-size:1.1em">${fx[humanResult.f]}</b></div>`:`<p class="dim">${human.alive?'당신이 열 수 있는 문은 남아 있지 않았다.':'당신은 이 장을 지켜보았다.'}</p>`}`,right:`<h3>문 앞의 얼굴들</h3>${logHTML()}<p class="dim" style="font-size:.85em">눈빛의 반응만 보았을 뿐, 문 뒤의 결과는 당사자만 압니다.</p>`,buttons:[{label:'이야기를 이어 간다',value:1}],tag:STOP==='doors2'?'doors2':'doors2_'});
-}
 function noseSVG(lie){ return `<svg viewBox="0 0 200 110" style="display:block;margin:.3em auto;height:min(20vh,150px);width:auto"><ellipse cx="60" cy="56" rx="34" ry="40" fill="#cdb888" stroke="#2a1d10" stroke-width="3"/><circle cx="48" cy="46" r="4" fill="#2a1d10"/><circle cx="68" cy="46" r="4" fill="#2a1d10"/><path d="M44 78q16 8 32 0" stroke="#2a1d10" stroke-width="3" fill="none"/><rect x="60" y="54" width="${lie?112:22}" height="9" rx="4" fill="#a9854f" stroke="#2a1d10" stroke-width="2.4"><animate attributeName="width" from="12" to="${lie?112:22}" dur="1.4s" fill="freeze"/></rect>${lie?'<path d="M176 56q10-14 16-6M176 60q12 0 16 8" stroke="#3a6a2a" stroke-width="3" fill="none"/>':''}</svg>`; }
-async function pinocchioPhase(human){
-  const alv=alive(P), be=BOOK_EVENTS.find(b=>b.id==='pinocchio'), claims=new Map(), asg=new Map();
-  for(const p of alv){ const idx=ri(N); asg.set(p,idx); if(!p.human){ const real=p.vit.has(idx); claims.set(p,rand()<0.45+0.3*p.skill?real:!real); } }
-  if(human.alive){ const idx=asg.get(human), real=human.vit.has(idx); const j=await bookScreen({left:`<h3>잔혹동화 책 · ${be.tag}</h3><h2>${be.title}</h2>${noseSVG(false)}<p class="quote">${be.story}</p>`,right:`<h3>한 줄 진술</h3><p>${be.rule}</p><p>책이 보여 준 당신의 실: <b>${STRING_NAMES[idx]}</b> — 실제로는 <b>${real?'급소입니다':'급소가 아닙니다'}</b>. 무엇이라고 말하시겠습니까?</p>`,buttons:[{label:'급소다',value:1,ghost:!real},{label:'급소가 아니다',value:2,ghost:real}],tag:STOP==='pino'?'pino':'pino_'}); claims.set(human,j===1); }
-  const victim=alv[ri(alv.length)], truth=claims.get(victim)===victim.vit.has(asg.get(victim));
-  const list=`<div>${alv.map((p,i)=>`<div class="slip" style="animation-delay:${0.3+i*0.5}s"><i>${nameOf(p)}</i>“내 ${STRING_NAMES[asg.get(p)]} 실은 급소${claims.get(p)?'다':'가 아니다'}.”</div>`).join('')}</div>`;
-  let res; if(truth){ victim.gold+=1; res=`<div class="rew"><div class="dim">${nameOf(victim)}의 진술 검증</div><b>진실</b><div class="dim" style="margin-top:.3em">정직한 코는 그대로였다. 재화 +1</div></div>`; }
-  else { victim.snip=Math.min(2,(victim.snip||0)+1); res=`<div class="rew l"><div class="dim">${nameOf(victim)}의 진술 검증</div><b>거짓</b><div class="dim" style="margin-top:.3em">코가 자랐다! 다음 공격에서 고를 수 있는 실이 1개 줄어든다.</div></div>`; }
-  await bookScreen({left:`<h3>잔혹동화 책 · 판정</h3><h2>코가 말한다</h2>${noseSVG(!truth)}${res}`,right:`<h3>오늘의 진술</h3>${list}<p class="dim">검증된 사람은 한 명뿐입니다. 나머지 진술은 진실일 수도, 속임수일 수도 있습니다.</p>`,buttons:[{label:'이야기를 이어 간다',value:1}],tag:STOP==='pino2'?'pino2':'pino2_'});
-}
-async function underworldPick(human,alv){
-  const cands=sample(BOOK_EVENTS.filter(b=>alv.length>=2||!['mirror','hunt','doors','pinocchio'].includes(b.id)),3);
-  const id=await bookScreen({left:`<h3>잔혹동화 책 · 저승 서술자</h3><h2>당신은 이제 책의 글쓴이</h2><p class="quote">탈락한 인형은 이야기에서 지워지지 않습니다. 이번에는 당신이 다음 장을 씁니다.</p>`,right:`<h3>다음 장을 고르세요</h3>${cands.map(c=>`<p><b>${c.title}</b> <span class="dim">— ${c.tag}</span><br><span style="font-size:.9em">${c.rule.split('.')[0]}.</span></p>`).join('')}`,buttons:cands.map(c=>({label:c.title,value:c.id})),tag:STOP==='under'?'under':'under_'});
-  return BOOK_EVENTS.find(b=>b.id===id); }
-async function bookEventPhase(human){
-  const alv=alive(P), X={ev:null}; let ev=params.get('ev')?BOOK_EVENTS.find(b=>b.id===params.get('ev')):(rand()<0.85?BOOK_EVENTS[ri(BOOK_EVENTS.length)]:null), narr='';
-  if(!human.alive&&alv.length>=1){ await transition(()=>{},{text:'저승 서술자',tip:'탈락한 당신이 책의 글쓴이가 됩니다…',job:human.job}); ev=await underworldPick(human,alv); }
-  else if(P.some(p=>!p.alive)&&ev&&rand()<0.3){ const nr=P.filter(p=>!p.alive)[0]; narr=`<p class="dim" style="font-size:.85em">저승 서술자 ${nameOf(nr)}가 이 장을 골랐습니다.</p>`; }
-  if(ev&&alv.length<2&&['mirror','hunt','doors','pinocchio'].includes(ev.id)) ev=null;
-  if(!ev) return X;
-  await transition(()=>{},{text:'잔혹동화 책',tip:'책이 스스로 펼쳐집니다…',job:human.job});
-  if(ev.id==='whisper'){ await whisperScreen(); return X; }
-  if(ev.id==='doors'){ await doorsPhase(human); return X; }
-  if(ev.id==='pinocchio'){ await pinocchioPhase(human); return X; }
-  X.ev=ev.id; let extra='', secret=false, leftTag=`${ev.tag}`;
-  if(ev.id==='mirror'){ X.mirror=sample(alv,2).map(p=>p.i); const mine=X.mirror.includes(human.i);
-    extra=mine?`<div class="rew"><div class="dim">당신이 선택되었습니다</div><b>${nameOf(P[X.mirror.find(i=>i!==human.i)])}</b><div class="dim" style="margin-top:.3em">탐색 중간에 이 사람과 위치가 맞바뀝니다.</div></div>`:'<p class="dim">두 사람이 선택되었습니다. 당신은 아닙니다. 누구인지는 책도 알려 주지 않습니다.</p>'; }
-  else if(ev.id==='hunt'){ const ord=shuffle(alv); X.hunt=ord.map((p,i)=>[p.i,ord[(i+1)%ord.length].i]); const pr=X.hunt.find(([h])=>h===human.i); const prey=pr?P[pr[1]]:null;
-    extra=prey?`<div class="rew"><div class="dim">당신의 사냥감</div><b>${nameOf(prey)}</b><div class="dim" style="margin-top:.3em">접촉하면 재화 +2, 상대는 재화 -1입니다. 누군가 당신도 노리고 있습니다.</div></div>`:'<p class="dim">당신은 사냥감을 받지 못했습니다.</p>'; }
-  else if(ev.id==='hood'){ const hold=sample(alv,Math.min(alv.length,alv.length>=3?2:1)); X.mission=hold.map(p=>p.i); secret=hold.includes(human);
-    extra=secret?`<div class="rew"><div class="dim">비밀 책장 — 본인만 볼 수 있습니다</div><b>당신에게 심부름이 맡겨졌다</b><div class="dim" style="margin-top:.3em">지도의 붉은 표시에서 바구니를 집어, 금빛 표시(할머니 집)까지. 가는 길에 아무에게도 들키지 마세요. 전달하는 순간 시야가 닿는 근처에 누가 있으면 실패합니다.</div></div>`:'<p class="dim">책이 몇몇에게만 비밀을 속삭였습니다. 당신은 아닙니다.</p>'; }
-  await bookScreen({left:`<h3>${secret?'비밀 책장':'잔혹동화 책'} · ${leftTag}</h3><h2>${ev.title}</h2>${eventIcon(ev.id)}<p class="quote">${ev.story}</p>${narr}`,right:`<h3>다음 장의 규칙</h3><p style="font-size:1.05em">${ev.rule}</p>${extra}<p class="dim">책은 소집이 시작될 때 펼쳐지고, 효과는 다음 탐색 라운드에 적용됩니다.</p>`,buttons:[{label:'이야기를 이어 간다',value:1}],tag:STOP==='event'?'event':'event_'});
-  return X;
-}
 const JOB_SYM={'#f6e3a6':'★','#9be37a':'■','#7fe3ff':'◆','#cdb6ff':'▲','#ff8a5c':'✂','#ff9ec7':'✚','#c4824a':'▼','#d9c46a':'✦'};
 const COLNAME={'#f6e3a6':'금색','#9be37a':'초록색','#7fe3ff':'청록색','#cdb6ff':'보라색','#ff8a5c':'주황색','#ff9ec7':'분홍색','#c4824a':'갈색','#d9c46a':'황토색'};
 function botNote(p,P_){
@@ -2711,18 +2730,6 @@ function botNote(p,P_){
   if(r<0.15+0.3*(0.4+p.skill*0.6)){ const k=ri(N); return `내 ${STRING_NAMES[k]} 실은 급소${p.vit.has(k)?'다':'가 아니다'}.`; }
   if(r<0.65){ const k=ri(N); return `내 ${STRING_NAMES[k]} 실은 급소${p.vit.has(k)?'가 아니다':'다'}.`; }
   const t=others[ri(Math.max(1,others.length))]||p; return rand()<0.5?`${code(t)}의 빛은 거짓이다.`:`${code(t)}를 조심해.`;
-}
-async function whisperScreen(){
-  const me=P.find(p=>p.human), be=BOOK_EVENTS.find(b=>b.id==='whisper'), fake=JOBS.filter(j=>j!==me.job)[ri(3)], others=alive(P).filter(p=>p!==me), tgt=others[ri(Math.max(1,others.length))]||me;
-  const k0=ri(N), real0=me.vit.has(k0), chips=[[`내 ${STRING_NAMES[k0]} 실은 급소${real0?'다':'가 아니다'}.`,'진실'],[`내 ${STRING_NAMES[k0]} 실은 급소${real0?'가 아니다':'다'}.`,'거짓'],[`${code(tgt)}를 조심해.`,'경고'],['나는 아무것도 모른다.','침묵']];
-  const left=`<h3>잔혹동화 책 · ${be.tag}</h3><h2>${be.title}</h2>${eventIcon('whisper')}<p class="quote">${be.story}</p>`;
-  const right=`<h3>쪽지를 남긴다</h3><p>${be.rule}</p><input id="wn" class="wq" maxlength="28" placeholder="벽에 속삭일 한 줄…" value="${chips[0][0]}"><div>${chips.map(([t,k])=>`<span class="wc" data-t="${t}">${t} <small>(${k})</small></span>`).join('')}</div><p class="dim" style="font-size:.85em">쪽지는 익명으로 낭독됩니다. 진실을 쓸지, 속일지는 당신의 몫입니다.</p>`;
-  const pr=bookScreen({left,right,buttons:[{label:'벽에 속삭인다',value:1}],tag:STOP==='whisper'?'whisper':'whisper_'});
-  document.querySelectorAll('.wc').forEach(el=>el.onclick=()=>{ document.getElementById('wn').value=el.dataset.t; sfx.play('click',{vol:0.6}); });
-  await pr; const mine=((document.getElementById('wn')||{}).value||'').trim()||'…';
-  const notes=shuffle([mine,...alive(P).filter(p=>!p.human).map(p=>botNote(p,P))]);
-  await transition(()=>{},{text:'벽이 낭독한다',tip:'쪽지들이 벽 틈에서 흘러나옵니다…',job:me.job});
-  await bookScreen({left:`<h3>잔혹동화 책 · 낭독</h3><h2>벽이 읽어 준다</h2><p class="dim">누가 썼는지는 아무도 모릅니다.</p><div>${notes.map((n,i)=>`<div class="slip" style="animation-delay:${0.5+i*0.9}s"><i>쪽지 ${i+1}</i>${n.replace(/[<>&]/g,'')}</div>`).join('')}</div>`,right:`<h3>속삭임의 규칙</h3><p>쪽지 중 일부는 거짓입니다. 쪽지와 사람들의 행동을 맞춰 보며 누가 거짓을 쓰는지 추리하세요.</p><p class="quote">벽이 입을 다물었습니다. 하지만 누군가의 심장 소리는 아직 들립니다.</p><p style="text-align:center"><span class="seal">✦</span></p>`,buttons:[{label:'소집을 계속한다',value:1}],tag:STOP==='whisper2'?'whisper2':'whisper2_'});
 }
 function eventIcon(id){
   const sv={doors:'<g stroke="#2a1d10" stroke-width="3"><path d="M10 92V38q22-26 44 0v54z" fill="#5a3a22"/><path d="M58 92V38q22-26 44 0v54z" fill="#3a2414"/><path d="M106 92V38q22-26 44 0v54z" fill="#120a06"/></g><circle cx="46" cy="66" r="3" fill="#d9b25a"/><circle cx="94" cy="66" r="3" fill="#d9b25a"/>',
@@ -2744,13 +2751,9 @@ function spellListHTML(job){
   return `<table><tr><th>스펠 카드</th><th>쿨</th><th>해금</th></tr>${SPELLS[job.id].map(s=>`<tr><td><b>${s.name}</b><br><span class="dim">${s.text}</span></td><td>${s.cd}초</td><td>Lv ${s.lv}</td></tr>`).join('')}</table>`;
 }
 const FLAVOR=['막이 오르기 전, 인형들은 숨을 죽이고 줄이 팽팽해지기를 기다렸습니다.','누군가의 줄이 한 번 떨렸고, 아무도 그것이 누구의 줄인지 말하지 않았습니다.','객석은 비어 있었지만, 어둠 속에서 박수 소리가 들려오는 듯했습니다.','옛날 옛적, 달이 눈을 감은 밤이었습니다. 극장의 문이 스스로 열렸습니다.','웃고 있는 입은 거짓말을 하지 못합니다. 빛이 꺼질 때까지는.','책장이 한 장 넘어갈 때마다 누군가의 실이 하나씩 끊어졌습니다.'];
-async function assignScreen(){
-  const me=P.find(p=>p.human); stageActors=[me.job];
-  const left=`<h3>Act 0 · 배역</h3><h2>당신의 배역</h2><img class="hero" alt="" src="${spriteURL(me.job,1.7)}"><p style="text-align:center"><span class="chip" style="font-size:1.3em"><i style="background:${me.job.color}"></i>${me.name}</span></p><p style="text-align:center" class="dim">${me.job.goal}</p>${HIDE.on?`<p class="dim" style="text-align:center;font-size:.85em">다른 배우의 직업은 비공개입니다.<br>얼굴 빛을 켜면 눈빛 색으로 드러나요:<br>${JOBS.map(j=>`<span class="chip"><i style="background:${j.color}"></i>${j.name}</span>`).join(' ')}<br>듀얼을 치르거나 탈락하면 정체가 드러납니다.</p>`:''}`;
-  const right=`<h3>스펠 카드</h3>${spellListHTML(me.job)}<h3 style="margin-top:.8em">나의 급소 (본인만 보임)</h3><div style="display:flex;align-items:center;gap:1em">${bodySVG(me.vit)}<div style="flex:1;font-size:.9em">${[...me.vit].sort((a,b)=>a-b).map(i=>`<div><b style="color:#8a1a28">${i+1}</b> ${STRING_NAMES[i]}</div>`).join('')}<p class="dim" style="font-size:.85em;margin-top:.6em">드래그/WASD로 이동, 스펠은 버튼·1~3키. 작은 하얀 점이 피격 판정.</p></div></div>`;
-  await bookScreen({left,right,buttons:[{label:'무대로',value:1}],tag:STOP==='assign'?'assign':'assign_'});
-}
-function spr(p,sz){ return shown(p)?spriteURL(p.job,sz):unkURL(sz); }
+const sprTok=(job,sz)=>`spr://${job.id}/${sz}`;
+function spr(p,sz){ return sprTok(p.job,sz); }
+const expandHTML=html=>String(html).replace(/spr:\/\/([a-z]+)\/([\d.]+)/g,(m,j,sz)=>spriteURL(JOBS.find(q=>q.id===j)||JOBS[0],+sz)).replace(/\{\{me(\d)\}\}/g,(m,i)=>(P[+i]&&P[+i].human)?'(나)':'');
 function unkURL(sz=1.6){ const c=document.createElement('canvas'); c.width=Math.round(112*sz); c.height=Math.round(190*sz); const x=c.getContext('2d'); drawUnknown(x,c.width/2,c.height-8*sz,sz,{t:0.4,q:true}); return c.toDataURL(); }
 function spritesRow(pairs,bye){
   return pairs.map(([a,b])=>`<div class="pairs"><img alt="" src="${spr(a,1.2)}"><span class="vs">VS</span><img alt="" src="${spr(b,1.2)}" style="transform:scaleX(-1)"></div><p style="text-align:center;margin:.1em 0 .6em">${nameOf(a)} &nbsp;대&nbsp; ${nameOf(b)}</p>`).join('')+(bye?`<p style="text-align:center">${nameOf(bye)} — 이번 소집은 쉽니다</p>`:'');
@@ -2793,24 +2796,134 @@ function runReveal(me,foe,myPicks,foePicks,myHits,foeHits,snap,foeCanceled){
   });
 }
 
-async function playGame(){
-  P=makePlayers(ri(4)); round=0; escapeWin=null; gameMap={theme:sample(Object.keys(THEMES),1)[0],seed:Math.floor(Math.random()*1e9)}; const me=P.find(p=>p.human);
-  await transition(()=>{},{text:'배역 배정',tip:'막이 오릅니다…',job:me.job});
-  await assignScreen();
+/* ===================== 다중 인간 흐름 (솔로 = 인간 1명) ===================== */
+const humansAll=()=>P.filter(p=>p.ctl);
+const serP=(p,forP)=>({i:p.i,job:p.job.id,name:p.name,nick:p.nick||'',gold:p.gold,alive:p.alive,duelWins:p.duelWins||0,snip:p.snip||0,escapes:p.escapes||0,viewers:p.viewers||0,cut:[...p.cut],vit:p===forP?[...p.vit]:null,me:p===forP});
+const serAll=forP=>P.map(p=>serP(p,forP));
+function mirrorP(list){ P=list.map(o=>({i:o.i,job:JOBS.find(j=>j.id===o.job),name:o.name,nick:o.nick,gold:o.gold,alive:o.alive,duelWins:o.duelWins,snip:o.snip,escapes:o.escapes,viewers:o.viewers,cut:new Set(o.cut),vit:new Set(o.vit||[]),human:!!o.me,ctl:!!o.me,skill:0.5})); return P.find(p=>p.human); }
+function clientWait(msg){ mode='title'; stageActors=[]; setScreen(`<p class="dim" style="text-align:center;margin:1.2em 0">${msg||'다른 플레이어를 기다리는 중…'}</p>`); }
+const OPS={
+  book:a=>bookScreen(a.opts),
+  trans:a=>transition(()=>{ mode='title'; if(a.o.actors) stageActors=a.o.actors.map(id=>JOBS.find(j=>j.id===id)).filter(Boolean); },{...a.o,job:JOBS.find(j=>j.id===a.o.job)||JOBS[0]}),
+  assign:a=>assignScreen(P[a.me]),
+  whisper:a=>whisperInput(P[a.me],P[a.tgt]),
+  pick:async a=>{ await transition(()=>{},{text:'실 선택',tip:a.tip,job:P[a.me].job}); return runPick(P[a.me],P[a.tar],a.n); },
+  reveal:async a=>{ const me=P[a.me], foe=P[a.foe], snap={}; a.snap.forEach((c,i)=>{ snap[i]=new Set(c); }); await transition(()=>{},{text:'공개',tip:'실이 팽팽해집니다…',job:me.job}); await runReveal(me,foe,a.myPicks,a.foePicks,a.myHits,a.foeHits,snap,a.canceled); mode='title'; },
+  cut:a=>{ const w=P[a.win]; stageActors=[w.job]; return runCut(w); },
+  wait:a=>{ clientWait(a.msg); },
+};
+function bookFor(h,opts){ return h.human?bookScreen(opts):NET.ask(h.remote,'book',{opts},opts.buttons[0].value); }
+async function bookEach(makeOpts,list){ list=list||humansAll(); const out=new Map(); await Promise.all(list.map(async h=>{ const o=makeOpts(h); if(!o) return; out.set(h,await bookFor(h,o)); })); return out; }
+function callFor(h,fn,a,def){ if(h.human) return Promise.resolve(OPS[fn](a)); return NET.ask(h.remote,fn,{...a,P:serAll(h)},def); }
+async function transAll(o,list){ list=list||humansAll(); await Promise.all(list.map(h=>{ const oo={...o,job:h.job.id}; if(h.human) return OPS.trans({o:oo}); if(h.remote!=null) NET.to(h.remote,{k:'rpc',id:0,fn:'trans',args:{o:oo,P:serAll(h)}}); return null; })); }
+function dropRemote(id){ const p=P.find(q=>q.remote===id); if(!p) return; p.ctl=false; p.remote=null; NET.dropPending(id,null); }
+// 클라이언트: 호스트가 보내는 화면 요청을 순서대로 처리한다
+let clientQ=Promise.resolve();
+async function clientSession(){
+  document.title='NETCLIENT'; clientWait('게임을 준비하는 중…');
+  return new Promise(res=>{
+    const end=msg=>{ NET.handlers={}; NET.sys.closed=null; NET.onClosed=null; if(msg){ clientQ=clientQ.then(()=>{ setScreen(`<p class="dim" style="text-align:center;margin:1.2em 0">${msg}</p>`); return waitButtons([{label:'돌아간다',value:1}],'netend'); }); } clientQ.then(()=>{ NET.leave(); res(); }); };
+    NET.handlers.rpc=m=>{ clientQ=clientQ.then(async()=>{ try{ if(m.args&&m.args.P) mirrorP(m.args.P); const v=await OPS[m.fn](m.args||{}); if(m.id) NET.reply(0,m.id,v===undefined?null:v); }catch(e){ console.error('rpc',m.fn,e); if(m.id) NET.reply(0,m.id,null); } if(m.fn!=='trans'&&m.fn!=='book') clientWait(); }); };
+    NET.handlers.end=m=>end(m.msg||'');
+    NET.sys.closed=m=>end('호스트가 나갔습니다');
+    NET.onClosed=()=>end('서버와의 연결이 끊겼습니다');
+  });
+}
+/* ---------- 책 이벤트 ---------- */
+async function whisperInput(me,tgt){
+  const be=BOOK_EVENTS.find(b=>b.id==='whisper'), k0=ri(N), real0=me.vit.has(k0), chips=[[`내 ${STRING_NAMES[k0]} 실은 급소${real0?'다':'가 아니다'}.`,'진실'],[`내 ${STRING_NAMES[k0]} 실은 급소${real0?'가 아니다':'다'}.`,'거짓'],[`${code(tgt)}를 조심해.`,'경고'],['나는 아무것도 모른다.','침묵']];
+  const left=`<h3>잔혹동화 책 · ${be.tag}</h3><h2>${be.title}</h2>${eventIcon('whisper')}<p class="quote">${be.story}</p>`;
+  const right=`<h3>쪽지를 남긴다</h3><p>${be.rule}</p><input id="wn" class="wq" maxlength="28" placeholder="벽에 속삭일 한 줄…" value="${chips[0][0]}"><div>${chips.map(([t,k])=>`<span class="wc" data-t="${t}">${t} <small>(${k})</small></span>`).join('')}</div><p class="dim" style="font-size:.85em">쪽지는 익명으로 낭독됩니다. 진실을 쓸지, 속일지는 당신의 몫입니다.</p>`;
+  const pr=bookScreen({left,right,buttons:[{label:'벽에 속삭인다',value:1}],tag:STOP==='whisper'?'whisper':'whisper_'});
+  document.querySelectorAll('.wc').forEach(el=>el.onclick=()=>{ document.getElementById('wn').value=el.dataset.t; sfx.play('click',{vol:0.6}); });
+  await pr; return ((document.getElementById('wn')||{}).value||'').trim()||'…';
+}
+async function whisperScreen(){
+  const be=BOOK_EVENTS.find(b=>b.id==='whisper'), hs=humansAll(), notes=[];
+  await Promise.all(hs.filter(h=>h.alive).map(async h=>{ const others=alive(P).filter(p=>p!==h), tgt=others[ri(Math.max(1,others.length))]||h; const note=await (h.human?whisperInput(h,tgt):NET.ask(h.remote,'whisper',{me:h.i,tgt:tgt.i,P:serAll(h)},'…')); notes.push(note||'…'); }));
+  for(const p of alive(P).filter(p=>!p.ctl)) notes.push(botNote(p,P));
+  const sh=shuffle(notes);
+  await transAll({text:'벽이 낭독한다',tip:'쪽지들이 벽 틈에서 흘러나옵니다…'});
+  await bookEach(h=>({left:`<h3>잔혹동화 책 · 낭독</h3><h2>벽이 읽어 준다</h2><p class="dim">누가 썼는지는 아무도 모릅니다.</p><div>${sh.map((n,i)=>`<div class="slip" style="animation-delay:${0.5+i*0.9}s"><i>쪽지 ${i+1}</i>${String(n).replace(/[<>&]/g,'')}</div>`).join('')}</div>`,right:`<h3>속삭임의 규칙</h3><p>쪽지 중 일부는 거짓입니다. 쪽지와 사람들의 행동을 맞춰 보며 누가 거짓을 쓰는지 추리하세요.</p><p class="quote">벽이 입을 다물었습니다. 하지만 누군가의 심장 소리는 아직 들립니다.</p><p style="text-align:center"><span class="seal">✦</span></p>`,buttons:[{label:'소집을 계속한다',value:1}],tag:STOP==='whisper2'?'whisper2':'whisper2_'}),hs);
+}
+async function doorsPhase(){
+  const ord=shuffle(alive(P)), fates=shuffle(['reward','trap','warp']), open=[null,null,null], log=[], react={reward:'눈빛이 환하게 번쩍였다',trap:'눈빛이 꺼질 듯 흔들렸다',warp:'눈빛이 사라졌다가 멀리서 깜빡였다'};
+  const logHTML=()=>log.length?`<div>${log.map(l=>l.none?`<div class="slip" style="animation-delay:.2s"><i>${nameOf(l.p)}</i>열 수 있는 문이 남아 있지 않았다.</div>`:`<div class="slip" style="animation-delay:.2s"><i>${DOOR_NAMES[l.d]}</i>${nameOf(l.p)} — ${react[l.f]}</div>`).join('')}</div>`:'<p class="dim">아직 아무도 문을 열지 않았습니다.</p>';
+  const be=BOOK_EVENTS.find(b=>b.id==='doors'), hres=new Map();
+  for(const p of ord){ const free=[0,1,2].filter(d=>!open[d]);
+    if(!free.length){ log.push({p,none:true}); if(p.ctl) hres.set(p,{none:true}); continue; }
+    let d; if(p.ctl){ d=await bookFor(p,{left:`<h3>잔혹동화 책 · ${be.tag}</h3><h2>${be.title}</h2>${doorsSVG(open.map(o=>!!o))}<p class="quote">${be.story}</p>`,right:`<h3>당신의 차례</h3><p>${be.rule}</p>${logHTML()}`,buttons:free.map(i=>({label:DOOR_NAMES[i]+' 열기',value:i})),tag:STOP==='doors'?'doors':'doors_'}); }
+    else d=free[ri(free.length)];
+    open[d]=p; const f=fates[d]; applyDoor(p,f); log.push({p,d,f}); if(p.ctl) hres.set(p,{d,f}); }
+  const fx={reward:'문 뒤에 금화가 가득했다! 재화 +2',trap:'문 뒤는 함정이었다. 재화 -1, 다음 탐색을 기절한 채 시작한다',warp:'낯선 길이었다. 다음 탐색을 다른 사람 곁에서 시작한다'};
+  await bookEach(h=>{ const hr=hres.get(h); return {left:`<h3>잔혹동화 책 · 문이 모두 열렸다</h3><h2>세 개의 문</h2>${doorsSVG(open.map(o=>!!o))}${hr&&!hr.none?`<div class="rew${hr.f==='trap'?' l':''}"><div class="dim">${DOOR_NAMES[hr.d]}</div><b style="font-size:1.1em">${fx[hr.f]}</b></div>`:`<p class="dim">${h.alive?'당신이 열 수 있는 문은 남아 있지 않았다.':'당신은 이 장을 지켜보았다.'}</p>`}`,right:`<h3>문 앞의 얼굴들</h3>${logHTML()}<p class="dim" style="font-size:.85em">눈빛의 반응만 보았을 뿐, 문 뒤의 결과는 당사자만 압니다.</p>`,buttons:[{label:'이야기를 이어 간다',value:1}],tag:STOP==='doors2'?'doors2':'doors2_'}; });
+}
+async function pinocchioPhase(){
+  const alv=alive(P), be=BOOK_EVENTS.find(b=>b.id==='pinocchio'), claims=new Map(), asg=new Map();
+  for(const p of alv){ const idx=ri(N); asg.set(p,idx); if(!p.ctl){ const real=p.vit.has(idx); claims.set(p,rand()<0.45+0.3*p.skill?real:!real); } }
+  await Promise.all(humansAll().filter(h=>h.alive).map(async h=>{ const idx=asg.get(h), real=h.vit.has(idx); const j=await bookFor(h,{left:`<h3>잔혹동화 책 · ${be.tag}</h3><h2>${be.title}</h2>${noseSVG(false)}<p class="quote">${be.story}</p>`,right:`<h3>한 줄 진술</h3><p>${be.rule}</p><p>책이 보여 준 당신의 실: <b>${STRING_NAMES[idx]}</b> — 실제로는 <b>${real?'급소입니다':'급소가 아닙니다'}</b>. 무엇이라고 말하시겠습니까?</p>`,buttons:[{label:'급소다',value:1,ghost:!real},{label:'급소가 아니다',value:2,ghost:real}],tag:STOP==='pino'?'pino':'pino_'}); claims.set(h,j===1); }));
+  const victim=alv[ri(alv.length)], truth=claims.get(victim)===victim.vit.has(asg.get(victim));
+  const list=`<div>${alv.map((p,i)=>`<div class="slip" style="animation-delay:${0.3+i*0.5}s"><i>${nameOf(p)}</i>“내 ${STRING_NAMES[asg.get(p)]} 실은 급소${claims.get(p)?'다':'가 아니다'}.”</div>`).join('')}</div>`;
+  let res; if(truth){ victim.gold+=1; res=`<div class="rew"><div class="dim">${nameOf(victim)}의 진술 검증</div><b>진실</b><div class="dim" style="margin-top:.3em">정직한 코는 그대로였다. 재화 +1</div></div>`; }
+  else { victim.snip=Math.min(2,(victim.snip||0)+1); res=`<div class="rew l"><div class="dim">${nameOf(victim)}의 진술 검증</div><b>거짓</b><div class="dim" style="margin-top:.3em">코가 자랐다! 다음 공격에서 고를 수 있는 실이 1개 줄어든다.</div></div>`; }
+  await bookEach(h=>({left:`<h3>잔혹동화 책 · 판정</h3><h2>코가 말한다</h2>${noseSVG(!truth)}${res}`,right:`<h3>오늘의 진술</h3>${list}<p class="dim">검증된 사람은 한 명뿐입니다. 나머지 진술은 진실일 수도, 속임수일 수도 있습니다.</p>`,buttons:[{label:'이야기를 이어 간다',value:1}],tag:STOP==='pino2'?'pino2':'pino2_'}));
+}
+async function underworldPick(picker,alv){
+  const cands=sample(BOOK_EVENTS.filter(b=>alv.length>=2||!['mirror','doors','pinocchio'].includes(b.id)),3);
+  const id=await bookFor(picker,{left:`<h3>잔혹동화 책 · 저승 서술자</h3><h2>당신은 이제 책의 글쓴이</h2><p class="quote">탈락한 인형은 이야기에서 지워지지 않습니다. 이번에는 당신이 다음 장을 씁니다.</p>`,right:`<h3>다음 장을 고르세요</h3>${cands.map(c=>`<p><b>${c.title}</b> <span class="dim">— ${c.tag}</span><br><span style="font-size:.9em">${c.rule.split('.')[0]}.</span></p>`).join('')}`,buttons:cands.map(c=>({label:c.title,value:c.id})),tag:STOP==='under'?'under':'under_'});
+  return BOOK_EVENTS.find(b=>b.id===id)||cands[0]; }
+async function bookEventPhase(){
+  const alv=alive(P), hs=humansAll(), dead=hs.filter(h=>!h.alive), X={ev:null}; let ev=params.get('ev')?BOOK_EVENTS.find(b=>b.id===params.get('ev')):(rand()<0.85?BOOK_EVENTS[ri(BOOK_EVENTS.length)]:null), narr='';
+  if(dead.length&&alv.length>=1){ const picker=dead[ri(dead.length)]; await transAll({text:'저승 서술자',tip:'탈락한 당신이 책의 글쓴이가 됩니다…'},[picker]); ev=await underworldPick(picker,alv); }
+  else if(P.some(p=>!p.alive)&&ev&&rand()<0.3){ const nr=P.filter(p=>!p.alive)[0]; narr=`<p class="dim" style="font-size:.85em">저승 서술자 ${nameOf(nr)}가 이 장을 골랐습니다.</p>`; }
+  if(ev&&alv.length<2&&['mirror','doors','pinocchio'].includes(ev.id)) ev=null;
+  if(!ev) return X;
+  await transAll({text:'잔혹동화 책',tip:'책이 스스로 펼쳐집니다…'});
+  if(ev.id==='whisper'){ await whisperScreen(); return X; }
+  if(ev.id==='doors'){ await doorsPhase(); return X; }
+  if(ev.id==='pinocchio'){ await pinocchioPhase(); return X; }
+  X.ev=ev.id; let hold=[];
+  if(ev.id==='mirror') X.mirror=sample(alv,2).map(p=>p.i);
+  else if(ev.id==='hood'){ hold=sample(alv,Math.min(alv.length,alv.length>=3?2:1)); X.mission=hold.map(p=>p.i); }
+  await bookEach(h=>{ let extra='', secret=false, leftTag=`${ev.tag}`;
+    if(ev.id==='mirror'){ const mine=X.mirror.includes(h.i);
+      extra=mine?`<div class="rew"><div class="dim">당신이 선택되었습니다</div><b>${nameOf(P[X.mirror.find(i=>i!==h.i)])}</b><div class="dim" style="margin-top:.3em">탐색 중간에 이 사람과 위치가 맞바뀝니다.</div></div>`:'<p class="dim">두 사람이 선택되었습니다. 당신은 아닙니다. 누구인지는 책도 알려 주지 않습니다.</p>'; }
+    else if(ev.id==='hood'){ secret=hold.includes(h);
+      extra=secret?`<div class="rew"><div class="dim">비밀 책장 — 본인만 볼 수 있습니다</div><b>당신에게 심부름이 맡겨졌다</b><div class="dim" style="margin-top:.3em">지도의 붉은 표시에서 바구니를 집어, 금빛 표시(할머니 집)까지. 가는 길에 아무에게도 들키지 마세요. 전달하는 순간 시야가 닿는 근처에 누가 있으면 실패합니다.</div></div>`:'<p class="dim">책이 몇몇에게만 비밀을 속삭였습니다. 당신은 아닙니다.</p>'; }
+    return {left:`<h3>${secret?'비밀 책장':'잔혹동화 책'} · ${leftTag}</h3><h2>${ev.title}</h2>${eventIcon(ev.id)}<p class="quote">${ev.story}</p>${narr}`,right:`<h3>다음 장의 규칙</h3><p style="font-size:1.05em">${ev.rule}</p>${extra}<p class="dim">책은 소집이 시작될 때 펼쳐지고, 효과는 다음 탐색 라운드에 적용됩니다.</p>`,buttons:[{label:'이야기를 이어 간다',value:1}],tag:STOP==='event'?'event':'event_'}; });
+  return X;
+}
+async function assignScreen(me){
+  me=me||P.find(p=>p.human); stageActors=[me.job];
+  const left=`<h3>Act 0 · 배역</h3><h2>당신의 배역</h2><img class="hero" alt="" src="${sprTok(me.job,1.7)}"><p style="text-align:center"><span class="chip" style="font-size:1.3em"><i style="background:${me.job.color}"></i>${me.name}</span></p><p style="text-align:center" class="dim">${me.job.goal}</p>${me.nick?`<p style="text-align:center" class="dim" style="font-size:.85em">${me.nick}</p>`:''}`;
+  const right=`<h3>스펠 카드</h3>${spellListHTML(me.job)}<h3 style="margin-top:.8em">나의 급소 (본인만 보임)</h3><div style="display:flex;align-items:center;gap:1em">${bodySVG(me.vit)}<div style="flex:1;font-size:.9em">${[...me.vit].sort((a,b)=>a-b).map(i=>`<div><b style="color:#8a1a28">${i+1}</b> ${STRING_NAMES[i]}</div>`).join('')}<p class="dim" style="font-size:.85em;margin-top:.6em">드래그/WASD로 이동, 스펠은 버튼·1~3키. 작은 하얀 점이 피격 판정.</p></div></div>`;
+  await bookScreen({left,right,buttons:[{label:'무대로',value:1}],tag:STOP==='assign'?'assign':'assign_'});
+}
+/* ---------- 탐색 (호스트) ---------- */
+function exploreOpts(o){ return {round:round,seed:o.seed!==undefined?o.seed:(gameMap?gameMap.seed:undefined),hunt:o.hunt||null,mission:o.mission||null,mirror:o.mirror||null,T:+(params.get('et')||opts.exploreT||EXP_T),ev:o.ev||params.get('ev')||null,theme:o.theme||params.get('theme')||(gameMap?gameMap.theme:null)}; }
+function runExploreHeadless(o){ const w=makeExplore(P,exploreOpts(o)); w.ents.forEach(e=>{ e.human=false; e.ctl=false; }); while(!w.over){ stepExplore(w,1/30); w.events.length=0; } return xSummaryApply(w); }
+async function runExploreAll(X){ const loc=P.find(p=>p.human); if(loc&&loc.alive) return runExplore(P,X); return runExploreHeadless(X); }
+/* ---------- 메인 흐름 ---------- */
+async function playGame(net){
+  const k=net?net.length:1, slots=shuffle(range(4)).slice(0,k);
+  P=makePlayers(net?-1:ri(4)); round=0; escapeWin=null; gameMap={theme:sample(Object.keys(THEMES),1)[0],seed:Math.floor(Math.random()*1e9)};
+  if(net){ net.forEach((np,n)=>{ const p=P[slots[n]]; p.ctl=true; p.nick=np.nick; if(np.id===NET.id) p.human=true; else p.remote=np.id; }); NET.sys.left=m=>dropRemote(m.id); } else P.forEach(p=>{ p.ctl=!!p.human; });
+  const me=P.find(p=>p.human);
+  await transAll({text:'배역 배정',tip:'막이 오릅니다…'});
+  await Promise.all(humansAll().map(h=>callFor(h,'assign',{me:h.i},null)));
   while(alive(P).length>1 && round<40){
-    round++; const human=P.find(p=>p.human); let xsum=null;
-    if(opts.explore && (!AUTO||params.has('xbot')) && human.alive){ await transition(()=>{},{text:`탐색 ${round}`,tip:'상자와 발전기를 찾아라. 그림자 인형사를 조심.',job:human.job}); xsum=await runExplore(P,nextX); nextX={}; nextEv=null; nextMirror=null; } else gainGold(P);
+    round++; let xsum=null; const hs=humansAll(), anyAlive=hs.some(h=>h.alive);
+    if(opts.explore && (!AUTO||params.has('xbot')) && anyAlive){ await transAll({text:`탐색 ${round}`,tip:'상자와 발전기를 찾아라. 그림자 인형사를 조심.'},hs.filter(h=>h.alive)); xsum=await runExploreAll(nextX); nextX={}; nextEv=null; nextMirror=null; } else gainGold(P);
     if(PLANS.on){ const ew=P.find(p=>p.alive&&(p.escapes||0)>=3); if(ew){ escapeWin=ew; break; } }
-    nextX=await bookEventPhase(human);
+    nextX=await bookEventPhase();
     const {pairs,bye}=pairUp(P);
-    await transition(()=>{ mode='title'; stageActors=alive(P).map(p=>p.job); },{text:`소집 ${round}`,job:human.job});
-    const briefL=`<h3>Act ${round} · 소집</h3><h2>제 ${round} 소집</h2><p class="quote">${FLAVOR[(round-1+ri(3))%FLAVOR.length]}</p>${xsum?`<table><tr><th>탐색 결과</th><th>재화</th><th>직업 목표</th><th>끊긴 실</th></tr>${P.map((p,i)=>`<tr><td>${nameOf(p)}</td><td>${xsum.gains[i]>0?'+':''}${xsum.gains[i]}</td><td>${xsum.extra[i]}</td><td>${xsum.snips[i]?'✂ '+xsum.snips[i]:'—'}</td></tr>`).join('')}</table><p class="dim">상자 ${xsum.counts.chest}개 · 발전기 ${xsum.counts.gen}개가 열렸습니다. 내 재화 Lv ${level(human)}.</p>`:`<p class="dim">모두 재화를 얻었습니다 (내 재화 Lv ${level(human)}).</p>`}`;
-    const briefR=`<h3>대진표</h3>${spritesRow(pairs,bye)}`;
-    await bookScreen({left:briefL,right:briefR,buttons:[{label:human.alive?'듀얼 시작':'관전 중… 계속',value:1}],tag:STOP==='brief'?'brief':'brief_'});
+    await transAll({text:`소집 ${round}`,actors:alive(P).map(p=>p.job.id)});
+    const briefR=`<h3>대진표</h3>${spritesRow(pairs,bye)}`, flavor=FLAVOR[(round-1+ri(3))%FLAVOR.length];
+    await bookEach(h=>({left:`<h3>Act ${round} · 소집</h3><h2>제 ${round} 소집</h2><p class="quote">${flavor}</p>${xsum?`<table><tr><th>탐색 결과</th><th>재화</th><th>직업 목표</th><th>끊긴 실</th></tr>${P.map((p,i)=>`<tr><td>${nameOf(p)}</td><td>${xsum.gains[i]>0?'+':''}${xsum.gains[i]}</td><td>${xsum.extra[i]}</td><td>${xsum.snips[i]?'✂ '+xsum.snips[i]:'—'}</td></tr>`).join('')}</table><p class="dim">상자 ${xsum.counts.chest}개 · 발전기 ${xsum.counts.gen}개가 열렸습니다. 내 재화 Lv ${level(h)}.</p>`:`<p class="dim">모두 재화를 얻었습니다 (내 재화 Lv ${level(h)}).</p>`}`,right:briefR,buttons:[{label:h.alive?'듀얼 시작':'관전 중… 계속',value:1}],tag:STOP==='brief'?'brief':'brief_'}));
     const plan=[];
     for(const [a,b] of pairs){
       let r;
-      if((a.human||b.human) && human.alive){
+      if((a.human||b.human) && me.alive){
         const A=a.human?a:b, B=a.human?b:a; let rs;
         if((opts.duelMode==='play' && !AUTO) || (AUTO&&STOP==='duel')){
           await transition(()=>{},{text:'입장',tip:`${lab(B)}과(와)의 1대1. 사용 가능: ${SPELLS[A.job.id].filter(s=>level(A)>=s.lv).map(s=>s.name).join(' · ')}`,job:A.job});
@@ -2820,45 +2933,43 @@ async function playGame(){
       } else { const rs=runDuelHeadless(a,b,a.skill,b.skill); r={winner:rs.winner,hitsA:rs.hitsA,hitsB:rs.hitsB}; }
       const w=r.winner,l=w===a?b:a; w.duelWins++; w.gold+=1; plan.push({a,b,w,l,r});
     }
-    const mine=plan.find(x=>x.a.human||x.b.human);
     mode='title'; stageActors=alive(P).map(p=>p.job);
-    const rows=plan.map(x=>`<tr><td>${nameOf(x.a)} vs ${nameOf(x.b)}</td><td>${nameOf(x.w)}</td><td>${x.r.hitsA} : ${x.r.hitsB}</td></tr>`).join('');
-    let msg=''; if(mine && human.alive){ msg = mine.w===human ? `<p class="win">승리 — 이번 공격에서 실을 ${picksFor(human,true,rules)}개 고를 수 있습니다.</p>` : `<p class="lose">패배 — 이번 공격의 선택은 ${picksFor(human,false,rules)}개입니다.</p>`; }
-    await transition(()=>{},{text:'결과',job:human.job});
+    await transAll({text:'결과'});
     const hp=n=>'<div class="hp">'+'♥'.repeat(Math.max(0,n))+'<i>'+'♥'.repeat(Math.max(0,HP0-n))+'</i></div>';
-    const card=(x,big)=>{ const a=x.a,b=x.b, ha=HP0-x.r.hitsA, hb=HP0-x.r.hitsB; // hitsA = a가 맞은 횟수
-      return big?`<div class="hv"><div><img class="${x.w===a?'':'dead'}" alt="" src="${spr(a,1.5)}">${hp(ha)}<div class="nm">${lab(a)}${a.human?'(나)':''}</div></div><span class="vs">VS</span><div><img class="${x.w===b?'':'dead'}" alt="" src="${spr(b,1.5)}" style="transform:scaleX(-1)">${hp(hb)}<div class="nm">${b.name}${b.human?'(나)':''}</div></div></div>`
+    const card=(x,big)=>{ const a=x.a,b=x.b, ha=HP0-x.r.hitsA, hb=HP0-x.r.hitsB;
+      return big?`<div class="hv"><div><img class="${x.w===a?'':'dead'}" alt="" src="${spr(a,1.5)}">${hp(ha)}<div class="nm">${lab(a)}{{me${a.i}}}</div></div><span class="vs">VS</span><div><img class="${x.w===b?'':'dead'}" alt="" src="${spr(b,1.5)}" style="transform:scaleX(-1)">${hp(hb)}<div class="nm">${b.name}{{me${b.i}}}</div></div></div>`
         :`<div class="mini"><img alt="" src="${spr(a,0.8)}"><div class="mid">${nameOf(a)} ${HP0-x.r.hitsA}<br>${nameOf(b)} ${HP0-x.r.hitsB}</div><div class="res">${lab(x.w)} 승</div></div>`; };
-    const others=plan.filter(x=>x!==mine);
-    const leftHTML=mine&&human.alive?`<h3>Act ${round} · 결과</h3><h2>나의 듀얼</h2><div style="position:relative">${card(mine,true)}<div class="stamp ${mine.w===human?'w':'l'}">${mine.w===human?'승리':'패배'}</div></div>`:`<h3>Act ${round} · 결과</h3><h2>듀얼 결과</h2>${plan.map(x=>card(x,false)).join('')}`;
-    const rew=mine&&human.alive?(mine.w===human?`<div class="rew"><div class="dim">이번 공격에서 고를 수 있는 실</div><b>${picksFor(human,true,rules)}개</b></div>`:`<div class="rew l"><div class="dim">이번 공격에서 고를 수 있는 실</div><b>${picksFor(human,false,rules)}개</b></div>`):'<p class="dim">당신은 관전 중입니다.</p>';
-    await bookScreen({left:leftHTML,right:`<h3>${mine&&human.alive?'다른 대결':'다음 장'}</h3>${mine&&human.alive?(others.map(x=>card(x,false)).join('')||'<p class="dim">이번 소집은 한 판뿐입니다.</p>'):''}${rew}<p class="quote">책장이 넘어가자, 인형들의 실이 다시 팽팽해졌습니다.</p>`,buttons:[{label:'실 선택으로',value:1}],tag:STOP==='result'?'result':'result_'});
-    const attacks=[];
+    await bookEach(h=>{ const mine=plan.find(x=>x.a===h||x.b===h), others=plan.filter(x=>x!==mine);
+      const leftHTML=mine&&h.alive?`<h3>Act ${round} · 결과</h3><h2>나의 듀얼</h2><div style="position:relative">${card(mine,true)}<div class="stamp ${mine.w===h?'w':'l'}">${mine.w===h?'승리':'패배'}</div></div>`:`<h3>Act ${round} · 결과</h3><h2>듀얼 결과</h2>${plan.map(x=>card(x,false)).join('')}`;
+      const rew=mine&&h.alive?(mine.w===h?`<div class="rew"><div class="dim">이번 공격에서 고를 수 있는 실</div><b>${picksFor(h,true,rules)}개</b></div>`:`<div class="rew l"><div class="dim">이번 공격에서 고를 수 있는 실</div><b>${picksFor(h,false,rules)}개</b></div>`):'<p class="dim">당신은 관전 중입니다.</p>';
+      return {left:leftHTML,right:`<h3>${mine&&h.alive?'다른 대결':'다음 장'}</h3>${mine&&h.alive?(others.map(x=>card(x,false)).join('')||'<p class="dim">이번 소집은 한 판뿐입니다.</p>'):''}${rew}<p class="quote">책장이 넘어가자, 인형들의 실이 다시 팽팽해졌습니다.</p>`,buttons:[{label:'실 선택으로',value:1}],tag:STOP==='result'?'result':'result_'}; });
+    const attacks=[], pjobs=[];
     for(const x of plan) for(const [att,tar] of [[x.a,x.b],[x.b,x.a]]){
-      const n0=picksFor(att,x.w===att,rules), sn=Math.min(att.snip||0,n0-1), n=n0-sn; att.snip=0; let picks;
-      if(att.human && att.alive){ await transition(()=>{},{text:'실 선택',tip:`${lab(tar)}의 12개 실 중 ${n}개를 고르세요.${sn?` (가위에 실이 ${sn}개 끊겨 줄었습니다)`:''}`,job:att.job}); picks=await runPick(att,tar,n); }
-      else picks=aiPicks(att,tar,n);
-      attacks.push({att,tar,picks,n});
+      const n0=picksFor(att,x.w===att,rules), sn=Math.min(att.snip||0,n0-1), n=n0-sn; att.snip=0; const rec={att,tar,picks:null,n}; attacks.push(rec);
+      if(att.ctl && att.alive){ pjobs.push(callFor(att,'pick',{me:att.i,tar:tar.i,n,tip:`${lab(tar)}의 12개 실 중 ${n}개를 고르세요.${sn?` (가위에 실이 ${sn}개 끊겨 줄었습니다)`:''}`},null).then(pk=>{ rec.picks=(Array.isArray(pk)&&pk.length===n&&new Set(pk).size===n&&pk.every(i=>Number.isInteger(i)&&i>=0&&i<N&&!tar.cut.has(i)))?pk:aiPicks(att,tar,n); })); }
+      else rec.picks=aiPicks(att,tar,n);
     }
+    await Promise.all(pjobs);
     const snap={}; P.forEach(p=>snap[p.i]=new Set(p.cut));
     const results=[];
     for(const x of plan){ const A=attacks.find(q=>q.att===x.a), B=attacks.find(q=>q.att===x.b);
       results.push(...applyPair(x.a,x.b,x.w,A.picks,B.picks,rules).map(r=>({...r,n:(r.att===x.a?A:B).n}))); }
-    const myA=results.find(r=>r.att.human);
-    if(myA && human.alive){ const foeA=results.find(r=>r.att===myA.tar&&r.tar===myA.att);
-      await transition(()=>{},{text:'공개',tip:'실이 팽팽해집니다…',job:human.job});
-      await runReveal(human,myA.tar,myA.picks,foeA.picks,myA.hits,foeA.hits,snap,foeA.canceled); }
+    await Promise.all(humansAll().filter(h=>h.alive).map(h=>{ const myA=results.find(r=>r.att===h); if(!myA) return null; const foeA=results.find(r=>r.att===myA.tar&&r.tar===myA.att);
+      return callFor(h,'reveal',{me:h.i,foe:myA.tar.i,snap:P.map(p=>[...snap[p.i]]),myPicks:myA.picks,foePicks:foeA.picks,myHits:myA.hits,foeHits:foeA.hits,canceled:!!foeA.canceled},null); }));
     mode='title';
   }
   const al=alive(P), win=escapeWin||(al.length===1?al[0]:null);
-  window.__result={rounds:round,winner:win?win.i:-1,humanWon:win?win.human:false};
+  window.__result={rounds:round,winner:win?win.i:-1,humanWon:win?!!win.human:false};
   document.title='결과: '+JSON.stringify(window.__result);
   stageActors=win?[win.job]:[];
-  await transition(()=>{ mode='title'; },{text:'막이 내립니다',job:me.job});
-  if(win) await runCut(win);
+  await transAll({text:'막이 내립니다',actors:win?[win.job.id]:[]});
+  if(win) await Promise.all(humansAll().map(h=>callFor(h,'cut',{win:win.i},null)));
   const stand=`<table><tr><th>배우</th><th>재화</th><th>듀얼 승</th><th>결과</th></tr>${[...P].sort((a,b)=>(b.alive-a.alive)||(b.duelWins-a.duelWins)).map(p=>`<tr><td>${nameOf(p)}</td><td>${p.gold}</td><td>${p.duelWins}</td><td>${p===win?'<b class="win">승리</b>':p.alive?'생존':'<span class="lose">탈락</span>'}</td></tr>`).join('')}</table>`;
-  return bookScreen({left:`<h3>Finale</h3><h2>${win?`${win.name} 승리`:'무승부'}</h2>${win?`<img class="hero" alt="" src="${spriteURL(win.job,1.7)}">`:''}`,right:`<h3>마지막 장</h3><p class="quote">${win?(escapeWin?(win.human?'발전기의 불빛이 문을 비췄고, 당신은 세 번 극장을 빠져나갔습니다.':'발전기 소리가 멎었을 때, 누군가는 이미 극장 밖에 있었습니다.'):(win.human?'당신의 줄만이 끝까지 팽팽했습니다.':'끝까지 서 있던 것은 당신이 아니었습니다.')):'마지막 두 줄이 동시에 끊어졌습니다.'}</p><p class="dim">${round}번의 소집 끝에 막이 내립니다.</p>${stand}`,buttons:[{label:'다시 하기',value:'again'}],tag:STOP==='end'?'end':'end_'});
+  const outs=await bookEach(h=>({left:`<h3>Finale</h3><h2>${win?`${win.name} 승리`:'무승부'}</h2>${win?`<img class="hero" alt="" src="${sprTok(win.job,1.7)}">`:''}`,right:`<h3>마지막 장</h3><p class="quote">${win?(escapeWin?(win===h?'발전기의 불빛이 문을 비췄고, 당신은 세 번 극장을 빠져나갔습니다.':'발전기 소리가 멎었을 때, 누군가는 이미 극장 밖에 있었습니다.'):(win===h?'당신의 줄만이 끝까지 팽팽했습니다.':'끝까지 서 있던 것은 당신이 아니었습니다.')):'마지막 두 줄이 동시에 끊어졌습니다.'}</p><p class="dim">${round}번의 소집 끝에 막이 내립니다.</p>${stand}`,buttons:[{label:'다시 하기',value:'again'}],tag:STOP==='end'?'end':'end_'}));
+  if(net){ for(const h of humansAll()) if(!h.human&&h.remote!=null) NET.to(h.remote,{k:'end',msg:''}); NET.sys.left=null; }
+  return outs.get(me);
 }
+async function playGameNet(players){ document.title='NETHOST '+players.length; try{ await playGame(players); }finally{ NET.leave(); } }
 (async function main(){
   P=makePlayers(0); frame();
   if(params.has('snd')){ sfx.init(); window.__pk=0; setInterval(()=>{ window.__pk=Math.max(window.__pk,sfx.level()); const q=sfx.status(); document.title='audio '+q.state+' '+q.rate+'Hz loops['+q.loops+'] err '+(window.__sfxErr||0)+' '+(window.__sfxLast||'')+' peak '+window.__pk.toFixed(3); },200); }
@@ -2876,8 +2987,9 @@ async function playGame(){
   if(params.has('pause')) setTimeout(()=>setPause(true),1500);
   if(demo==='explore'){ P[0].human=true; P[0].gold=0; if(params.has('job')) P[0].job=JOBS[+params.get('job')]; stageActors=[]; await runExplore(P); return; }
   if(demo==='cut'){ P.forEach(p=>p.gold=8); const jb=JOBS[+(params.get('job')||0)], w=P.find(p=>p.job===jb)||P[0]; w.job=jb; w.human=true; stageActors=[]; await runCut(w); return; }
-  if(demo==='book'){ P.forEach(p=>p.gold=8); P[0].human=true; await assignScreen(); return; }
-  while(true){ const act=await titleScreen(); if(act==='sim'||(AUTO&&act!=='start')) break; await playGame(); if(AUTO) break; }
+  if(demo==='book'){ P.forEach(p=>p.gold=8); P[0].human=true; await assignScreen(P[0]); return; }
+  if(params.get('online')){ const r=await onlineFlow(); if(r){ await (r.host?playGameNet(r.players):clientSession()); } return; }
+  while(true){ const act=await titleScreen(); if(act&&act.online){ await (act.online.host?playGameNet(act.online.players):clientSession()); NET.leave(); continue; } if(act==='sim'||(AUTO&&act!=='start')) break; await playGame(); if(AUTO) break; }
 })();
 </script>
 </body>
