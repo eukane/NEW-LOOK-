@@ -726,35 +726,73 @@ const BOSSES={
   ]},
 };
 const BOSSJOB={}; for(const b of Object.values(BOSSES)) BOSSJOB['boss_'+b.id]={id:'boss_'+b.id,name:b.name,color:b.color,isBoss:true,bossId:b.id};
-function pickHero(d){ const al=d.H.filter(h=>!h.dead); return al.length?al[ri(al.length)]:null; }
+function pickHero(d){ const al=d.H.filter(h=>!h.dead); if(!al.length) return null; let h=al[ri(al.length)]; if(h.job.id==='hermit'&&al.length>1&&rand()<0.6){ const o=al.filter(q=>q!==h); h=o[ri(o.length)]; } return h; }
 function rndHeroY(d){ const al=d.H.filter(h=>!h.dead); return al.length?al[ri(al.length)].y:AH*0.7; }
 function makeBoss(heroes,bossId,o){
   o=o||{}; const B=BOSSES[bossId]||BOSSES.puppet, n=heroes.length;
-  const boss={isBoss:true,def:B,job:{id:'boss',name:B.name,color:B.color},x:AW/2,y:215,r:B.r,maxHp:Math.round(B.hpPer*(B.hpK||1)*({1:2.4,2:6.8,3:10.2}[n]||n*3.4)*(o.hpMul||1)),dir:1,inv:0,cd:B.patterns.map(()=>2.5+rand()*2),face:'idle',rage:false,busy:0,last:-1,wx:0,shot:1.4,hits:0};
+  const boss={isBoss:true,def:B,job:{id:'boss',name:B.name,color:B.color},x:AW/2,y:215,r:B.r,maxHp:Math.round(1.4*B.hpPer*(B.hpK||1)*({1:2.4,2:6.8,3:10.2}[n]||n*3.4)*(o.hpMul||1)),dir:1,inv:0,cd:B.patterns.map(()=>2.5+rand()*2),face:'idle',rage:false,busy:0,last:-1,wx:0,shot:1.4,hits:0};
   boss.hp=boss.maxHp;
-  const H=heroes.map((p,i)=>({p,job:p.job,shield:(p.job.id==='arch'&&(p.dex|0)>=2?1:0),x:AW*(i+1)/(n+1),y:AH-240,homeY:AH-240,dir:-1,hp:BHP0,maxHp:BHP0,dead:false,inv:0,cd:[0,0,0],shot:0.5+rand()*0.4,r:8,speed:(p.job.id==='tech'&&PLANS.on?306:330),minY:AH*0.42,maxY:AH-70,mx:0,my:0,tx:null,ty:null,hits:0,face:'idle',ai:null,
+  const H=heroes.map((p,i)=>({p,job:p.job,shield:(p.job.id==='arch'&&(p.dex|0)>=2?1:0),x:AW*(i+1)/(n+1),y:AH-240,homeY:AH-240,dir:-1,hp:BHP0,maxHp:BHP0,dead:false,inv:0,cd:[0,0,0],shot:0.5+rand()*0.4,r:8,speed:(p.job.id==='tech'&&PLANS.on?306:330),sp0:(p.job.id==='tech'&&PLANS.on?306:330),sh0:(p.job.id==='arch'&&(p.dex|0)>=2?1:0),invDur:1.4,res:0,minY:AH*0.42,maxY:AH-70,mx:0,my:0,tx:null,ty:null,hits:0,face:'idle',ai:null,
     cdMul:p.job.id==='ent'?1-0.02*Math.min(12,p.viewers||0):p.job.id==='arch'?((p.dex|0)>=4?0.85:1):p.job.id==='scout'?0.88:p.job.id==='martyr'?1-0.025*Math.min(12,p.wc||0):1}));
+  H.forEach(h=>{ h.cd0=h.cdMul; });
   return {t:0,over:false,res:null,boss,H,bul:[],zones:[],timers:[],banners:[],sparks:[],log:[],fx:[],parts:[],shake:0,flash:0,spd:1,fxOn:false,onEvent:null,
     phase:'pattern',phT:0,patN:0,wiped:false,turn:1,turns:BOSS_TURNS,roundDone:false,round:1,think:0.8,dmg:0,heroMul:o.heroMul||1};
 }
+
+/* 영웅 팀 능력: 직업마다 보스전에서 팀에 주는 고유 효과 (팀에 그 직업이 있을 때) */
+const BBONUS={
+ ent:{name:'앙코르',text:'공격 구간 동안 팀 전체 공격 ×1.2'},
+ tech:{name:'발전기 보호막',text:'소집 시작 때 본인과 동료 1명(체력이 가장 적은)이 보호막 1회'},
+ scout:{name:'함정 수색',text:'보스 패턴 쿨타임 +15%'},
+ arch:{name:'도감 지식',text:'팀 전체 스펠 쿨타임 -5%'},
+ mender:{name:'수선',text:'소집마다 한 번, 공격 구간 시작 때 쓰러진 영웅 1명을 일으키고 가장 약한 영웅의 하트 +1'},
+ digger:{name:'발 빠른 도굴',text:'팀 이동 속도 +8%'},
+ scare:{name:'짚단 방패',text:'팀이 맞은 뒤 무적 시간 +0.8초'},
+ shear:{name:'복수의 가위',text:'영웅이 쓰러지면 6초간 팀 공격 ×1.3'},
+ jester:{name:'행운의 한 방',text:'팀 공격이 10% 확률로 3배 치명타'},
+ seer:{name:'예지',text:'보스 패턴이 0.7초 늦게 나간다 (이름이 먼저 보인다)'},
+ clock:{name:'시간 정지',text:'공격 구간 +1.5초'},
+ pyro:{name:'폭죽',text:'공격 구간 시작 때 보스에게 폭죽 피해 (보스 체력의 3%)'},
+ lock:{name:'자물쇠',text:'보스의 분노가 체력 35% 이하에서만 시작된다'},
+ herb:{name:'독',text:'공격 구간 동안 보스가 초당 1 피해를 입는다'},
+ carver:{name:'방패 조각',text:'팀 피격 판정이 작아진다 (반경 8→5)'},
+ hunter:{name:'덫',text:'공격 구간에 보스가 반격하지 못한다'},
+ magi:{name:'마법 가속',text:'팀 전체 스펠 쿨타임 -20%'},
+ thief:{name:'소매치기',text:'공격 구간 시작 때 보스 패턴 쿨타임 +3초'},
+ martyr:{name:'순교의 부활',text:'본인은 쓰러져도 소집마다 1번 제자리에서 하트 1칸으로 부활'},
+ hermit:{name:'은둔',text:'보스 패턴이 은둔자를 덜 노린다'},
+};
+const bHas=(d,id)=>d.H.some(h=>h.job.id===id), bAlive=(d,id)=>d.H.some(h=>h.job.id===id&&!h.dead);
+function bossBonusInit(d){
+  d.tAtk=T_ATK+(bHas(d,'clock')?1.5:0); d.bossCdMul=bHas(d,'scout')?1.15:1; d.seerDelay=bHas(d,'seer')?0.7:0; d.rageAt=bHas(d,'lock')?0.35:0.5; d.noShot=bHas(d,'hunter'); d.teamDm=1; d.venge=0;
+  for(const h of d.H){ h.cdMul=h.cd0*(bHas(d,'magi')?0.8:1)*(bHas(d,'arch')?0.95:1); h.speed=h.sp0*(bHas(d,'digger')?1.08:1); h.invDur=1.4+(bHas(d,'scare')?0.8:0); h.r=bHas(d,'carver')?5:8; h.shield=(h.sh0|0)+((bHas(d,'tech')&&h.job.id==='tech')?1:0); h.res=h.job.id==='martyr'?1:0; }
+  if(bHas(d,'tech')){ const al=d.H.filter(h=>h.job.id!=='tech'); if(al.length){ al.sort((x,y)=>x.maxHp-y.maxHp); al[0].shield++; } }
+  d.menderUsed=false;
+}
+function bossBonusAtk(d){ const B=d.boss;
+  if(bAlive(d,'mender')&&!d.menderUsed){ d.menderUsed=true; const dead=d.H.find(h=>h.dead); if(dead){ dead.dead=false; dead.hp=1; dead.inv=1.5; dead.y=dead.homeY; d.banners.push({text:'수선 — 부활',col:'#ff9ec7',t:0,side:'A'}); if(d.fxq) d.fxq.push(['bn','수선 — 부활','#ff9ec7','A']); } let weak=null; for(const h of d.H) if(!h.dead&&h.hp<h.maxHp&&(!weak||h.hp<weak.hp)) weak=h; if(weak) weak.hp++; }
+  if(bAlive(d,'pyro')) bossDamage(d,d.boss.maxHp*0.03*d.heroMul,'#ffb040');
+  if(bAlive(d,'thief')) for(let i=0;i<B.cd.length;i++) B.cd[i]+=3;
+  d.teamDm=bAlive(d,'ent')?1.2:1; }
 function bossHeal(d,round,info){ // 소집 시작: 산 영웅은 하트 회복, 쓰러진 영웅은 하트 1칸으로 부활 (info: 탐색 결과로 정해진 하트·공격 배율)
   for(const h of d.H){ const inf=info&&info[h.p.i]; if(inf){ h.maxHp=inf.maxHp; h.dm=inf.dm; } if(h.dead){ h.dead=false; h.hp=1; } else h.hp=h.maxHp; if(inf&&inf.hurt) h.hp=Math.max(1,h.hp-inf.hurt); h.inv=1.5; h.cd=[0,0,0]; h.x=Math.max(40,Math.min(AW-40,h.x)); h.y=h.homeY; h.face='idle'; }
   d.round=round; d.turn=1; d.phase='pattern'; d.phT=0; d.roundDone=false; d.wiped=false; d.patN=0; d.bul.length=0; d.zones.length=0; d.timers.length=0; d.think=0.8; d.boss.busy=0;
   d.boss.cd=d.boss.def.patterns.map(()=>(d.bossHaste?0.6:2)+rand()*(d.bossHaste?1.2:2.5));
+  bossBonusInit(d);
 }
 function canCastB(d,m,i){ return !d.over&&!m.dead&&d.phase==='attack'&&unlocked(m,i)&&m.cd[i]<=0; }
 function castSpellB(d,m,i){ if(!canCastB(d,m,i)) return false; const sp=SPELLS[m.job.id][i]; m.cd[i]=sp.cd*(m.cdMul||1); sp.cast(d,m,d.boss); ev(d,'cast',m,i); d.banners.push({text:sp.name,col:m.job.color,t:0,side:'A'}); if(d.fxq) d.fxq.push(['bn',sp.name,m.job.color,'A']); return true; }
 function canBossCast(d,i){ const B=d.boss, pt=B.def.patterns[i]; return !d.over&&!d.roundDone&&d.phase==='pattern'&&d.phT>0.4&&B.cd[i]<=0&&(!pt.rage||B.rage)&&d.patN<(B.rage?3:2)&&d.t>=B.busy-0.4; }
 function bossCast(d,i){ if(!canBossCast(d,i)) return false; d.patN++; bossPattern(d,i); return true; }
-function bossPattern(d,i){ const B=d.boss, pt=B.def.patterns[i], f=pickHero(d); if(!f) return; B.cd[i]=pt.cd*(B.rage?0.78:1); B.busy=d.t+pt.dur; B.last=i; pt.cast(d,B,f); ev(d,'pattern',B,i); d.banners.push({text:pt.name,col:B.job.color,t:0,side:'B'}); if(d.fxq) d.fxq.push(['bn',pt.name,B.job.color,'B']); d.log.push([d.t.toFixed(1),B.job.name,pt.name]); }
-function bossDamage(d,amount,col){ const B=d.boss; if(B.hp<=0) return; B.hp-=amount; B.hits++; B.face='hurt'; if(d.fxOn&&Math.random()<0.4) d.sparks.push({x:B.x+(rand()-0.5)*40,y:B.y+(rand()-0.5)*30,t:0,col}); if(!B.rage&&B.hp<=B.maxHp*0.5){ B.rage=true; d.banners.push({text:'분노',col:'#ff5a6a',t:0,side:'B'}); d.shake=0.6; ev(d,'rage',B); } if(B.hp<=0){ B.hp=0; d.over=true; d.res='heroes'; } }
-function heroHurt(d,h,col){ if(h.shield>0){ h.shield--; h.inv=1.0; return; } h.hp--; h.hits++; h.inv=1.4; h.face='hurt'; d.sparks.push({x:h.x,y:h.y,t:0,col}); burst(d,h.x,h.y,col,18,320,'spark'); d.shake=0.35; d.flash=0.35; ev(d,'hit',h); if(h.hp<=0){ h.dead=true; h.hp=0; ev(d,'down',h); if(d.H.every(q=>q.dead)){ d.roundDone=true; d.wiped=true; ev(d,'wipe'); } } }
+function bossPattern(d,i){ const B=d.boss, pt=B.def.patterns[i], f=pickHero(d); if(!f) return; B.cd[i]=pt.cd*(B.rage?0.78:1)*(d.bossCdMul||1); B.busy=d.t+pt.dur; B.last=i; if(d.seerDelay>0) after(d,d.seerDelay,()=>{ pt.cast(d,B,f); }); else pt.cast(d,B,f); ev(d,'pattern',B,i); d.banners.push({text:pt.name,col:B.job.color,t:0,side:'B'}); if(d.fxq) d.fxq.push(['bn',pt.name,B.job.color,'B']); d.log.push([d.t.toFixed(1),B.job.name,pt.name]); }
+function bossDamage(d,amount,col){ const B=d.boss; if(B.hp<=0) return; B.hp-=amount; B.hits++; B.face='hurt'; if(d.fxOn&&Math.random()<0.4) d.sparks.push({x:B.x+(rand()-0.5)*40,y:B.y+(rand()-0.5)*30,t:0,col}); if(!B.rage&&B.hp<=B.maxHp*(d.rageAt||0.5)){ B.rage=true; d.banners.push({text:'분노',col:'#ff5a6a',t:0,side:'B'}); d.shake=0.6; ev(d,'rage',B); } if(B.hp<=0){ B.hp=0; d.over=true; d.res='heroes'; } }
+function heroHurt(d,h,col){ if(h.shield>0){ h.shield--; h.inv=1.0; return; } h.hp--; h.hits++; h.inv=h.invDur||1.4; h.face='hurt'; d.sparks.push({x:h.x,y:h.y,t:0,col}); burst(d,h.x,h.y,col,18,320,'spark'); d.shake=0.35; d.flash=0.35; ev(d,'hit',h); if(h.hp<=0&&h.res>0){ h.res--; h.hp=1; h.inv=2.0; d.banners.push({text:'순교의 부활',col:'#e8c8a0',t:0,side:'A'}); if(d.fxq) d.fxq.push(['bn','순교의 부활','#e8c8a0','A']); return; } if(h.hp<=0){ h.dead=true; h.hp=0; if(bAlive(d,'shear')) d.venge=6; ev(d,'down',h); if(d.H.every(q=>q.dead)){ d.roundDone=true; d.wiped=true; ev(d,'wipe'); } } }
 function stepBoss(d,dt){
   if(d.over||d.roundDone) return; d.t+=dt; d.phT+=dt;
-  const B=d.boss; B.inv=Math.max(0,B.inv-dt); d.spd=B.rage?1.12:1; const bdt=dt*d.spd;
+  const B=d.boss; B.inv=Math.max(0,B.inv-dt); if(d.venge>0) d.venge-=dt; d.spd=B.rage?1.12:1; const bdt=dt*d.spd;
   // --- 구간 전환
-  if(d.phase==='pattern'&&d.phT>=T_PAT){ d.phase='attack'; d.phT=0; d.timers.length=0; d.banners.push({text:'공격 기회!',col:'#ffe08a',t:0,side:'A'}); ev(d,'phase',d.phase); B.face='tired'; }
-  else if(d.phase==='attack'&&d.phT>=T_ATK){ if(d.turn>=d.turns){ d.roundDone=true; return; } d.turn++; d.phase='pattern'; d.phT=0; d.think=0.6; d.patN=0; ev(d,'phase',d.phase); B.face='idle'; for(let i=0;i<B.cd.length;i++) B.cd[i]=Math.max(0,B.cd[i]-1.5); }
+  if(d.phase==='pattern'&&d.phT>=T_PAT){ d.phase='attack'; d.phT=0; d.timers.length=0; bossBonusAtk(d); d.banners.push({text:'공격 기회!',col:'#ffe08a',t:0,side:'A'}); ev(d,'phase',d.phase); B.face='tired'; }
+  else if(d.phase==='attack'&&d.phT>=(d.tAtk||T_ATK)){ if(d.turn>=d.turns){ d.roundDone=true; return; } d.turn++; d.phase='pattern'; d.phT=0; d.think=0.6; d.patN=0; d.teamDm=1; ev(d,'phase',d.phase); B.face='idle'; for(let i=0;i<B.cd.length;i++) B.cd[i]=Math.max(0,B.cd[i]-1.5); }
   // --- 보스 이동·패턴
   const atk=d.phase==='attack';
   if(B.ctl){ if(B.tx!=null){ const dx=B.tx-B.x, sp=Math.min(Math.abs(dx),(atk?150:230)*dt); B.x+=Math.sign(dx)*sp; } B.x=Math.max(70,Math.min(AW-70,B.x)); B.wx=Math.asin(Math.max(-1,Math.min(1,(B.x-AW/2)/B.def.amp[0]))); }
@@ -762,7 +800,7 @@ function stepBoss(d,dt){
   B.y=215+(atk?25:0);
   for(let i=0;i<B.cd.length;i++) B.cd[i]=Math.max(0,B.cd[i]-dt);
   if(!atk&&!B.ctl){ d.think-=dt; if(d.think<=0){ d.think=0.4; if(d.t>=B.busy+0.6&&d.patN<(B.rage?3:2)){ const ready=[]; B.def.patterns.forEach((p,i)=>{ if(B.cd[i]<=0&&(!p.rage||B.rage)&&i!==B.last) ready.push(i); }); if(ready.length){ d.patN++; bossPattern(d,ready[ri(ready.length)]); } } } }
-  else { B.shot-=dt; if(B.shot<=0){ B.shot=1.5; const f=pickHero(d); if(f) for(const o of [-0.3,0,0.3]) shoot(d,B,{ang:aimAng(B,f)+o,sp:200,r:7,shape:'rivet',spin:6,trail:2}); } }
+  else { if(bAlive(d,'herb')) bossDamage(d,1.0*dt,'#7fc47a'); B.shot-=dt; if(B.shot<=0&&!d.noShot){ B.shot=1.5; const f=pickHero(d); if(f) for(const o of [-0.3,0,0.3]) shoot(d,B,{ang:aimAng(B,f)+o,sp:200,r:7,shape:'rivet',spin:6,trail:2}); } }
   // --- 영웅
   for(const h of d.H){ if(h.dead) continue;
     h.inv=Math.max(0,h.inv-dt); for(let i=0;i<3;i++) h.cd[i]=Math.max(0,h.cd[i]-dt);
@@ -779,7 +817,7 @@ function stepBoss(d,dt){
     if(d.fxOn&&b.trail){ b.tr.push(b.x,b.y); if(b.tr.length>b.trail*4) b.tr.splice(0,2); }
     let remove=!!b.dead;
     if(!remove){ if(b.owner===B){ for(const h of d.H){ if(h.dead||h.inv>0) continue; if(Math.hypot(b.x-h.x,b.y-h.y)<b.r+h.r){ heroHurt(d,h,b.col); remove=true; break; } } }
-      else if(Math.hypot(b.x-B.x,b.y-B.y)<b.r+B.r){ bossDamage(d,pm*d.heroMul*((b.owner&&b.owner.dm)||1),b.col); remove=true; } }
+      else if(Math.hypot(b.x-B.x,b.y-B.y)<b.r+B.r){ { let mul=pm*d.heroMul*((b.owner&&b.owner.dm)||1)*(d.teamDm||1)*(d.venge>0?1.3:1); if(bAlive(d,'jester')&&rand()<0.1) mul*=3; bossDamage(d,mul,b.col); } remove=true; } }
     if(b.x<-70||b.x>AW+70||b.y<-70||b.y>AH+70) remove=true;
     if(remove) d.bul.splice(i,1); }
   // --- 구역
@@ -3772,7 +3810,7 @@ function drawBossScene(c,t){
   c.font=`400 13px ${FD}`; c.textAlign='left'; c.textBaseline='middle'; c.fillStyle=B.job.color; c.fillText(B.job.name+(B.rage?'  분노':''),pad+9,18);
   c.textAlign='right'; c.fillStyle='#bba878'; c.fillText(`소집 ${sc.round}/${sc.maxRounds||BOSS_ROUNDS} · 턴 ${d.turn}/${d.turns}`,pad+bw-9,18);
   const hbx=pad+9, hbw=bw-18; c.fillStyle='#1a0f08'; c.fillRect(hbx,28,hbw,10); c.fillStyle=B.rage?'#c0283a':'#8f5ab8'; c.fillRect(hbx,28,hbw*Math.max(0,B.hp/B.maxHp),10); c.fillStyle='rgba(255,255,255,.5)'; c.fillRect(hbx+hbw/2-1,27,2,12); c.strokeStyle='#4a3a20'; c.strokeRect(hbx+.5,28.5,hbw-1,9);
-  const atk=d.phase==='attack', plen=atk?T_ATK:T_PAT, k=Math.max(0,1-d.phT/plen);
+  const atk=d.phase==='attack', plen=atk?(d.tAtk||T_ATK):T_PAT, k=Math.max(0,1-d.phT/plen);
   c.fillStyle='#1a0f08'; c.fillRect(pad,50,bw,13); c.fillStyle=atk?'#e0b64a':'#a3323d'; c.fillRect(pad,50,bw*k,13); c.strokeStyle='#4a3a20'; c.strokeRect(pad+.5,50.5,bw-1,12);
   c.font=`400 11px ${FD}`; c.textAlign='left'; c.fillStyle='#f1e6c8'; c.fillText(atk?'공격 구간 — 스펠로 보스를 쳐라!':'패턴 구간 — 탄막을 피하라',pad+6,57); c.textAlign='right'; c.fillText(Math.ceil(plen-d.phT)+'초',pad+bw-6,57);
   for(const b of d.banners){ const kk=b.t/1.4, mine=b.side==='A', a=Math.min(1,kk*6)*Math.min(1,(1-kk)*3)*(mine?0.75:0.9), yy=mine?ay+AH*s*0.55:ay+AH*s*0.27;
@@ -3982,7 +4020,7 @@ async function titleScreen(){
 async function bossDemoRun(){
   const PP=makePlayers(0).slice(0,3); PP.forEach(p=>{ p.gold=6; p.name=p.job.name; }); PP[0].human=true; P=PP; stageActors=PP.map(p=>p.job);
   const list=Object.values(BOSSES).map(b=>`<p style="margin:.5em 0"><span class="chip"><i style="background:${b.color}"></i>${b.name}</span><br><span class="dim" style="font-size:.88em">${b.intro}</span></p>`).join('');
-  const pick=await bookScreen({left:`<h3>Boss Rush · 체험</h3><h2>누구와 싸울까</h2><p class="quote">한 소집에 세 번, 보스의 탄막이 쏟아지고 지친 틈에 영웅이 반격합니다. 쓰러져도 다음 소집에 하트 1칸으로 돌아옵니다 (최대 ${BOSS_ROUNDS}소집).</p>${list}`,right:`<h3>나의 스펠 카드 (${PP[0].job.name})</h3>${spellListHTML(PP[0].job)}<p class="dim" style="font-size:.88em">동료: ${PP[1].job.name}·${PP[2].job.name} (봇)</p>`,buttons:[...Object.values(BOSSES).map(b=>({label:b.name,value:b.id})),{label:'무작위',value:'rand'}],tag:'boss_'});
+  const pick=await bookScreen({left:`<h3>Boss Rush · 체험</h3><h2>누구와 싸울까</h2><p class="quote">한 소집에 세 번, 보스의 탄막이 쏟아지고 지친 틈에 영웅이 반격합니다. 쓰러져도 다음 소집에 하트 1칸으로 돌아옵니다 (최대 ${BOSS_ROUNDS}소집).</p>${list}`,right:`<h3>나의 스펠 카드 (${PP[0].job.name})</h3>${spellListHTML(PP[0].job)}${bonusHTML(PP)}<p class="dim" style="font-size:.88em">동료: ${PP[1].job.name}·${PP[2].job.name} (봇)</p>`,buttons:[...Object.values(BOSSES).map(b=>({label:b.name,value:b.id})),{label:'무작위',value:'rand'}],tag:'boss_'});
   const bid=pick==='rand'||!BOSSES[pick]?sample(Object.keys(BOSSES),1)[0]:pick;
   const r=await startBossScene(PP,PP[0],bid,{}); mode='title'; stageActors=[];
   await bookScreen({left:`<h3>Boss Rush · 결과</h3><h2>${r.winner==='heroes'?'영웅의 승리':'보스의 승리'}</h2><p class="quote">${r.winner==='heroes'?BOSSES[bid].name+'을(를) 쓰러뜨렸습니다.':'소집이 끝나도 '+BOSSES[bid].name+'은(는) 무대 위에 서 있었습니다.'}</p><p class="dim">${r.rounds}소집 · 보스 체력 ${r.bossHp} / ${r.bossMax}</p>`,right:'',buttons:[{label:'돌아가기',value:1}],tag:'boss_end'});
@@ -4262,6 +4300,7 @@ async function playGame(net){
   return outs.get(me);
 }
 let ONLINE_BOSS=params.get('bossmode')?(params.get('bossmode')==='fight'?'fight':'full'):'';
+const bonusHTML=heroes=>`<h3 style="margin-top:.8em">팀 능력 (보스전)</h3>${heroes.map(h=>{ const b=BBONUS[h.job.id]; return b?`<p style="margin:.35em 0;font-size:.9em"><span class="chip"><i style="background:${h.job.color}"></i>${h.job.name}</span> <b>${b.name}</b> — <span class="dim">${b.text}</span></p>`:''; }).join('')}`;
 const BG_ROUNDS=4, BG_EXPLORE_T=120, BG_HASTE=8, BG_GOLD0=5, BG_HP={puppet:0.78,giant:0.58,shears:0.62};
 const bgInfo=(g,c)=>({maxHp:Math.min(5,3+Math.floor(Math.max(0,g-6)/5)),dm:+Math.max(0.9,Math.min(1.4,1+0.03*(g-6))).toFixed(2),hurt:c>=5?2:c>=3?1:0,c,g});
 // 보스전 전체 판: 탐색(보스 아바타 포함) → 보스전 × N소집. net이 없으면 로컬(사람 1명 + 봇).
@@ -4277,11 +4316,11 @@ async function playBossGame(net,localRole){
   const list=Object.values(BOSSES).map(b=>`<p style="margin:.5em 0"><span class="chip"><i style="background:${b.color}"></i>${b.name}</span><br><span class="dim" style="font-size:.88em">${b.intro}</span><br><span class="dim" style="font-size:.82em;color:#c9b27a">탐색 방해공작: ${b.sabo}</span></p>`).join('');
   let bid;
   if(bossP.ctl){ await Promise.all(humans.filter(h=>h!==bossP).map(h=>callFor(h,'wait',{msg:`보스 ${bossP.nick||''}님이 상대를 고르는 중…`},null)));
-    const pick=await bookFor(bossP,{left:`<h3>Boss Rush</h3><h2>당신이 보스입니다</h2><p class="quote">탐색에서는 큰 몸으로 영웅을 쫓아 붙잡고 고유한 방해공작을 쓰며, 보스전에서는 탄막 패턴으로 영웅 팀을 몰아붙입니다.</p>${list}`,right:`<h3>영웅 팀</h3>${heroes.map(h=>`<p style="margin:.4em 0"><span class="chip"><i style="background:${h.job.color}"></i>${h.job.name}</span> <span class="dim">${h.nick||'봇'}</span></p>`).join('')}`,buttons:[...Object.values(BOSSES).map(b=>({label:b.name,value:b.id})),{label:'무작위',value:'rand'}],tag:'bosspick_'});
+    const pick=await bookFor(bossP,{left:`<h3>Boss Rush</h3><h2>당신이 보스입니다</h2><p class="quote">탐색에서는 큰 몸으로 영웅을 쫓아 붙잡고 고유한 방해공작을 쓰며, 보스전에서는 탄막 패턴으로 영웅 팀을 몰아붙입니다.</p>${list}`,right:`<h3>영웅 팀</h3>${heroes.map(h=>`<p style="margin:.4em 0"><span class="chip"><i style="background:${h.job.color}"></i>${h.job.name}</span> <span class="dim">${h.nick||'봇'}</span></p>`).join('')}${bonusHTML(heroes)}`,buttons:[...Object.values(BOSSES).map(b=>({label:b.name,value:b.id})),{label:'무작위',value:'rand'}],tag:'bosspick_'});
     bid=pick==='rand'||!BOSSES[pick]?sample(Object.keys(BOSSES),1)[0]:pick; }
   else bid=sample(Object.keys(BOSSES),1)[0];
   bossP.job=BOSSJOB['boss_'+bid]; bossP.name=BOSSES[bid].name; const BD=BOSSES[bid];
-  await Promise.all(humans.map(h=>h===bossP?null:bookFor(h,{left:`<h3>Boss Rush</h3><h2>영웅 팀 — ${BD.name}</h2><p class="quote">${BD.intro}</p><p class="dim">당신은 ${h.job.name}. 탐색에서는 상자·발전기를 모으되 보스에게 붙잡히지 않도록 하세요 (붙잡히면 재화를 잃고 보스전 하트가 줄어듭니다). 모은 재화는 보스전의 공격력·하트·스펠이 됩니다.</p><p class="dim" style="color:#c9b27a">보스의 방해공작: ${BD.sabo}</p>`,right:`<h3>나의 스펠 카드</h3>${spellListHTML(h.job)}`,buttons:[{label:'무대로',value:1}],tag:'bossrole_'})));
+  await Promise.all(humans.map(h=>h===bossP?null:bookFor(h,{left:`<h3>Boss Rush</h3><h2>영웅 팀 — ${BD.name}</h2><p class="quote">${BD.intro}</p><p class="dim">당신은 ${h.job.name}. 탐색에서는 상자·발전기를 모으되 보스에게 붙잡히지 않도록 하세요 (붙잡히면 재화를 잃고 보스전 하트가 줄어듭니다). 모은 재화는 보스전의 공격력·하트·스펠이 됩니다.</p><p class="dim" style="color:#c9b27a">보스의 방해공작: ${BD.sabo}</p>`,right:`<h3>나의 스펠 카드</h3>${spellListHTML(h.job)}${bonusHTML(heroes)}`,buttons:[{label:'무대로',value:1}],tag:'bossrole_'})));
   gameMap={theme:sample(Object.keys(THEMES),1)[0],seed:Math.floor(Math.random()*1e9)}; opts.exploreT=BG_EXPLORE_T; opts.explore=true;
   const d=makeBoss(heroes,bid,{hpMul:BG_HP[bid]||0.7}); const loc=humans.find(h=>h.human); let final=null;
   for(let r=1;r<=BG_ROUNDS&&!final;r++){
@@ -4322,7 +4361,7 @@ async function playBossNet(net){
   await Promise.all(humans.filter(h=>h!==bossP).map(h=>callFor(h,'wait',{msg:`보스 ${bossP.nick||''}님이 상대를 고르는 중…`},null)));
   const pick=await bookFor(bossP,{left:`<h3>Boss Rush</h3><h2>당신이 보스입니다</h2><p class="quote">영웅 ${heroes.length}명이 당신을 쓰러뜨리러 옵니다. 패턴 구간에 패턴 버튼으로 탄막을 발동하고, 보스가 지친 공격 구간을 버텨 내세요.</p>${list}`,right:`<h3>영웅 팀</h3>${heroes.map(h=>`<p style="margin:.4em 0"><span class="chip"><i style="background:${h.job.color}"></i>${h.job.name}</span> <span class="dim">${h.nick||'봇'}</span></p>`).join('')}`,buttons:[...Object.values(BOSSES).map(b=>({label:b.name,value:b.id})),{label:'무작위',value:'rand'}],tag:'bosspick_'});
   const bid=pick==='rand'||!BOSSES[pick]?sample(Object.keys(BOSSES),1)[0]:pick;
-  await Promise.all(humans.map(h=>h===bossP?null:bookFor(h,{left:`<h3>Boss Rush</h3><h2>${h===humans[0]||true?'영웅 팀 — '+BOSSES[bid].name:''}</h2><p class="quote">${BOSSES[bid].intro}</p><p class="dim">당신은 ${h.job.name}. 스펠은 보스가 지친 ‘공격 구간’에만 쓸 수 있습니다. 쓰러져도 다음 소집에 하트 1칸으로 돌아옵니다 (최대 ${BOSS_ROUNDS}소집).</p>`,right:`<h3>나의 스펠 카드</h3>${spellListHTML(h.job)}`,buttons:[{label:'무대로',value:1}],tag:'bossrole_'})));
+  await Promise.all(humans.map(h=>h===bossP?null:bookFor(h,{left:`<h3>Boss Rush</h3><h2>${h===humans[0]||true?'영웅 팀 — '+BOSSES[bid].name:''}</h2><p class="quote">${BOSSES[bid].intro}</p><p class="dim">당신은 ${h.job.name}. 스펠은 보스가 지친 ‘공격 구간’에만 쓸 수 있습니다. 쓰러져도 다음 소집에 하트 1칸으로 돌아옵니다 (최대 ${BOSS_ROUNDS}소집).</p>`,right:`<h3>나의 스펠 카드</h3>${spellListHTML(h.job)}${bonusHTML(heroes)}`,buttons:[{label:'무대로',value:1}],tag:'bossrole_'})));
   const waits=humans.filter(h=>h.remote!=null).map(h=>NET.ask(h.remote,'bossnet',{me:h.i,bossIdx:bossP.i,heroIdx:heroes.map(q=>q.i),bossId:bid,P:serAll(h)},null,900000));
   const loc=humans.find(h=>h.human); let r;
   if(loc) r=await startBossScene(heroes,loc===bossP?null:loc,bid,{bossP,net:true});
