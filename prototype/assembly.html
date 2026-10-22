@@ -3291,8 +3291,14 @@ function drawExplore(c,t){
   for(const f of w.xfx) if(f.k==='flare'&&(f.fid||0)===vf) hole(f.x,f.y-10,f.r*1.5,0.95);
   for(const k of Object.keys(w.expose)){ const t_=w.ents[+k]; if(t_&&t_.p.alive&&!t_.out&&(t_.fid||0)===vf) hole(t_.x,t_.y-40,170,0.9); }
   for(const e of w.ents) if(e!==me&&e.light&&e.p.alive&&!e.hidden&&(e.fid||0)===vf) hole(e.x,e.y-40,fog?100:230,0.9);
+  if(!vf) for(const dr of w.doors) if(!dr.inner&&dr.b) hole(dr.x,dr.y,100,fog?0.35:0.6);   // 건물 입구는 어둠 속에서도 희미하게 열려 보인다
   if(!fog){ for(const o of w.objs) if(o.type==='gen'&&o.lit&&(o.fid||0)===vf){ hole(o.x,o.y,380,0.95); hole(o.x-110,o.y,260,0.8); hole(o.x+110,o.y,260,0.8); } if(!vf) for(const l of w.lamps) hole(l.x,l.y-30,135,0.75); for(const m of w.mons) if(m.type.id==='guard'&&!m.asleep&&(m.fid||0)===vf) hole(m.x-(m.face||1)*22,m.y-14,170,0.7); for(const o of w.objs) if(o.type==='cam'&&!o.done&&(o.fid||0)===vf) hole(o.x,o.y,o.seen||o.flash>0?150:70,0.55); }
   if(!params.has('xo')&&!XV) c.drawImage(dk,0,0,W,H);
+  if(!vf&&!XV){ c.save(); c.globalCompositeOperation='lighter'; for(const dr of w.doors){ if(dr.inner||!dr.b) continue; const sx=(dr.x-cx)*z+W/2, sy=(dr.y-cy)*z+H/2; if(sx<-100||sx>W+100||sy<-100||sy>H+100) continue; const hz=dr.o==='h', pulse=0.75+0.25*Math.sin(t*1.8+dr.x*0.013), half=(DG/2-8)*z;
+    const gl=glowSprite('#ffb86a',46); c.globalAlpha=0.28*pulse; c.drawImage(gl.c,sx-gl.s*0.9,sy-gl.s*0.9,gl.s*1.8,gl.s*1.8);
+    c.globalAlpha=0.75*pulse; c.strokeStyle='#ffd9a0'; c.lineWidth=Math.max(2,3.2*z); c.lineCap='round'; c.beginPath(); if(hz){ c.moveTo(sx-half,sy); c.lineTo(sx+half,sy); } else { c.moveTo(sx,sy-half); c.lineTo(sx,sy+half); } c.stroke();
+    c.globalAlpha=0.5*pulse; c.lineWidth=Math.max(1.2,1.6*z); c.beginPath(); if(hz){ for(const s of [-1,1]){ c.moveTo(sx+s*half,sy-7*z); c.lineTo(sx+s*half,sy+7*z); } } else { for(const s of [-1,1]){ c.moveTo(sx-7*z,sy+s*half); c.lineTo(sx+7*z,sy+s*half); } } c.stroke(); }
+    c.restore(); }
   c.save(); c.globalCompositeOperation='lighter'; const wg=c.createRadialGradient(W/2+(me.x-cx)*z,H/2+(me.y-cy-40)*z,10,W/2+(me.x-cx)*z,H/2+(me.y-cy-40)*z,(fog?110:240)*z); wg.addColorStop(0,'rgba(255,190,110,.13)'); wg.addColorStop(1,'rgba(255,190,110,0)'); c.fillStyle=wg; c.fillRect(0,0,W,H); c.restore();
   if(fog){ c.save(); c.globalCompositeOperation='lighter'; for(let i=0;i<4;i++){ const fx=((t*0.03*(i+1)+i*0.3)%1.3-0.15)*W, g_=c.createRadialGradient(fx,H*(0.3+i*0.18),0,fx,H*(0.3+i*0.18),W*0.5); g_.addColorStop(0,'rgba(140,160,170,.07)'); g_.addColorStop(1,'rgba(140,160,170,0)'); c.fillStyle=g_; c.fillRect(0,0,W,H); } c.restore(); }
   // 소리 물결 (안개 호수에서는 모든 소리가, 평소에는 방울 꼬마·허수아비 비명만)
