@@ -672,7 +672,7 @@ defJob({id:'hermit',name:'은둔자',color:'#9aa89a',kind:'ink',
  * 영웅의 평타·스펠은 직업 듀얼 엔진(BASIC/SPELLS)을 그대로 쓰고, 보스는 BOSSES의 패턴(쿨타임)을 쓴다. */
 const BHP0=3, BOSS_TURNS=3, T_PAT=10, T_ATK=6, BOSS_ROUNDS=6;
 const BOSSES={
- puppet:{id:'puppet',name:'그림자 인형사',color:'#b9a0d8',r:40,hpPer:62,
+ puppet:{id:'puppet',name:'그림자 인형사',color:'#b9a0d8',r:40,hpPer:62,mon:'puppet',amp:[190,90],spd:0.55,intro:'실과 인형으로 판을 짜는 보스. 가로로 훑는 실과 위에서 내리는 장막을 읽어라.',
   patterns:[
    {name:'실 휘두르기',cd:6,dur:2.8,rage:0,text:'사슬 같은 실이 가로로 훑고 지나간다 (틈이 있다)',cast(d,m,f){ castFx(d,m,'curtain');
      for(let w=0;w<3;w++) after(d,w*0.9,()=>{ const dir=w%2?-1:1, N=19, gap=3+ri(N-7), y0=Math.max(m.y+130,Math.min(AH-120,rndHeroY(d)+(rand()-0.5)*80));
@@ -689,12 +689,46 @@ const BOSSES={
      for(let k=0;k<60;k++) after(d,k*0.06,()=>{ shoot(d,m,{x:m.x,y:m.y,ang:k*0.52,sp:110+k*2,r:7,shape:'link',trail:2}); });
      for(let k=0;k<4;k++) after(d,1.0+k*0.5,()=>{ const tg=pickHero(d)||f; d.zones.push({x:Math.max(50,Math.min(AW-50,tg.x)),y:0,w:64,owner:m,tgt:tg,phase:'wait',t:0,warn:0.9,act:0.4}); }); }},
   ]},
+ giant:{id:'giant',name:'거인',color:'#c9a46a',r:54,hpPer:62,hpK:1.6,mon:'giant',sc:1.3,amp:[120,50],spd:0.32,intro:'크고 느린 보스. 발 구르기 경고 원과 지진 기둥, 퍼지는 충격파를 읽어라.',
+  patterns:[
+   {name:'발 구르기',cd:8,dur:3.2,rage:0,text:'경고 원이 뜨고 잠시 뒤 쾅 — 파편이 사방으로 튄다',cast(d,m,f){ castFx(d,m,'ring');
+     for(let k=0;k<3;k++) after(d,k*0.6,()=>{ const tg=pickHero(d)||f; d.zones.push({type:'slam',x:Math.max(80,Math.min(AW-80,tg.x+(rand()-0.5)*90)),y:Math.max(300,Math.min(AH-100,tg.y+(rand()-0.5)*90)),rad:92,owner:m,tgt:tg,phase:'wait',t:0,warn:0.95,act:0.4}); }); }},
+   {name:'충격파',cd:9,dur:3.6,rage:0,text:'고리 모양 충격파가 세 번 퍼진다 (틈이 있다)',cast(d,m,f){ castFx(d,m,'ring');
+     for(let k=0;k<3;k++) after(d,k*0.85,()=>{ const N=30, g0=rand()*6.283, gw=0.42; for(let i=0;i<N;i++){ const a2=i/N*6.283; let df=Math.atan2(Math.sin(a2-g0),Math.cos(a2-g0)); if(Math.abs(df)<gw) continue; shoot(d,m,{x:m.x,y:m.y+20,ang:a2,sp:125+k*22,r:9,shape:'ring',trail:2}); } }); }},
+   {name:'돌 던지기',cd:7,dur:3.2,rage:0,text:'바위가 날아가 떨어져 부서지며 파편이 튄다',cast(d,m,f){ castFx(d,m,'flash');
+     for(let k=0;k<4;k++) after(d,k*0.45,()=>{ const tg=pickHero(d)||f, tx=tg.x+(rand()-0.5)*70, ty=tg.y+(rand()-0.5)*70; shoot(d,m,{ang:aimAng(m,{x:tx,y:ty}),sp:270,r:15,shape:'ball',trail:4,upd:(b,dt)=>{ if(Math.hypot(tx-b.x,ty-b.y)<20||b.age>2.0){ b.dead=true; burst(d,b.x,b.y,'#c9a46a',14,260,'spark'); const r0=rand()*6.283; for(let i=0;i<10;i++) shoot(d,m,{x:b.x,y:b.y,ang:r0+i/10*6.283,sp:165,r:6,shape:'rivet',spin:6,trail:2}); } }}); }); }},
+   {name:'팔 휘두르기',cd:10,dur:3.6,rage:0,text:'거대한 팔이 좌우로 크게 쓸고 간다',cast(d,m,f){ castFx(d,m,'curtain');
+     for(let s=0;s<2;s++) for(let i=0;i<34;i++) after(d,s*1.5+i*0.04,()=>{ const a2=Math.PI/2+(s?1:-1)*(-0.95+i*0.056); shoot(d,m,{x:m.x,y:m.y+30,ang:a2,sp:250,r:9,shape:'bone',spin:6,trail:2}); }); }},
+   {name:'지진',cd:11,dur:4.2,rage:0,text:'땅이 갈라진다 — 짝수 기둥, 그다음 홀수 기둥',cast(d,m,f){ castFx(d,m,'ring'); d.shake=Math.max(d.shake,0.3);
+     for(let w=0;w<2;w++) after(d,w*1.5,()=>{ for(let c=w;c<6;c+=2) d.zones.push({x:60+c*120,y:0,w:84,owner:m,tgt:f,phase:'wait',t:0,warn:1.05,act:0.45}); }); }},
+   {name:'거인의 분노',cd:15,dur:5.0,rage:1,text:'분노 — 연쇄 발 구르기와 충격파',cast(d,m,f){ castFx(d,m,'ring');
+     for(let k=0;k<6;k++) after(d,k*0.5,()=>{ const x=70+((k*2+ri(2))%6)*110, y=Math.max(320,Math.min(AH-90,rndHeroY(d)+(rand()-0.5)*160)); d.zones.push({type:'slam',x,y,rad:86,owner:m,tgt:f,phase:'wait',t:0,warn:0.9,act:0.4}); });
+     for(let k=0;k<2;k++) after(d,1.0+k*1.3,()=>{ const N=30, g0=rand()*6.283; for(let i=0;i<N;i++){ const a2=i/N*6.283; if(Math.abs(Math.atan2(Math.sin(a2-g0),Math.cos(a2-g0)))<0.45) continue; shoot(d,m,{x:m.x,y:m.y+20,ang:a2,sp:140,r:9,shape:'ring',trail:2}); } }); }},
+  ]},
+ shears:{id:'shears',name:'줄 끊는 가위',color:'#d8dde6',r:30,hpPer:62,hpK:0.55,mon:'shears',sc:2.5,amp:[270,150],spd:1.05,intro:'작고 빠른 보스. 교차하는 칼날과 따라붙는 바늘, 양옆에서 날아오는 분신 가위를 읽어라.',
+  patterns:[
+   {name:'가위질',cd:6,dur:2.6,rage:0,text:'엇갈린 칼날이 X자로 교차한다',cast(d,m,f){ castFx(d,m,'flash');
+     for(let k=0;k<9;k++) after(d,k*0.08,()=>{ const a0=aimAng(m,f); for(const o of [-0.5,0.5]) shoot(d,m,{ang:a0+o*(1-k/12),sp:300,r:7,shape:'blade',trail:2}); }); }},
+   {name:'실 끊기',cd:8,dur:3.2,rage:0,text:'바늘이 천천히 따라붙다 방향을 튼다',cast(d,m,f){ castFx(d,m,'flash');
+     for(let k=0;k<6;k++) after(d,k*0.3,()=>{ const tg=pickHero(d)||f; shoot(d,m,{ang:aimAng(m,tg)+(k%2?0.5:-0.5),sp:190,r:7,shape:'needle',trail:3,upd:(b,dt)=>{ if(b.age<1.7){ const w2=aimAng(b,tg), cur=Math.atan2(b.vy,b.vx), df=Math.atan2(Math.sin(w2-cur),Math.cos(w2-cur)); setVel(b,cur+Math.max(-1,Math.min(1,df))*dt*1.7,190+b.age*60); } }}); }); }},
+   {name:'분신 가위',cd:9,dur:3.6,rage:0,text:'양옆에 분신이 나타나 칼날을 쏜다',cast(d,m,f){ castFx(d,m,'ring');
+     const y=Math.max(380,Math.min(AH-160,rndHeroY(d)-80));
+     for(const sx of [24,AW-24]) for(let k=0;k<3;k++) after(d,0.5+k*0.65,()=>{ const tg=pickHero(d)||f, a0=Math.atan2(tg.y-y,tg.x-sx); for(let i=-2;i<=2;i++) shoot(d,m,{x:sx,y,ang:a0+i*0.22,sp:250,r:7,shape:'blade',trail:2}); }); }},
+   {name:'오려내기',cd:11,dur:4.0,rage:0,text:'영역이 잘려 나간다 — 경고 원 바깥으로',cast(d,m,f){ castFx(d,m,'ring');
+     for(let k=0;k<5;k++) after(d,k*0.55,()=>{ const tg=pickHero(d)||f; d.zones.push({type:'slam',x:Math.max(80,Math.min(AW-80,tg.x+(rand()-0.5)*140)),y:Math.max(320,Math.min(AH-100,tg.y+(rand()-0.5)*140)),rad:78,owner:m,tgt:tg,phase:'wait',t:0,warn:0.85,act:0.35}); }); }},
+   {name:'십자 빔',cd:7,dur:3.0,rage:0,text:'세로 빔이 내리꽂히고 가로로 칼날 줄이 훑는다',cast(d,m,f){ castFx(d,m,'flash');
+     for(let k=0;k<3;k++) after(d,k*0.4,()=>{ const tg=pickHero(d)||f; d.zones.push({x:Math.max(50,Math.min(AW-50,tg.x)),y:0,w:56,owner:m,tgt:tg,phase:'wait',t:0,warn:0.9,act:0.4}); });
+     after(d,1.1,()=>{ const dir=rand()<0.5?-1:1, N=17, gap=3+ri(N-6), y0=Math.max(m.y+130,Math.min(AH-120,rndHeroY(d))); for(let i=0;i<N;i++){ if(Math.abs(i-gap)<=2) continue; shoot(d,m,{x:dir>0?-10:AW+10,y:y0+(i-N/2)*22,ang:dir>0?0:Math.PI,sp:230,r:7,shape:'blade',trail:2}); } }); }},
+   {name:'마지막 가위',cd:14,dur:4.6,rage:1,text:'분노 — 고속 X자 칼날과 빔',cast(d,m,f){ castFx(d,m,'ring');
+     for(let k=0;k<16;k++) after(d,k*0.14,()=>{ const a0=aimAng(m,pickHero(d)||f); for(const o of [-0.55,0.55]) shoot(d,m,{ang:a0+o*(1-k/22),sp:310,r:7,shape:'blade',trail:2}); });
+     for(let k=0;k<4;k++) after(d,0.8+k*0.7,()=>{ const tg=pickHero(d)||f; d.zones.push({x:Math.max(50,Math.min(AW-50,tg.x)),y:0,w:56,owner:m,tgt:tg,phase:'wait',t:0,warn:0.85,act:0.4}); }); }},
+  ]},
 };
 function pickHero(d){ const al=d.H.filter(h=>!h.dead); return al.length?al[ri(al.length)]:null; }
 function rndHeroY(d){ const al=d.H.filter(h=>!h.dead); return al.length?al[ri(al.length)].y:AH*0.7; }
 function makeBoss(heroes,bossId,o){
   o=o||{}; const B=BOSSES[bossId]||BOSSES.puppet, n=heroes.length;
-  const boss={isBoss:true,def:B,job:{id:'boss',name:B.name,color:B.color},x:AW/2,y:215,r:B.r,maxHp:Math.round(B.hpPer*({1:2.4,2:6.8,3:10.2}[n]||n*3.4)*(o.hpMul||1)),dir:1,inv:0,cd:B.patterns.map(()=>2.5+rand()*2),face:'idle',rage:false,busy:0,last:-1,wx:0,shot:1.4,hits:0};
+  const boss={isBoss:true,def:B,job:{id:'boss',name:B.name,color:B.color},x:AW/2,y:215,r:B.r,maxHp:Math.round(B.hpPer*(B.hpK||1)*({1:2.4,2:6.8,3:10.2}[n]||n*3.4)*(o.hpMul||1)),dir:1,inv:0,cd:B.patterns.map(()=>2.5+rand()*2),face:'idle',rage:false,busy:0,last:-1,wx:0,shot:1.4,hits:0};
   boss.hp=boss.maxHp;
   const H=heroes.map((p,i)=>({p,job:p.job,shield:(p.job.id==='arch'&&(p.dex|0)>=2?1:0),x:AW*(i+1)/(n+1),y:AH-240,homeY:AH-240,dir:-1,hp:BHP0,maxHp:BHP0,dead:false,inv:0,cd:[0,0,0],shot:0.5+rand()*0.4,r:8,speed:(p.job.id==='tech'&&PLANS.on?306:330),minY:AH*0.42,maxY:AH-70,mx:0,my:0,tx:null,ty:null,hits:0,face:'idle',ai:null,
     cdMul:p.job.id==='ent'?1-0.02*Math.min(12,p.viewers||0):p.job.id==='arch'?((p.dex|0)>=4?0.85:1):p.job.id==='scout'?0.88:p.job.id==='martyr'?1-0.025*Math.min(12,p.wc||0):1}));
@@ -719,7 +753,7 @@ function stepBoss(d,dt){
   else if(d.phase==='attack'&&d.phT>=T_ATK){ if(d.turn>=d.turns){ d.roundDone=true; return; } d.turn++; d.phase='pattern'; d.phT=0; d.think=0.6; d.patN=0; ev(d,'phase',d.phase); B.face='idle'; for(let i=0;i<B.cd.length;i++) B.cd[i]=Math.max(0,B.cd[i]-1.5); }
   // --- 보스 이동·패턴
   const atk=d.phase==='attack';
-  B.wx+=dt*(atk?0.25:0.55); B.x=AW/2+Math.sin(B.wx)*(atk?90:190); B.y=215+(atk?25:0);
+  B.wx+=dt*B.def.spd*(atk?0.45:1); B.x=AW/2+Math.sin(B.wx)*B.def.amp[atk?1:0]; B.y=215+(atk?25:0);
   for(let i=0;i<B.cd.length;i++) B.cd[i]=Math.max(0,B.cd[i]-dt);
   if(!atk){ d.think-=dt; if(d.think<=0){ d.think=0.4; if(d.t>=B.busy+0.6&&d.patN<(B.rage?3:2)){ const ready=[]; B.def.patterns.forEach((p,i)=>{ if(B.cd[i]<=0&&(!p.rage||B.rage)&&i!==B.last) ready.push(i); }); if(ready.length){ d.patN++; bossPattern(d,ready[ri(ready.length)]); } } } }
   else { B.shot-=dt; if(B.shot<=0){ B.shot=1.5; const f=pickHero(d); if(f) for(const o of [-0.3,0,0.3]) shoot(d,B,{ang:aimAng(B,f)+o,sp:200,r:7,shape:'rivet',spin:6,trail:2}); } }
@@ -3561,7 +3595,7 @@ function drawBossScene(c,t){
   // 보스
   c.save(); const bl=B.hp<=B.maxHp*0.5; if(d.phase==='attack'){ c.globalCompositeOperation='lighter'; const gl=glowSprite('#ffe08a',70); c.globalAlpha=0.4+0.15*Math.sin(t*8); c.drawImage(gl.c,B.x-gl.s*1.4,B.y-gl.s*1.4,gl.s*2.8,gl.s*2.8); c.globalCompositeOperation='source-over'; c.globalAlpha=1; }
   { c.save(); c.globalCompositeOperation='lighter'; const gl0=glowSprite(B.rage?'#ff5a6a':'#8f5ab8',60); c.globalAlpha=0.35+0.1*Math.sin(t*3); c.drawImage(gl0.c,B.x-gl0.s*1.5,B.y-gl0.s*1.2,gl0.s*3,gl0.s*3); c.restore(); }
-  c.translate(B.x,B.y+34); c.scale(2.3,2.3); c.translate(-B.x,-B.y-34); if(B.face==='hurt'&&Math.floor(t*14)%2===0) c.globalAlpha=0.6; drawMonster(c,{x:B.x,y:B.y,type:MON_TYPES.puppet,anim:t,state:bl?'chase':'patrol',face:1},t); c.restore();
+  { const bsc=B.def.sc||2.3; c.translate(B.x,B.y+34); c.scale(bsc,bsc); c.translate(-B.x,-B.y-34); } if(B.face==='hurt'&&Math.floor(t*14)%2===0) c.globalAlpha=0.6; drawMonster(c,{x:B.x,y:B.y,type:MON_TYPES[B.def.mon||'puppet'],anim:t,state:bl?'chase':'patrol',face:1,r:B.r},t); c.restore();
   c.save(); c.globalAlpha=0.28; c.strokeStyle=B.job.color; c.lineWidth=2; c.beginPath(); c.arc(B.x,B.y,B.r,0,7); c.stroke(); c.restore();
   c.save(); c.globalCompositeOperation='lighter'; for(const b of d.bul){ const sp=glowSprite(b.col,b.r); c.globalAlpha=0.36; c.drawImage(sp.c,b.x-sp.s,b.y-sp.s,sp.s*2,sp.s*2); } c.restore();
   for(const b of d.bul) drawBullet(c,b,t);
@@ -3784,9 +3818,11 @@ async function titleScreen(){
 }
 async function bossDemoRun(){
   const PP=makePlayers(0).slice(0,3); PP.forEach(p=>{ p.gold=6; p.name=p.job.name; }); PP[0].human=true; P=PP; stageActors=PP.map(p=>p.job);
-  await bookScreen({left:`<h3>Boss Rush · 체험</h3><h2>그림자 인형사</h2><p class="quote">한 소집에 세 번, 보스의 탄막이 쏟아지고 지친 틈에 영웅이 반격합니다.</p><p class="dim">당신은 ${PP[0].job.name}, 동료는 ${PP[1].job.name}·${PP[2].job.name}(봇). 쓰러져도 다음 소집에 하트 1칸으로 돌아옵니다. 최대 ${BOSS_ROUNDS}소집.</p>`,right:`<h3>나의 스펠 카드</h3>${spellListHTML(PP[0].job)}`,buttons:[{label:'무대로',value:1}],tag:'boss_'});
-  const r=await startBossScene(PP,PP[0],'puppet',{}); mode='title'; stageActors=[];
-  await bookScreen({left:`<h3>Boss Rush · 결과</h3><h2>${r.winner==='heroes'?'영웅의 승리':'보스의 승리'}</h2><p class="quote">${r.winner==='heroes'?'그림자 인형사의 실이 모두 끊어졌습니다.':'소집이 끝나도 인형사는 무대 위에 서 있었습니다.'}</p><p class="dim">${r.rounds}소집 · 보스 체력 ${r.bossHp} / ${r.bossMax}</p>`,right:'',buttons:[{label:'돌아가기',value:1}],tag:'boss_end'});
+  const list=Object.values(BOSSES).map(b=>`<p style="margin:.5em 0"><span class="chip"><i style="background:${b.color}"></i>${b.name}</span><br><span class="dim" style="font-size:.88em">${b.intro}</span></p>`).join('');
+  const pick=await bookScreen({left:`<h3>Boss Rush · 체험</h3><h2>누구와 싸울까</h2><p class="quote">한 소집에 세 번, 보스의 탄막이 쏟아지고 지친 틈에 영웅이 반격합니다. 쓰러져도 다음 소집에 하트 1칸으로 돌아옵니다 (최대 ${BOSS_ROUNDS}소집).</p>${list}`,right:`<h3>나의 스펠 카드 (${PP[0].job.name})</h3>${spellListHTML(PP[0].job)}<p class="dim" style="font-size:.88em">동료: ${PP[1].job.name}·${PP[2].job.name} (봇)</p>`,buttons:[...Object.values(BOSSES).map(b=>({label:b.name,value:b.id})),{label:'무작위',value:'rand'}],tag:'boss_'});
+  const bid=pick==='rand'||!BOSSES[pick]?sample(Object.keys(BOSSES),1)[0]:pick;
+  const r=await startBossScene(PP,PP[0],bid,{}); mode='title'; stageActors=[];
+  await bookScreen({left:`<h3>Boss Rush · 결과</h3><h2>${r.winner==='heroes'?'영웅의 승리':'보스의 승리'}</h2><p class="quote">${r.winner==='heroes'?BOSSES[bid].name+'을(를) 쓰러뜨렸습니다.':'소집이 끝나도 '+BOSSES[bid].name+'은(는) 무대 위에 서 있었습니다.'}</p><p class="dim">${r.rounds}소집 · 보스 체력 ${r.bossHp} / ${r.bossMax}</p>`,right:'',buttons:[{label:'돌아가기',value:1}],tag:'boss_end'});
 }
 async function howToScreen(){
   const step=(n,t,d)=>`<div style="display:flex;gap:.7em;margin:.55em 0"><span class="seal" style="flex:none;width:1.9em;height:1.9em;line-height:1.9em;font-size:.9em">${n}</span><div><b>${t}</b><div class="dim" style="font-size:.9em">${d}</div></div></div>`;
