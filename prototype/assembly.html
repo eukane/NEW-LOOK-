@@ -2592,17 +2592,21 @@ function duelBottom(){ return W<H*0.9 ? Math.max(58,Math.min(78,W*0.2))+24 : 14;
 function arenaT(){ const bt=duelBottom(), av=H-HUD_TOP-bt, s=Math.min(W/AW,av/AH); return {s,ax:(W-AW*s)/2,ay:HUD_TOP+(av-AH*s)/2}; }
 function drawDuel(c,t){
   const sc=duelScene, d=sc.d, {s,ax,ay}=arenaT();
+  const sf=(nm,fn)=>{ try{ c.save(); fn(); }catch(e){ reportErr('duel.'+nm,e); } finally{ c.restore(); } };
   drawStage(c,W,H,t);
   c.save(); c.translate(ax,ay); c.scale(s,s);
   if(d.shake>0 && sc.humanIn){ const k=d.shake*26; c.translate((Math.random()-0.5)*k,(Math.random()-0.5)*k); }
   c.fillStyle='rgba(6,3,2,.55)'; rr(c,0,0,AW,AH,6); c.fill(); c.strokeStyle='rgba(143,115,64,.6)'; c.lineWidth=3; rr(c,0,0,AW,AH,6); c.stroke();
   c.setLineDash([14,14]); c.strokeStyle='rgba(217,205,176,.12)'; c.lineWidth=3; c.beginPath(); c.moveTo(20,AH/2); c.lineTo(AW-20,AH/2); c.stroke(); c.setLineDash([]);
-  for(const z of d.zones) drawZone(c,z,t);
-  for(const f of d.fx) drawCastFx(c,f,t);
+  sf('zone',()=>{ for(const z of d.zones) drawZone(c,z,t); });
+  sf('fx',()=>{ for(const f of d.fx) drawCastFx(c,f,t); });
+  sf('bullet',()=>{
   c.save(); c.globalCompositeOperation='lighter';
   for(const b of d.bul){ const sp=glowSprite(b.col,b.r); c.globalAlpha=0.36; c.drawImage(sp.c,b.x-sp.s,b.y-sp.s,sp.s*2,sp.s*2); }
   c.restore();
   for(const b of d.bul) drawBullet(c,b,t);
+  });
+  sf('char',()=>{
   for(const m of [d.B,d.A]){
     const sz=1.3, blink = m.inv>0 && Math.floor(t*14)%2===0;
     c.save(); if(blink) c.globalAlpha=0.45;
@@ -2612,8 +2616,9 @@ function drawDuel(c,t){
     c.beginPath(); c.arc(m.x,m.y,m.r,0,7); c.fillStyle='#fff'; c.fill(); c.lineWidth=3; c.strokeStyle=m.job.color; c.stroke();
     if(m===d.A){ c.beginPath(); c.arc(m.x,m.y,m.r+9,0,7); c.strokeStyle='rgba(255,255,255,.3)'; c.lineWidth=2; c.stroke(); }
   }
-  drawParticles(c,d.parts);
-  for(const p of d.sparks){ const k=p.t/0.5; c.strokeStyle=`rgba(255,255,255,${1-k})`; c.lineWidth=4; c.beginPath(); c.arc(p.x,p.y,10+60*k,0,7); c.stroke(); }
+  });
+  sf('part',()=>{ drawParticles(c,d.parts);
+  for(const p of d.sparks){ const k=p.t/0.5; c.strokeStyle=`rgba(255,255,255,${1-k})`; c.lineWidth=4; c.beginPath(); c.arc(p.x,p.y,10+60*k,0,7); c.stroke(); } });
   c.restore();
   atmosphere(c,W,H,t);
   if(d.flash>0 && sc.humanIn){ c.fillStyle=`rgba(160,10,20,${d.flash*0.5})`; c.fillRect(0,0,W,H); }
