@@ -3890,7 +3890,7 @@ function update(dt){
 function draw(){
   g.clearRect(0,0,W,H);
   if(mode==='duel' && duelScene) drawDuel(g,now);
-  if(mode==='boss' && bossScene) drawBossScene(g,now);
+  else if(mode==='boss' && bossScene) drawBossScene(g,now);
   else if(mode==='pick' && pickScene) drawPick(g,now);
   else if(mode==='reveal' && revScene) drawReveal(g,now);
   else if(mode==='book' && bookScene) drawBook(g,now);
