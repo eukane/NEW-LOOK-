@@ -3911,7 +3911,13 @@ const TIPS_SEEN=(()=>{ try{ return new Set(JSON.parse(localStorage.getItem('mt_t
 let tipTimer=null; function showTip(id,title,text,ms=4500,cls=''){ if(!SETTINGS.tutorial||TIPS_SEEN.has(id)||FAST) return; TIPS_SEEN.add(id); try{ localStorage.setItem('mt_tips',JSON.stringify([...TIPS_SEEN])); }catch(e){}
   const el=document.getElementById('tip'); el.innerHTML=`<i>!</i><div><b>${title}</b>${text}</div>`; el.classList.toggle('xp',mode==='explore'); el.classList.toggle('dt',cls==='dt'); el.classList.add('on'); el.onclick=()=>{ el.classList.remove('on'); }; clearTimeout(tipTimer); tipTimer=setTimeout(()=>el.classList.remove('on'),ms); sfx.play('click',{vol:0.4,rate:1.4}); }
 const RAF=!(params.has('auto')||params.has('demo')||params.has('stop')||params.has('fast')||params.has('bt')||params.has('ct'));
-function frame(){ const ts=performance.now(); const dt=Math.min(0.05,(ts-lastTs)/1000); lastTs=ts; if(!paused) now+=dt; update(paused?0:dt); draw(); if(RAF) requestAnimationFrame(frame); else setTimeout(frame,16); }
+const ERRS={seen:new Set(),el:null};
+function reportErr(where,e){ const msg=where+': '+(e&&e.message||e); const key=msg.slice(0,120); if(ERRS.seen.has(key)) return; ERRS.seen.add(key); console.error('[frame]',where,e); window.__frameErr=(window.__frameErr||[]).concat([msg+' @ '+(((e&&e.stack)||'').split('\n')[1]||'').trim().slice(0,100)]);
+  try{ if(!ERRS.el){ ERRS.el=document.createElement('div'); ERRS.el.style.cssText='position:fixed;left:6px;top:6px;z-index:99;max-width:92vw;background:rgba(120,10,20,.88);color:#fff;font:11px/1.35 monospace;padding:5px 8px;border:1px solid #ff6a7a;pointer-events:none;white-space:pre-wrap'; document.body.appendChild(ERRS.el); } ERRS.el.textContent='오류(화면은 계속 돌아갑니다): '+msg+'\n'+(((e&&e.stack)||'').split('\n')[1]||'').trim().slice(0,110); clearTimeout(ERRS.t); ERRS.t=setTimeout(()=>{ if(ERRS.el) ERRS.el.textContent=''; },9000); }catch(_){} }
+function frame(){ const ts=performance.now(); const dt=Math.min(0.05,(ts-lastTs)/1000); lastTs=ts; if(!paused) now+=dt;
+  try{ update(paused?0:dt); }catch(e){ reportErr('update['+mode+']',e); }
+  try{ draw(); }catch(e){ reportErr('draw['+mode+']',e); }
+  if(RAF) requestAnimationFrame(frame); else setTimeout(frame,16); }
 
 function simReport(){
   const base={...rules}; const names={off:'없음',extra:'A. 관객의 동정',last:'B. 최후의 승부수'};
