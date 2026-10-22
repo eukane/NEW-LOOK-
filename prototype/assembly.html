@@ -197,6 +197,16 @@ const shown=()=>true;   // 직업은 모두 공개
 const lab=p=>shown(p)?p.name:code(p);
 const level = p => Math.min(5, Math.floor(p.gold/2)+((p.viewers||0)>=8?1:0));
 const alive = P => P.filter(p=>p.alive);
+// 여유 재화: 레벨 상한(5)에 필요한 재화를 넘는 몫. 소품(공연 소품)에 쓴다.
+const GCAP=p=>(p.viewers||0)>=8?8:10, SPARE=p=>Math.max(0,(p.gold|0)-GCAP(p));
+const PROPS=[
+  {id:'shield',name:'방패막',cost:2,max:2,key:'pShield',desc:'다음 듀얼에서 첫 피격 1회를 막습니다'},
+  {id:'ward',name:'실 보호',cost:2,max:2,key:'ward',desc:'다음 공격에서 끊길 급소 1개를 지켜 줍니다 (쓸 때까지 유지)'},
+  {id:'seal',name:'봉인',cost:2,max:1,key:'seal',desc:'다음 듀얼에서 상대의 스펠 2·3을 12초간 봉인합니다'}];
+const propCan=(p,pr)=>SPARE(p)>=pr.cost&&((p[pr.key]|0)<pr.max);
+function buyProp(p,id){ const pr=PROPS.find(q=>q.id===id); if(!pr||!propCan(p,pr)) return false; p.gold-=pr.cost; p[pr.key]=(p[pr.key]|0)+1; return true; }
+function botBuy(p){ for(let k=0;k<6&&SPARE(p)>=2;k++){ const o=PROPS.filter(pr=>propCan(p,pr)); if(!o.length) break; buyProp(p,o[ri(o.length)].id); } }
+const propText=p=>PROPS.filter(pr=>(p[pr.key]|0)>0).map(pr=>pr.name+(p[pr.key]>1?' ×'+p[pr.key]:'')).join(' · ')||'없음';
 function picksFor(p, won, rules){
   let n = rules.basePicks + (won ? rules.winBonus : 0);               // 이긴 쪽 4개 / 진 쪽 3개
   if(rules.comeback==='extra' && p.cut.size>=2) n += 1;                // 역전 기믹 A: 관객의 동정
@@ -205,7 +215,8 @@ function picksFor(p, won, rules){
 }
 function aiPicks(p, t, count){ return sample(range(N).filter(i=>!t.cut.has(i)), count); }
 function resolveAttack(att, tar, picks){
-  const hits = picks.filter(i=>tar.vit.has(i) && !tar.cut.has(i));
+  let hits = picks.filter(i=>tar.vit.has(i) && !tar.cut.has(i));
+  if(hits.length && (tar.ward|0)>0){ tar.ward--; hits=hits.slice(1); }   // 실 보호
   hits.forEach(i=>tar.cut.add(i));
   if(tar.cut.size>=VITALS) tar.alive = false;
   return hits;
@@ -257,8 +268,11 @@ function runBotGames(rules, n){
 const AW=720, AH=1280, DUR=45, HP0=5;
 const aimAng = (a,b) => Math.atan2(b.y-a.y, b.x-a.x);
 function makeDuel(A,B){
-  const mk=(p,y,dir,minY,maxY)=>({p,job:p.job,shield:(p.job.id==='arch'&&(p.dex|0)>=2?1:0),x:AW/2,y,homeY:y,dir,hp:HP0,inv:0,cd:[0,0,0],shot:0.5+rand()*0.4,r:8,speed:(p.job.id==='tech'&&PLANS.on?306:330),minY,maxY,mx:0,my:0,tx:null,ty:null,hits:0,face:'idle',ai:null,cdMul:p.job.id==='tech'&&PLANS.on?1.2:p.job.id==='ent'?1-0.02*Math.min(12,p.viewers||0):p.job.id==='arch'?((p.dex|0)>=4?0.85:1):p.job.id==='scout'?0.88:p.job.id==='martyr'?1-0.025*Math.min(12,p.wc||0):1});
-  return {t:0,over:false,fxOn:false,A:mk(A,AH-230,-1,AH*0.44,AH-70),B:mk(B,250,1,70,AH*0.56),bul:[],zones:[],timers:[],banners:[],sparks:[],log:[],fx:[],parts:[],shake:0,flash:0,spd:1,onEvent:null};
+  const mk=(p,y,dir,minY,maxY)=>({p,job:p.job,shield:(p.job.id==='arch'&&(p.dex|0)>=2?1:0)+(p.pShield|0),x:AW/2,y,homeY:y,dir,hp:HP0,inv:0,cd:[0,0,0],shot:0.5+rand()*0.4,r:8,speed:(p.job.id==='tech'&&PLANS.on?306:330),minY,maxY,mx:0,my:0,tx:null,ty:null,hits:0,face:'idle',ai:null,cdMul:p.job.id==='tech'&&PLANS.on?1.2:p.job.id==='ent'?1-0.02*Math.min(12,p.viewers||0):p.job.id==='arch'?((p.dex|0)>=4?0.85:1):p.job.id==='scout'?0.88:p.job.id==='martyr'?1-0.025*Math.min(12,p.wc||0):1});
+  const dA=mk(A,AH-230,-1,AH*0.44,AH-70), dB=mk(B,250,1,70,AH*0.56);
+  if((A.seal|0)>0){ dB.cd[1]=dB.cd[2]=Math.max(dB.cd[1],12); } if((B.seal|0)>0){ dA.cd[1]=dA.cd[2]=Math.max(dA.cd[1],12); }
+  A.pShield=0; B.pShield=0; A.seal=0; B.seal=0;
+  return {t:0,over:false,fxOn:false,A:dA,B:dB,bul:[],zones:[],timers:[],banners:[],sparks:[],log:[],fx:[],parts:[],shake:0,flash:0,spd:1,onEvent:null};
 }
 function after(d,sec,fn){ d.timers.push({t:sec,fn}); }
 function ev(d,type,a,b){ if(d.onEvent) d.onEvent(type,a,b); }
@@ -4166,6 +4180,11 @@ const OPS={
 };
 OPS.bossnet=opsBossnet;
 function bookFor(h,opts){ return h.human?bookScreen(opts):NET.ask(h.remote,'book',{opts},opts.buttons[0].value); }
+async function briefEach(mk){ await Promise.all(humansAll().map(async h=>{ for(;;){ const o=mk(h); if(!o) return;
+  if(h.alive){ const opts=PROPS.filter(pr=>propCan(h,pr)); const sp=SPARE(h);
+    if(sp>=2||PROPS.some(pr=>(h[pr.key]|0)>0)){ o.left+=`<div class="rew"><div class="dim">공연 소품 — 레벨 상한을 넘은 여유 재화 ${sp}</div><p style="margin:.3em 0">보유: ${propText(h)}</p></div>`; }
+    o.buttons=[...o.buttons,...opts.map(pr=>({label:`${pr.name} 마련 (재화 −${pr.cost}) · ${pr.desc}`,value:'buy:'+pr.id}))]; }
+  const v=await bookFor(h,o); if(typeof v==='string'&&v.startsWith('buy:')){ buyProp(h,v.slice(4)); continue; } return v; } })); }
 async function bookEach(makeOpts,list){ list=list||humansAll(); const out=new Map(); await Promise.all(list.map(async h=>{ const o=makeOpts(h); if(!o) return; out.set(h,await bookFor(h,o)); })); return out; }
 function callFor(h,fn,a,def){ if(h.human) return Promise.resolve(OPS[fn](a)); return NET.ask(h.remote,fn,{...a,P:serAll(h)},def); }
 async function transAll(o,list){ list=list||humansAll(); await Promise.all(list.map(h=>{ const oo={...o,job:h.job.id}; if(h.human) return OPS.trans({o:oo}); if(h.remote!=null) NET.to(h.remote,{k:'rpc',id:0,fn:'trans',args:{o:oo,P:serAll(h)}}); return null; })); }
@@ -4278,7 +4297,8 @@ async function playGame(net){
     const {pairs,bye}=pairUp(P);
     await transAll({text:`소집 ${round}`,actors:alive(P).map(p=>p.job.id)});
     const briefR=`<h3>대진표</h3>${spritesRow(pairs,bye)}`, flavor=FLAVOR[(round-1+ri(3))%FLAVOR.length];
-    await bookEach(h=>({left:`<h3>Act ${round} · 소집</h3><h2>제 ${round} 소집</h2><p class="quote">${flavor}</p>${xsum?`<table><tr><th>탐색 결과</th><th>재화</th><th>직업 목표</th><th>끊긴 실</th></tr>${P.map((p,i)=>`<tr><td>${nameOf(p)}</td><td>${xsum.gains[i]>0?'+':''}${xsum.gains[i]}</td><td>${xsum.extra[i]}</td><td>${xsum.snips[i]?'✂ '+xsum.snips[i]:'—'}</td></tr>`).join('')}</table><p class="dim">상자 ${xsum.counts.chest}개 · 발전기 ${xsum.counts.gen}개가 열렸습니다. 내 재화 Lv ${level(h)}.</p>`:`<p class="dim">모두 재화를 얻었습니다 (내 재화 Lv ${level(h)}).</p>`}`,right:briefR,buttons:[{label:h.alive?'듀얼 시작':'관전 중… 계속',value:1}],tag:STOP==='brief'?'brief':'brief_'}));
+    P.filter(p=>p.alive&&!p.ctl).forEach(botBuy);
+    await briefEach(h=>({left:`<h3>Act ${round} · 소집</h3><h2>제 ${round} 소집</h2><p class="quote">${flavor}</p>${xsum?`<table><tr><th>탐색 결과</th><th>재화</th><th>직업 목표</th><th>끊긴 실</th></tr>${P.map((p,i)=>`<tr><td>${nameOf(p)}</td><td>${xsum.gains[i]>0?'+':''}${xsum.gains[i]}</td><td>${xsum.extra[i]}</td><td>${xsum.snips[i]?'✂ '+xsum.snips[i]:'—'}</td></tr>`).join('')}</table><p class="dim">상자 ${xsum.counts.chest}개 · 발전기 ${xsum.counts.gen}개가 열렸습니다. 내 재화 Lv ${level(h)}.</p>`:`<p class="dim">모두 재화를 얻었습니다 (내 재화 Lv ${level(h)}).</p>`}`,right:briefR,buttons:[{label:h.alive?'듀얼 시작':'관전 중… 계속',value:1}],tag:STOP==='brief'?'brief':'brief_'}));
     const plan=[], dj=[], interactiveOn=(opts.duelMode==='play' && !AUTO) || (AUTO&&STOP==='duel') || params.has('netduel');
     for(const [a,b] of pairs){ const item={a,b,w:null,l:null,r:null}; plan.push(item); const hum=[a,b].filter(p=>p.ctl&&p.alive);
       if(hum.length && interactiveOn){ dj.push(runInteractivePair(a,b).then(({rs,A,B})=>{ item.r={winner:rs.winner,hitsA:a===A?rs.hitsA:rs.hitsB,hitsB:a===A?rs.hitsB:rs.hitsA}; })); }
