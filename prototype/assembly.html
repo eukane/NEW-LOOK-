@@ -213,7 +213,20 @@ function picksFor(p, won, rules){
   else if(rules.comeback==='last' && p.cut.size>=3) n = 5;             // 역전 기믹 B: 최후의 승부수
   return n;
 }
-function aiPicks(p, t, count){ return sample(range(N).filter(i=>!t.cut.has(i)), count); }
+// 듀얼에서 얻는 단서: 상대에게 맞힌 횟수(최대 3)만큼 '급소가 아닌 실'을 알려 주고, 무피격 완승이면 급소 1개까지 드러난다.
+const CLUE_MAX_={v:2}; const CLUE_MAX=()=>CLUE_MAX_.v;
+function makeClue(att,tar,landed,flawless){
+  const free=range(N).filter(i=>!tar.cut.has(i)), safe=sample(free.filter(i=>!tar.vit.has(i)),Math.min(CLUE_MAX(),landed|0));
+  const vital=flawless?sample(free.filter(i=>tar.vit.has(i)),1):[];
+  return {safe,vital};
+}
+function aiPicks(p, t, count, clue){
+  const out=[]; if(clue&&clue.vital) for(const i of clue.vital){ if(out.length<count&&!t.cut.has(i)) out.push(i); }
+  const bad=new Set([...out,...(clue&&clue.safe||[])]);
+  let pool=range(N).filter(i=>!t.cut.has(i)&&!bad.has(i)); const rest=sample(pool,Math.min(count-out.length,pool.length)); out.push(...rest);
+  if(out.length<count){ const more=range(N).filter(i=>!t.cut.has(i)&&!out.includes(i)); out.push(...sample(more,count-out.length)); }
+  return out;
+}
 function resolveAttack(att, tar, picks){
   let hits = picks.filter(i=>tar.vit.has(i) && !tar.cut.has(i));
   if(hits.length && (tar.ward|0)>0){ tar.ward--; hits=hits.slice(1); }   // 실 보호
@@ -2681,11 +2694,14 @@ function drawPick(c,t){
   drawStrings(c,L,{cut:sc.target.cut,sel:sc.sel,flashT:0},t);
   drawChar(c,L.fx,L.fy,L.s,sc.target.job,{t,face:'idle',idle:false});
   drawAnchors(c,L,{cut:sc.target.cut,sel:sc.sel},t);
+  { const ck=sc.clue||{safe:[],vital:[]}, rr_=Math.max(11,L.s*3.2); c.textAlign='center'; c.textBaseline='middle'; c.font=`700 ${Math.round(rr_*1.15)}px ${FD}`;
+    for(const i of ck.safe){ const q=L.pts[i]; if(!q||sc.target.cut.has(i)) continue; c.beginPath(); c.arc(q[0],q[1],rr_,0,7); c.fillStyle='rgba(20,40,24,.82)'; c.fill(); c.strokeStyle='#7fbf66'; c.lineWidth=2; c.stroke(); c.fillStyle='#9be37a'; c.fillText('✓',q[0],q[1]+1); }
+    for(const i of ck.vital){ const q=L.pts[i]; if(!q||sc.target.cut.has(i)) continue; const pu=1+Math.sin(t*5)*0.12; c.beginPath(); c.arc(q[0],q[1],rr_*pu,0,7); c.fillStyle='rgba(60,10,16,.85)'; c.fill(); c.strokeStyle='#d8505f'; c.lineWidth=2.4; c.stroke(); c.fillStyle='#ff8c98'; c.fillText('✦',q[0],q[1]+1); } }
   atmosphere(c,W,H,t);
   const bw=Math.min(W-170,420), bx=W/2-bw/2;
   c.fillStyle='rgba(8,4,3,.88)'; c.fillRect(bx,10,bw,62); c.strokeStyle='#4a3a20'; c.lineWidth=1; c.strokeRect(bx+.5,10.5,bw-1,61);
   c.textAlign='center'; c.textBaseline='middle'; c.fillStyle='#d9cdb0'; c.font=`400 17px ${FD}`; c.fillText(`${lab(sc.target)}의 실`,W/2,28);
-  c.font=`400 14px ${FD}`; c.fillStyle='#bba878'; c.fillText(`${sc.n}개를 고르세요 (${sc.sel.size}/${sc.n})`,W/2,48);
+  c.font=`400 14px ${FD}`; c.fillStyle='#bba878'; c.fillText(`${sc.n}개를 고르세요 (${sc.sel.size}/${sc.n})`+(sc.clue&&(sc.clue.safe.length||sc.clue.vital.length)?`  ·  ✓ 안전 ${sc.clue.safe.length}${sc.clue.vital.length?' · ✦ 급소 '+sc.clue.vital.length:''}`:''),W/2,48);
   if(opts.timer){ c.fillStyle='#2a1a0e'; c.fillRect(bx+14,60,bw-28,5); c.fillStyle='#8f7340'; c.fillRect(bx+14,60,(bw-28)*Math.max(0,sc.left/15),5); }
 }
 function drawReveal(c,t){
@@ -4137,11 +4153,11 @@ function startDuelScene(A,B,netRemote){
   });
 }
 function updatePickBtn(){ const b=document.getElementById('pk'); if(b&&pickScene){ b.disabled = pickScene.sel.size!==pickScene.n; b.textContent=`확정 (${pickScene.sel.size}/${pickScene.n})`; } }
-function runPick(me,target,n){
+function runPick(me,target,n,clue){
   return new Promise(res=>{
-    pickScene={me,target,n,sel:new Set(),left:15,L:null,finish:null};
+    pickScene={me,target,n,clue:clue||{safe:[],vital:[]},sel:new Set(),left:15,L:null,finish:null};
     ui.innerHTML=`<div class="scr bottom"><div style="pointer-events:auto;display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:center"><div class="vrow"><span class="l">내 급소</span>${[...me.vit].sort((a,b)=>a-b).map(i=>`<span class="vc ${me.cut.has(i)?'cut':''}" title="${STRING_NAMES[i]}">${i+1}</span>`).join('')}</div><button class="btn" id="pk" disabled>확정</button></div></div>`;
-    const finish=()=>{ const sel=pickScene.sel; while(sel.size<n){ const free=range(N).filter(i=>!target.cut.has(i)&&!sel.has(i)); sel.add(free[ri(free.length)]); } pickScene.finish=null; const out=[...sel]; pickScene=null; res(out); };
+    const finish=()=>{ const sel=pickScene.sel; const ck=pickScene.clue; for(const i of ck.vital){ if(sel.size<n&&!target.cut.has(i)) sel.add(i); } while(sel.size<n){ let free=range(N).filter(i=>!target.cut.has(i)&&!sel.has(i)&&!ck.safe.includes(i)); if(!free.length) free=range(N).filter(i=>!target.cut.has(i)&&!sel.has(i)); sel.add(free[ri(free.length)]); } pickScene.finish=null; const out=[...sel]; pickScene=null; res(out); };
     pickScene.finish=finish; document.getElementById('pk').onclick=finish; updatePickBtn(); mode='pick';
     if(AUTO && STOP!=='pick') setTimeout(finish,0);
   });
@@ -4173,7 +4189,7 @@ const OPS={
   trans:a=>transition(()=>{ mode='title'; if(a.o.actors) stageActors=a.o.actors.map(id=>JOBS.find(j=>j.id===id)).filter(Boolean); },{...a.o,job:JOBS.find(j=>j.id===a.o.job)||JOBS[0]}),
   assign:a=>assignScreen(P[a.me]),
   whisper:a=>whisperInput(P[a.me],P[a.tgt]),
-  pick:async a=>{ await transition(()=>{},{text:'실 선택',tip:a.tip,job:P[a.me].job}); return runPick(P[a.me],P[a.tar],a.n); },
+  pick:async a=>{ await transition(()=>{},{text:'실 선택',tip:a.tip,job:P[a.me].job}); return runPick(P[a.me],P[a.tar],a.n,a.clue); },
   reveal:async a=>{ const me=P[a.me], foe=P[a.foe], snap={}; a.snap.forEach((c,i)=>{ snap[i]=new Set(c); }); await transition(()=>{},{text:'공개',tip:'실이 팽팽해집니다…',job:me.job}); await runReveal(me,foe,a.myPicks,a.foePicks,a.myHits,a.foeHits,snap,a.canceled); mode='title'; },
   cut:a=>{ const w=P[a.win]; stageActors=[w.job]; return runCut(w); },
   wait:a=>{ clientWait(a.msg); },
@@ -4317,9 +4333,9 @@ async function playGame(net){
       return {left:leftHTML,right:`<h3>${mine&&h.alive?'다른 대결':'다음 장'}</h3>${mine&&h.alive?(others.map(x=>card(x,false)).join('')||'<p class="dim">이번 소집은 한 판뿐입니다.</p>'):''}${rew}<p class="quote">책장이 넘어가자, 인형들의 실이 다시 팽팽해졌습니다.</p>`,buttons:[{label:'실 선택으로',value:1}],tag:STOP==='result'?'result':'result_'}; });
     const attacks=[], pjobs=[];
     for(const x of plan) for(const [att,tar] of [[x.a,x.b],[x.b,x.a]]){
-      const n0=picksFor(att,x.w===att,rules), sn=Math.min(att.snip||0,n0-1), n=n0-sn; att.snip=0; const rec={att,tar,picks:null,n}; attacks.push(rec);
-      if(att.ctl && att.alive){ pjobs.push(callFor(att,'pick',{me:att.i,tar:tar.i,n,tip:`${lab(tar)}의 12개 실 중 ${n}개를 고르세요.${sn?` (가위에 실이 ${sn}개 끊겨 줄었습니다)`:''}`},null).then(pk=>{ rec.picks=(Array.isArray(pk)&&pk.length===n&&new Set(pk).size===n&&pk.every(i=>Number.isInteger(i)&&i>=0&&i<N&&!tar.cut.has(i)))?pk:aiPicks(att,tar,n); })); }
-      else rec.picks=aiPicks(att,tar,n);
+      const n0=picksFor(att,x.w===att,rules), sn=Math.min(att.snip||0,n0-1), n=n0-sn; att.snip=0; const mineA=att===x.a, landed=mineA?x.r.hitsB:x.r.hitsA, taken=mineA?x.r.hitsA:x.r.hitsB, clue=makeClue(att,tar,landed,x.w===att&&taken===0); const rec={att,tar,picks:null,n,clue}; attacks.push(rec);
+      if(att.ctl && att.alive){ pjobs.push(callFor(att,'pick',{me:att.i,tar:tar.i,n,clue,tip:`${lab(tar)}의 12개 실 중 ${n}개를 고르세요.${clue.safe.length?` 듀얼에서 ${clue.safe.length}번 맞혀 안전한 실 ${clue.safe.length}개(✓)를 알아냈습니다.`:''}${clue.vital.length?' 무피격 완승 — 급소 1개(✦)가 드러났습니다.':''}${sn?` (가위에 실이 ${sn}개 끊겨 줄었습니다)`:''}`},null).then(pk=>{ rec.picks=(Array.isArray(pk)&&pk.length===n&&new Set(pk).size===n&&pk.every(i=>Number.isInteger(i)&&i>=0&&i<N&&!tar.cut.has(i)))?pk:aiPicks(att,tar,n,clue); })); }
+      else rec.picks=aiPicks(att,tar,n,clue);
     }
     await Promise.all(pjobs);
     const snap={}; P.forEach(p=>snap[p.i]=new Set(p.cut));
